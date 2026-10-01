@@ -49,6 +49,7 @@ class PinyinEngine(
             // A reading that no single word covers is decoded as a whole sentence, and that
             // sentence is the answer for anything longer than a word.
             candidates.addAll(sentenceCandidates(buffer))
+            addInitialCandidates(buffer, candidates)
             addSyllableCandidates(buffer, buffer.length, candidates, from = 0, until = topRank)
             addCompletionCandidates(buffer, head = buffer, out = candidates)
             addSyllableCandidates(buffer, buffer.length, candidates, from = topRank)
@@ -63,6 +64,9 @@ class PinyinEngine(
             val head = buffer.substring(0, covered)
             addCompletionCandidates(buffer, head = head, out = candidates)
             candidates.addAll(sentenceCandidates(buffer))
+            // "nh" cannot be read as syllables at all, but that is exactly how 你好 is typed in
+            // jianpin, so the initials index is consulted before falling back to characters.
+            addInitialCandidates(buffer, candidates)
             addWordCandidates(head, head.length, candidates)
             addSyllableCandidates(head, head.length, candidates)
             if (candidates.size < limit) {
@@ -71,6 +75,12 @@ class PinyinEngine(
         } else {
             // Nothing complete yet: offer syllables that would complete the trailing fragment.
             addPartialCandidates(buffer, candidates, limit)
+            addInitialCandidates(buffer, candidates)
+            // Letters that read as nothing must still be committable, whatever the initials index
+            // had to say about them.
+            if (candidates.none { it.kind == CandidateKind.Raw }) {
+                candidates.add(Candidate(buffer, buffer.length, CandidateKind.Raw))
+            }
         }
 
         if (candidates.isEmpty()) {
@@ -398,6 +408,73 @@ class PinyinEngine(
     }
 
     /** Ranking key for one completion, see [addCompletionCandidates] for the order. */
+    /**
+     * 首字母 candidates: every character is represented by its initial, so the whole buffer is
+     * consumed and nothing is left to type. "nh" gives 你好 without typing a single full syllable.
+     *
+     * A run of initials is decoded as a sequence, not looked up as one string: "jtzmy" is
+     * 今天 + 怎么样 (jt | zmy), and the same letters also reach 今天怎么 / 今天这么 through
+     * 今天 + 怎么 (jt | zm). Partial paths are kept on purpose with their own `consumed`, so
+     * picking one leaves the rest of the initials in the buffer to carry on typing.
+     */
+    private fun addInitialCandidates(buffer: String, out: MutableList<Candidate>) {
+        if (nineKey || buffer.length < INITIALS_MIN_LENGTH) return
+
+        val letters = buffer.lowercase()
+        if (letters.any { it !in 'a'..'z' }) return
+        // position -> the paths that reach it, best first
+        val paths = Array(letters.length + 1) { ArrayList<InitialPath>(INITIALS_PATHS) }
+        paths[0].add(InitialPath(consumed = 0, text = "", score = 0))
+
+        for (start in 0 until letters.length) {
+            if (paths[start].isEmpty()) continue
+            val longest = minOf(MAX_INITIALS, letters.length - start)
+            for (length in MIN_INITIALS..longest) {
+                val key = letters.substring(start, start + length)
+                // The whole bucket, not the top few: the ranking below moves words up by how
+                // natural their syllables are and whether they are common, and a word the lookup
+                // already dropped can never come back.
+                val words = dictionary.wordsForInitials(key, INITIALS_LOOKUP)
+                if (words.isEmpty()) continue
+                for (word in words) {
+                    for (path in paths[start]) {
+                        val next = paths[start + length]
+                        val text = path.text + word.word
+                        if (next.any { it.text == text }) continue
+                        next.add(
+                            InitialPath(start + length, text, path.score + word.score),
+                        )
+                        next.sortByDescending { it.score }
+                        while (next.size > INITIALS_PATHS) next.removeAt(next.size - 1)
+                    }
+                }
+            }
+        }
+
+        val ranked = ArrayList<Candidate>(INITIALS_LIMIT)
+        for (consumed in letters.length downTo MIN_INITIALS) {
+            for (path in paths[consumed]) {
+                if (path.text.length < 2) continue
+                ranked.add(
+                    Candidate(
+                        text = path.text,
+                        consumed = consumed,
+                        kind = CandidateKind.Conversion,
+                        score = path.score,
+                        annotation = "首字母",
+                        // Every character was given at least its initial, so nothing is dimmed.
+                        unmatchedFrom = -1,
+                    ),
+                )
+            }
+            if (ranked.size >= INITIALS_LIMIT) break
+        }
+        out.addAll(ranked.take(INITIALS_LIMIT))
+    }
+
+    /** One way of reading a run of initials: how much it ate, what it produced, how good it is. */
+    private data class InitialPath(val consumed: Int, val text: String, val score: Int)
+
     private data class Ranked(
         val continuesTypedSyllable: Boolean,
         val untyped: Int,
@@ -662,18 +739,31 @@ class PinyinEngine(
         private const val SENTENCE_LIMIT = 8
         /** Characters the "convert only the first syllable" fallback may add. */
         private const val PREFIX_CHAR_LIMIT = 12
+        /** Shortest buffer treated as 首字母; a single letter stays a character lookup. */
+        private const val INITIALS_MIN_LENGTH = 2
+        /** Shortest word initials step; single letters have no word to stand for. */
+        private const val MIN_INITIALS = 2
+        private const val MAX_INITIALS = 4
+        /** Words kept per initials step, and how many readings of a run are offered. */
         /**
-         * Unigram cost of one unit, on the dictionary's log-frequency scale: a unit's score is its
-         * log frequency minus this, so one two character word beats two single characters and
-         * longer words are worth reaching for. A character is charged a fixed score because the
-         * asset ranks characters but does not score them.
+         * How many 首字母 readings to offer. Generous on purpose: the corpus ranks 你好 below a
+         * dozen place names for "nh", and the candidate list has to still contain it - the bar
+         * shows the first few and the expand button the rest.
+         */
+        private const val INITIALS_LIMIT = 30
+        /** How many bucket entries a single 首字母 step may consider before ranking. */
+        private const val INITIALS_LOOKUP = 60
+        /**
+         * Unigram cost of one unit in the sentence decoder, on the dictionary's log-frequency
+         * scale: a unit scores its log frequency minus this, so one word beats several characters.
+         * Single characters get a fixed score because the asset ranks them but does not score them.
          */
         private const val UNIT_PENALTY = 1200f
         private const val CHARACTER_SCORE = 905f
-        private const val NEGATIVE = -1_000_000f
+        /** Segmentations cache, bounded so a long session cannot grow it without limit. */
         private const val COVER_CACHE_LIMIT = 256
-
         /** Nine key signatures never get longer than the longest syllable's digit count. */
         private const val MAX_T9_SYLLABLE_LENGTH = 6
+        private const val INITIALS_PATHS = 8
     }
 }

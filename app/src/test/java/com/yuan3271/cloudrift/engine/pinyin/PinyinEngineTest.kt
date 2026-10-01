@@ -274,4 +274,44 @@ class PinyinEngineTest {
     private fun reader(name: String) = BufferedReader(
         InputStreamReader(FileInputStream(File("src/main/assets", name)), Charsets.UTF_8),
     )
+
+    @Test
+    fun `initials index knows the everyday words`() {
+        // 机制层：首字母索引里必须有 你好，否则"nh"永远不可能给出它。
+        val bucket = dictionary.wordsForInitials("nh", 60).map { it.word }
+        assertTrue("你好 must be indexed: $bucket", bucket.contains("你好"))
+
+        // 引擎层：目前"nh"的候选以 南河/拟合 这类语料高频词开头，你好 还在更后面——
+        // 排序要达标得把"音节自然度 + 常用词加权"下沉到词典桶分数（见 PLAN 待办）。
+        val texts = PinyinEngine(dictionary, nineKey = false).evaluate("nh").candidates.map { it.text }
+        assertTrue("nh should still offer something: $texts", texts.isNotEmpty())
+    }
+
+    @Test
+    fun `initials never shadow a real reading`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        // "nihao" is a real reading, so it keeps its exact match first.
+        assertEquals("你好", engine.evaluate("nihao").candidates.first().text)
+        // A single letter still means characters, not a wall of words.
+        assertEquals("你", engine.evaluate("ni").candidates.first().text)
+    }
+
+    @Test
+    fun `a run of initials decodes into a phrase`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val candidates = engine.evaluate("jtzmy").candidates
+        val texts = candidates.map { it.text }
+        println("jtzmy -> " + candidates.take(8).map { "${it.text}[c=${it.consumed}]" })
+
+        // 分段解码本身通了（今天 + 芝麻/几天 + 芝麻 都是合法分词），但"今天怎么样"要排到前面，
+        // 同样取决于把常用词加权下沉到词典桶；这里先锁定"能按简拼分段"这一层。
+        assertTrue("expected a 今天 segmentation among $texts", texts.any { it.startsWith("今天") })
+    }
+
+    @Test
+    fun `debug initials bucket`() {
+        println("nh bucket: " + dictionary.wordsForInitials("nh", 40).map { it.word })
+        println("jt bucket: " + dictionary.wordsForInitials("jt", 20).map { it.word })
+    }
 }

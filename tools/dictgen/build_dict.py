@@ -19,6 +19,7 @@ Usage: python3 tools/dictgen/build_dict.py
 
 from __future__ import annotations
 
+import json
 import math
 import pathlib
 import re
@@ -33,6 +34,10 @@ ASSETS = ROOT / "app/src/main/assets"
 JIEBA = TOOLS / "raw_jieba_dict.txt"
 PYINYIN_DATA = TOOLS / "clean/pinyin_data.txt"
 THUOCL_DIR = TOOLS / "clean"
+# Optional: HSK vocabulary with a corpus rank per word (MIT, drkameleon/complete-hsk-vocabulary).
+# It is the only conversational-frequency source in the build, which is what keeps 怎么样 above
+# 简体字 and 今天 above 几天 in the decoder.
+HSK = TOOLS / "raw/hsk_complete.json"
 
 THUOCL_FILES = [
     ("THUOCL_IT.txt", 0.95),
@@ -135,6 +140,40 @@ def load_jieba() -> dict[str, int]:
     return words
 
 
+def load_hsk() -> dict[str, int]:
+    """HSK vocabulary -> corpus rank (1 = the most frequent word in that corpus).
+
+    The one conversational source in the build. Without it the news-heavy corpus puts 简体字 above
+    怎么样 and 几天 above 今天, which is exactly what sentence and 首字母 candidates then repeat.
+    """
+    if not HSK.exists():
+        return {}
+    with HSK.open(encoding="utf-8") as handle:
+        entries = json.load(handle)
+    ranks: dict[str, int] = {}
+    for entry in entries:
+        word = entry.get("simplified")
+        rank = entry.get("frequency")
+        if not word or not isinstance(rank, int):
+            continue
+        if 2 <= len(word) <= MAX_WORD_LENGTH:
+            ranks.setdefault(word, rank)
+    return ranks
+
+
+def hsk_bonus(rank: int) -> int:
+    """How much a conversational rank is worth on the log-frequency score scale."""
+    if rank <= 500:
+        return 260
+    if rank <= 1500:
+        return 200
+    if rank <= 3000:
+        return 140
+    if rank <= 6000:
+        return 80
+    return 0
+
+
 def load_thuocl() -> dict[str, int]:
     words: dict[str, int] = {}
     for filename, source_weight in THUOCL_FILES:
@@ -202,7 +241,8 @@ def main() -> int:
 
     jieba = load_jieba()
     thuocl = load_thuocl()
-    print(f"jieba: {len(jieba)} words, THUOCL: {len(thuocl)} words")
+    hsk = load_hsk()
+    print(f"jieba: {len(jieba)} words, THUOCL: {len(thuocl)} words, HSK: {len(hsk)} words")
 
     word_scores: dict[str, int] = dict(jieba)
     # Domain vocabulary complements the corpus list rather than overriding it. A word that only a
@@ -214,6 +254,14 @@ def main() -> int:
             word_scores[word] = int(score * THUOCL_ONLY_DISCOUNT)
         else:
             word_scores[word] = max(word_scores[word], int(score * 0.9))
+
+    # Conversational frequency, on top of the corpus lists. `frequency` in that file is a corpus
+    # rank (today 155, 怎么 128, 怎么样 1367, 简体字 57431), so it is applied in tiers: the words a
+    # person says out loud beat the words a news corpus happens to repeat.
+    for word, rank in hsk.items():
+        bonus = hsk_bonus(rank)
+        if bonus:
+            word_scores[word] = word_scores.get(word, 0) + bonus
 
     by_reading: dict[str, list[tuple[str, int]]] = defaultdict(list)
     # A character's own frequency as a standalone word is the right signal for ordering single

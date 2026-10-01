@@ -21,6 +21,7 @@
 | [jieba](https://github.com/fxsjy/jieba) `dict.txt` | MIT | 词条与词频 |
 | [THUOCL](https://github.com/thunlp/THUOCL) | MIT | 领域词表（IT、医学、法律、成语等） |
 | [pinyin-data](https://github.com/mozillazg/pinyin-data) | MIT | 汉字读音及其常用度排序 |
+| [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary) | MIT | 口语常用词及其语料排名（用于让"怎么样""今天"这类词排在行业词前面） |
 
 生成的资产是上述数据的衍生作品，再分发时请一并保留本声明。词库文件本身不包含任何
 上游项目的源代码。
