@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API keys must never leave the device through Auto Backup. -->
+<full-backup-content>
+    <exclude
+        domain="sharedpref"
+        path="cloudrift_settings.xml" />
+    <exclude
+        domain="sharedpref"
+        path="cloudrift_clipboard.xml" />
+    <exclude
+        domain="sharedpref"
+        path="cloudrift_profile.xml" />
+</full-backup-content>
