@@ -90,21 +90,35 @@ class UpdateChecker(
         }
     }
 
-    /** Hands the APK to the system downloader, or opens the release page if there is no asset. */
-    fun download(info: UpdateInfo) {
+    /**
+     * Hands the APK to the system downloader.
+     *
+     * @param viaMirror fetch through a GitHub proxy instead of going straight to the release asset.
+     *   GitHub's own download host is slow or unreachable on some networks (the same reason the
+     *   dictionary fetch needed a mirror), so the user gets to pick rather than having one button
+     *   that silently does nothing.
+     */
+    fun download(info: UpdateInfo, viaMirror: Boolean = false) {
         val apkUrl = info.apkUrl
         if (apkUrl == null) return
+        val url = if (viaMirror) MIRROR_PREFIX + apkUrl else apkUrl
+        val fileName = buildString {
+            append("cloudrift-type-")
+            append(info.versionName)
+            if (viaMirror) append("-mirror")
+            append(".apk")
+        }
         runCatching {
-            val request = DownloadManager.Request(Uri.parse(apkUrl))
+            val request = DownloadManager.Request(Uri.parse(url))
                 .setTitle("云隙输入 ${info.versionName}")
-                .setDescription("正在下载新版本")
+                .setDescription(if (viaMirror) "正在通过加速镜像下载" else "正在下载新版本")
                 .setMimeType(APK_MIME)
                 .setNotificationVisibility(
                     DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
                 )
                 .setDestinationInExternalPublicDir(
                     android.os.Environment.DIRECTORY_DOWNLOADS,
-                    "cloudrift-type-${info.versionName}.apk",
+                    fileName,
                 )
             appContext.getSystemService(DownloadManager::class.java)?.enqueue(request)
         }
@@ -180,6 +194,8 @@ class UpdateChecker(
         private const val KEY_LAST_CHECK = "last_check"
         private const val KEY_CACHED = "cached"
         private const val APK_MIME = "application/vnd.android.package-archive"
+        /** Public GitHub proxy; the download URL is appended to it verbatim. */
+        private const val MIRROR_PREFIX = "https://ghproxy.net/"
         private const val LATEST_RELEASE_URL =
             "https://api.github.com/repos/yuan3271/CloudriftType/releases/latest"
 

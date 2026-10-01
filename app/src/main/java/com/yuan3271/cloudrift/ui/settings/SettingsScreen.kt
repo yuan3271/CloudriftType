@@ -140,6 +140,7 @@ fun SettingsScreen(
                 onShowDot = { value -> onUpdate { it.copy(showUpdateDot = value) } },
                 onCheckNow = actions.checkForUpdate,
                 onDownload = actions.downloadUpdate,
+                onDownloadMirror = actions.downloadUpdateViaMirror,
                 onOpenRelease = actions.openRelease,
             )
 
@@ -497,6 +498,7 @@ private fun UpdateCard(
     onShowDot: (Boolean) -> Unit,
     onCheckNow: () -> Unit,
     onDownload: () -> Unit,
+    onDownloadMirror: () -> Unit,
     onOpenRelease: () -> Unit,
 ) {
     Card(
@@ -550,8 +552,18 @@ private fun UpdateCard(
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onDownload) { Text("下载更新") }
+                    OutlinedButton(onClick = onDownloadMirror) { Text("加速下载") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = onOpenRelease) { Text("查看发布页") }
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "GitHub 直连慢或打不开时，用「加速下载」经 ghproxy 镜像取同一个安装包。",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
             }
             Spacer(Modifier.height(12.dp))
             Text(

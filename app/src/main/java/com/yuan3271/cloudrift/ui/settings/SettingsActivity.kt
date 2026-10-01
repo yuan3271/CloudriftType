@@ -50,6 +50,9 @@ class SettingsActivity : ComponentActivity() {
                         clearLearning = AppGraph.profile::clear,
                         checkForUpdate = { AppGraph.updates.checkIfDue(force = true) },
                         downloadUpdate = { update?.let(AppGraph.updates::download) },
+                        downloadUpdateViaMirror = {
+                            update?.let { AppGraph.updates.download(it, viaMirror = true) }
+                        },
                         openRelease = {
                             val url = update?.releaseUrl ?: RELEASES_URL
                             runCatching {
@@ -89,6 +92,7 @@ data class SettingsActions(
     val clearLearning: () -> Unit,
     val checkForUpdate: () -> Unit,
     val downloadUpdate: () -> Unit,
+    val downloadUpdateViaMirror: () -> Unit,
     val openRelease: () -> Unit,
     val finish: () -> Unit,
 )
