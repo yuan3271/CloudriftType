@@ -69,12 +69,9 @@ class ImeController(
     private var doubleSpaceArmed = false
     /** Timer that applies a finished transcript on its own; see voiceAutoApplyDelayMs. */
     private var autoApplyJob: Job? = null
-    /** The last thing that went in as one unit, so one backspace can take it back out. */
-    private var lastCommit: CommitRecord? = null
     /** True while the editor reports a selection rather than a plain caret. */
     private var hasSelection: Boolean = false
 
-    private data class CommitRecord(val text: String, val at: Long)
     /** Last single character that went in, used to spot a word the user is spelling out. */
     private var lastCharacter: CharacterCommit? = null
 
@@ -188,11 +185,6 @@ class ImeController(
         // The caret moved without us: the user is editing somewhere else, so the character chain
         // that could become a learned word is broken.
         lastCharacter = null
-        // lastCommit is deliberately *not* cleared here any more. Editors report selection changes
-        // in their own time and with their own granularity, so clearing on every callback used to
-        // disarm the "one backspace takes the commit back" window a few frames after every commit.
-        // takeBackLastCommit() re-reads the text in front of the caret instead, which is the only
-        // thing that actually proves the commit is still there to take back.
         if (_state.value.isComposing) commitBuffer()
     }
 
@@ -319,11 +311,8 @@ class ImeController(
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
         editor.commit(text)
-        // Pasted text is not a candidate pick: backspace should take it apart one character at a
-        // time, not swallow the whole paste.
-        lastCommit = null
-        // Nor is it something we can predict from: the 联想 strip described the previous caret
-        // position, not this one.
+        // Pasted text is not something we can predict from: the 联想 strip described the previous
+        // caret position, not this one.
         clearAssociations()
     }
 
@@ -429,7 +418,10 @@ class ImeController(
         if (_state.value.isComposing) {
             clearBuffer()
         } else {
-            editor.deleteSurroundingBefore(BACKSPACE_WORD_LENGTH)
+            // One character, never a word: a long press is not a licence to guess where the
+            // previous one started. Holding the key already repeats single character deletes.
+            selfEditCounter++
+            editor.deleteSurroundingBefore(1)
         }
     }
 
@@ -446,7 +438,6 @@ class ImeController(
     fun clearAllText() {
         onClearAllArmedChanged(false)
         lastCharacter = null
-        lastCommit = null
         clearBuffer()
         selfEditCounter++
         editor.clearAll()
@@ -464,9 +455,6 @@ class ImeController(
         }
         selfEditCounter++
         editor.commit(candidate.text)
-        // A sentence candidate can be ten characters long; one backspace should take the whole
-        // thing back, which is what every Chinese keyboard does after a word goes in.
-        rememberCommit(candidate.text)
         if (remaining.isEmpty()) {
             // Nothing left to compose, so the strip turns into 联想 for what just went in.
             clearComposingQuietly()
@@ -572,9 +560,6 @@ class ImeController(
         _state.value = _state.value.copy(autoApplyPending = false)
         selfEditCounter++
         editor.commit(ready.text)
-        // A dictated sentence is not a candidate either. It used to be remembered like one, so the
-        // first backspace after speaking deleted the entire sentence instead of one character.
-        lastCommit = null
         voice.dismiss()
         updateEnterLabel()
     }
@@ -606,7 +591,6 @@ class ImeController(
 
     private fun appendReading(text: String) {
         if (text.isEmpty()) return
-        lastCommit = null
         val current = _state.value
         if (current.page != KeyboardPage.Letters && current.raw.isEmpty()) {
             // Punctuation typed from a symbol page goes straight in.
@@ -661,8 +645,7 @@ class ImeController(
 
     /**
      * Drops the composing region without letting the editor's selection callback look like a user
-     * edit - otherwise the callback would consume the "one backspace takes the commit back" window
-     * a few frames after every commit.
+     * edit - the callback would otherwise break the character chain that can become a learned word.
      */
     private fun clearComposingQuietly() {
         selfEditCounter++
@@ -692,12 +675,13 @@ class ImeController(
         updateEnterLabel()
     }
 
+    /**
+     * Always exactly one character. Backspace used to take the whole just-committed candidate back
+     * within a few seconds of it going in, which reads as "it ate a word I did not ask it to".
+     * Deleting what is on screen one character at a time is the only thing a backspace needs to do.
+     */
     private fun backspace() {
         lastCharacter = null
-        if (takeBackLastCommit()) {
-            clearAssociations()
-            return
-        }
         // A selected range is the user's target, not the text next to the caret, and
         // deleteSurroundingText is ignored by most editors while a selection is live - pressing the
         // key is what makes them delete the selection.
@@ -719,41 +703,6 @@ class ImeController(
         selfEditCounter++
         editor.deleteSurroundingBefore(1)
         doubleSpaceArmed = false
-    }
-
-    /**
-     * The first backspace after a commit takes that whole commit back, so a seven character
-     * sentence does not have to be erased one character at a time.
-     *
-     * The editor is asked what is actually in front of the caret instead of trusting our own
-     * bookkeeping: composing text and selection changes arrive asynchronously, and an editor that
-     * reports them differently than expected used to leave the caret somewhere else while this
-     * still deleted the remembered length.
-     */
-    private fun takeBackLastCommit(): Boolean {
-        val commit = lastCommit ?: return false
-        val elapsed = System.currentTimeMillis() - commit.at
-        val before = if (_state.value.raw.isEmpty() && elapsed <= COMMIT_UNDO_WINDOW_MS) {
-            editor.textBefore(commit.text.length)
-        } else {
-            null
-        }
-        val takeBack = takesBackCommit(
-            remembered = commit.text,
-            before = before,
-            elapsedMs = elapsed,
-            hasComposingText = _state.value.raw.isNotEmpty(),
-        )
-        lastCommit = null
-        if (!takeBack) return false
-        selfEditCounter++
-        editor.deleteSurroundingBefore(commit.text.length)
-        doubleSpaceArmed = false
-        return true
-    }
-
-    private fun rememberCommit(text: String) {
-        lastCommit = if (text.isEmpty()) null else CommitRecord(text, System.currentTimeMillis())
     }
 
     private fun space() {
@@ -926,35 +875,12 @@ class ImeController(
 
     companion object {
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
-        private const val BACKSPACE_WORD_LENGTH = 8
         /** How long two single character commits may be apart and still form a learned word. */
         private const val AUTO_WORD_WINDOW_MS = 3000L
-        /** How long after a commit one backspace still takes the whole thing back. */
-        private const val COMMIT_UNDO_WINDOW_MS = 4000L
         /** Bounds the corner drag may move the floating keyboard within. */
         const val MIN_FLOATING_WIDTH_PERCENT = 45
         const val MAX_FLOATING_WIDTH_PERCENT = 100
         const val MIN_FLOATING_KEY_HEIGHT = 28
         const val MAX_FLOATING_KEY_HEIGHT = 72
     }
-}
-
-/**
- * Whether one backspace should remove the whole remembered commit instead of a single character.
- *
- * Kept as a pure function because this rule is the part that went wrong: it is not enough to
- * remember what was committed, the editor has to be showing exactly that text in front of the
- * caret right now. A different text, no answer from the editor, a live composition, or a commit
- * older than the window all fall back to deleting one character.
- */
-internal fun takesBackCommit(
-    remembered: String,
-    before: String?,
-    elapsedMs: Long,
-    hasComposingText: Boolean,
-    windowMs: Long = 4000L,
-): Boolean {
-    if (remembered.isEmpty() || hasComposingText) return false
-    if (elapsedMs > windowMs) return false
-    return before == remembered
 }

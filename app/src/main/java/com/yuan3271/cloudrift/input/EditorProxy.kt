@@ -65,15 +65,6 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
         sendBackspaceKey()
     }
 
-    /**
-     * The text just before the caret, or null when the editor will not say. Used to check that a
-     * commit is still where we left it before a backspace takes the whole of it back.
-     */
-    fun textBefore(length: Int): String? {
-        if (length <= 0) return null
-        return connection?.getTextBeforeCursor(length, 0)?.toString()
-    }
-
     fun newline() {
         isComposing = false
         connection?.commitText("\n", 1)
