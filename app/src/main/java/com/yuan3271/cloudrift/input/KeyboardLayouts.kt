@@ -99,11 +99,11 @@ object KeyboardLayouts {
         }
         // Ten units wide, like the letter rows, so every key on the page is the same size.
         val function = listOf(
-            KeyDef.modifier(KeyCode.Symbols, if (en) "?123" else "符", weight = 1.5f),
-            KeyDef.immediate(comma),
-            KeyDef.space.copy(weight = 4.5f),
-            KeyDef.immediate(period),
-            KeyDef.enter.copy(label = enterLabel, weight = 2f),
+            KeyDef.modifier(KeyCode.Symbols, if (en) "?123" else "符", weight = 1.3f),
+            KeyDef.immediate(comma, weight = 0.9f),
+            KeyDef.space.copy(weight = 5.1f),
+            KeyDef.immediate(period, weight = 0.9f),
+            KeyDef.enter.copy(label = enterLabel, weight = 1.8f),
         )
         return listOf(top, middle, bottom, function)
     }

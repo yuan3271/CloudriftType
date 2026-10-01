@@ -428,6 +428,25 @@ class ImeController(
         }
     }
 
+    /**
+     * The 清空 key: empties the editor in one go. The pending reading is dropped first, so the
+     * selection covers the text rather than our own composing region.
+     */
+    /** Lights up while the finger is held above the backspace key. */
+    fun onClearAllArmedChanged(armed: Boolean) {
+        if (_state.value.clearAllArmed == armed) return
+        _state.value = _state.value.copy(clearAllArmed = armed)
+    }
+
+    fun clearAllText() {
+        onClearAllArmedChanged(false)
+        lastCharacter = null
+        lastCommit = null
+        clearBuffer()
+        selfEditCounter++
+        editor.clearAll()
+    }
+
     fun selectCandidate(index: Int) {
         val current = _state.value
         val candidate = current.candidates.getOrNull(index) ?: return
@@ -823,6 +842,7 @@ class ImeController(
             accentHue = snapshot.accentHue,
             accentSaturation = snapshot.accentSaturation,
             keyCornerRadiusDp = snapshot.keyCornerRadiusDp,
+            keyLabelScalePercent = snapshot.keyLabelScalePercent,
             keyBackground = snapshot.keyBackground,
             keyHeightDp = snapshot.keyHeightDp,
             bottomGapDp = snapshot.bottomGapDp,

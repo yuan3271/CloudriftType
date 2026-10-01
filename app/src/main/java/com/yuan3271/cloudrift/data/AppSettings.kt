@@ -158,6 +158,8 @@ data class AppSettings(
 
     /** Key corner radius in dp. */
     val keyCornerRadiusDp: Int = 18,
+    /** Label size on the keys, as a percentage; 100 is the designed size. */
+    val keyLabelScalePercent: Int = 100,
     val keyBackground: KeyBackground = KeyBackground.Filled,
     /** Key height in dp; 0 means "derive from screen size". */
     val keyHeightDp: Int = 0,

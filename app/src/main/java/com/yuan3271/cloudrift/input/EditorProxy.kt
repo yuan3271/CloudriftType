@@ -55,6 +55,17 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
     }
 
     /**
+     * Empties the editor: select everything, then press delete. Going through the editor's own
+     * select-all action is what makes this work in fields that ignore a large
+     * [deleteSurroundingBefore] - which is most of them.
+     */
+    fun clearAll() {
+        val connection = connection ?: return
+        connection.performContextMenuAction(android.R.id.selectAll)
+        sendBackspaceKey()
+    }
+
+    /**
      * The text just before the caret, or null when the editor will not say. Used to check that a
      * commit is still where we left it before a backspace takes the whole of it back.
      */

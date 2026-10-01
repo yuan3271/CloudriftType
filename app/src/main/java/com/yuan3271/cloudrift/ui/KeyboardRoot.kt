@@ -47,6 +47,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
@@ -157,6 +158,7 @@ private fun KeyboardSurface(
     }
     val bottomGap = if (floating) 0.dp else state.bottomGapDp.dp
     val density = LocalDensity.current
+    val labelScale = state.keyLabelScalePercent / 100f
     // The number page is a phone dial pad, so its keys stay round whatever the corner slider
     // says; every other page follows the user's choice.
     val cornerRadius = if (state.page == KeyboardPage.Numbers) {
@@ -175,6 +177,8 @@ private fun KeyboardSurface(
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,
         onSpaceCancelChanged = controller::onSpaceCancelChanged,
+        onClearAllArmedChanged = controller::onClearAllArmedChanged,
+        onClearAll = controller::clearAllText,
     )
     val recording = state.voice as? VoiceState.Recording
 
@@ -285,7 +289,9 @@ private fun KeyboardSurface(
 
             // Hold-to-talk borrows the candidate strip instead of the whole key area: the
             // space bar has to stay under the finger that is holding it.
-            if (state.holdToTalk && recording != null) {
+            if (state.clearAllArmed) {
+                ClearAllStrip()
+            } else if (state.holdToTalk && recording != null) {
                 ListeningStrip(
                     level = recording.level,
                     elapsedMs = recording.elapsedMs,
@@ -347,6 +353,7 @@ private fun KeyboardSurface(
                         cornerRadius = cornerRadius,
                         keyBackground = state.keyBackground,
                         callbacks = callbacks,
+                        labelScale = labelScale,
                     )
 
                     else -> KeyCanvas(
@@ -362,11 +369,53 @@ private fun KeyboardSurface(
                         keyBackground = state.keyBackground,
                         activeKeyCode = if (state.capsLock) KeyCode.Shift else null,
                         callbacks = callbacks,
+                        labelScale = labelScale,
                     )
                 }
             }
 
             Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
+/**
+ * Shown in place of the candidate strip while backspace is held and slid up: the option is lit, and
+ * letting go clears the field. Drawn in the strip's own height, so lighting it up never moves the
+ * keys that are still under the finger.
+ */
+@Composable
+private fun ClearAllStrip() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .padding(horizontal = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = RoundedCornerShape(50),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(
+                    imageVector = CloudriftIcons.Close,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = "松手清空全部",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
         }
     }
 }

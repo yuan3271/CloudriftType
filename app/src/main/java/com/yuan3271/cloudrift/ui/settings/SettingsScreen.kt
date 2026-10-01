@@ -235,6 +235,13 @@ fun SettingsScreen(
                     onChange = { value -> onUpdate { it.copy(keyCornerRadiusDp = value) } },
                 )
                 ValueSlider(
+                    title = "按键字母大小",
+                    value = settings.keyLabelScalePercent,
+                    range = 80..140,
+                    unit = "%",
+                    onChange = { value -> onUpdate { it.copy(keyLabelScalePercent = value) } },
+                )
+                ValueSlider(
                     title = "键盘高度",
                     value = settings.keyHeightDp,
                     range = 0..72,

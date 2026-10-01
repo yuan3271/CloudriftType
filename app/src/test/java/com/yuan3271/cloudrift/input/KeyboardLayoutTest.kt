@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.input
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import kotlin.math.roundToInt
 import org.junit.Test
 
 /**
@@ -18,7 +19,10 @@ class KeyboardLayoutTest {
         enterLabel = "换行",
     )
 
-    private fun totals(rows: List<List<KeyDef>>) = rows.map { row -> row.sumOf { it.weight.toDouble() } }
+    /** Rounded, because adding Floats (1.3 + 0.9 + …) lands on 9.9999998 rather than 10. */
+    private fun totals(rows: List<List<KeyDef>>) = rows.map { row ->
+        (row.sumOf { it.weight.toDouble() } * 100).roundToInt() / 100.0
+    }
 
     @Test
     fun `every row of a qwerty page is ten units wide`() {

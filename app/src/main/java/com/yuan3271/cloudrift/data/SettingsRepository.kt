@@ -37,6 +37,7 @@ class SettingsRepository(context: Context) {
             hapticFeedback = prefs.getBoolean(KEY_HAPTIC, defaults.hapticFeedback),
             soundFeedback = prefs.getBoolean(KEY_SOUND, defaults.soundFeedback),
             keyCornerRadiusDp = prefs.getInt(KEY_KEY_RADIUS, defaults.keyCornerRadiusDp),
+            keyLabelScalePercent = prefs.getInt(KEY_KEY_LABEL_SCALE, defaults.keyLabelScalePercent),
             keyBackground = KeyBackground.fromKey(prefs.getString(KEY_KEY_BACKGROUND, null)),
             keyHeightDp = prefs.getInt(KEY_KEY_HEIGHT, defaults.keyHeightDp),
             bottomGapDp = prefs.getInt(KEY_BOTTOM_GAP, defaults.bottomGapDp),
@@ -74,6 +75,7 @@ class SettingsRepository(context: Context) {
             .putBoolean(KEY_HAPTIC, settings.hapticFeedback)
             .putBoolean(KEY_SOUND, settings.soundFeedback)
             .putInt(KEY_KEY_RADIUS, settings.keyCornerRadiusDp)
+            .putInt(KEY_KEY_LABEL_SCALE, settings.keyLabelScalePercent)
             .putString(KEY_KEY_BACKGROUND, settings.keyBackground.name)
             .putInt(KEY_KEY_HEIGHT, settings.keyHeightDp)
             .putInt(KEY_BOTTOM_GAP, settings.bottomGapDp)
@@ -141,6 +143,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_HAPTIC = "haptic_feedback"
         private const val KEY_SOUND = "sound_feedback"
         private const val KEY_KEY_RADIUS = "key_corner_radius"
+        private const val KEY_KEY_LABEL_SCALE = "key_label_scale"
         private const val KEY_KEY_BACKGROUND = "key_background"
         private const val KEY_KEY_HEIGHT = "key_height"
         private const val KEY_BOTTOM_GAP = "bottom_gap"

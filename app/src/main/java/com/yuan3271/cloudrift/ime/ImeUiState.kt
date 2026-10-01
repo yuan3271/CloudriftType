@@ -37,6 +37,8 @@ data class ImeUiState(
     val voiceAutoApplyDelayMs: Int = 1000,
     /** True while a finished transcript is counting down to applying itself. */
     val autoApplyPending: Boolean = false,
+    /** True while holding backspace and sliding up has lit the "clear everything" option. */
+    val clearAllArmed: Boolean = false,
     /** A newer release, when the checker has found one. */
     val update: UpdateInfo? = null,
     /** Whether the toolbar shows the little yellow update mark. */
@@ -55,6 +57,8 @@ data class ImeUiState(
     val accentSaturation: Int = 42,
 
     val keyCornerRadiusDp: Int = 18,
+    /** Key label size as a percentage of the designed size. */
+    val keyLabelScalePercent: Int = 100,
     val keyBackground: KeyBackground = KeyBackground.Filled,
     /** 0 means "derive from the screen size". */
     val keyHeightDp: Int = 0,

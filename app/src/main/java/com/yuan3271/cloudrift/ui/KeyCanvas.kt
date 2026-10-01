@@ -25,6 +25,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -77,6 +79,10 @@ data class KeyCallbacks(
     val onSpaceRelease: (cancelled: Boolean) -> Unit,
     /** The finger crossed (or came back from) the slide-up-to-cancel line while holding. */
     val onSpaceCancelChanged: (armed: Boolean) -> Unit,
+    /** Holding backspace and sliding up lights up the "clear everything" option. */
+    val onClearAllArmedChanged: (armed: Boolean) -> Unit,
+    /** The finger was lifted while that option was lit. */
+    val onClearAll: () -> Unit,
 )
 
 /**
@@ -95,11 +101,13 @@ fun KeyCanvas(
     callbacks: KeyCallbacks,
     modifier: Modifier = Modifier,
     activeKeyCode: KeyCode? = null,
+    labelScale: Float = 1f,
 ) {
     var popup by remember { mutableStateOf<AlternatePopup?>(null) }
     var canvasBounds by remember { mutableStateOf(Rect.Zero) }
 
     Box(modifier = modifier.onGloballyPositioned { canvasBounds = it.boundsInWindow() }) {
+        CompositionLocalProvider(LocalKeyLabelScale provides labelScale) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(KEY_GAP),
@@ -151,6 +159,7 @@ fun KeyCanvas(
                     popup = null
                 },
             )
+        }
         }
     }
 }
@@ -233,6 +242,7 @@ private fun RowScope.KeyButton(
     val swipeThreshold = with(density) { 20.dp.toPx() }
     val cursorStep = with(density) { 24.dp.toPx() }
     val cancelDistance = with(density) { SPACE_CANCEL_DISTANCE.toPx() }
+    val clearDistance = with(density) { CLEAR_ALL_DISTANCE.toPx() }
 
     KeyFace(
         key = key,
@@ -263,6 +273,9 @@ private fun RowScope.KeyButton(
                     cancelDistance = cancelDistance,
                     spaceRelease = { cancelled -> callbacks.onSpaceRelease(cancelled) },
                     spaceCancelChanged = { armed -> callbacks.onSpaceCancelChanged(armed) },
+                    clearAllArmedChanged = { armed -> callbacks.onClearAllArmedChanged(armed) },
+                    clearAll = { callbacks.onClearAll() },
+                    clearDistance = clearDistance,
                     cursorDrag = { steps ->
                         if (key.code == KeyCode.Space) callbacks.onSpaceCursorDrag(steps)
                     },
@@ -355,9 +368,11 @@ fun KeyTile(
     keyBackground: KeyBackground,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    labelScale: Float = 1f,
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    CompositionLocalProvider(LocalKeyLabelScale provides labelScale) {
     KeyFace(
         key = key,
         height = height,
@@ -371,6 +386,7 @@ fun KeyTile(
             onClick = onClick,
         ),
     ) { contentColor -> KeyContent(key = key, contentColor = contentColor) }
+    }
 }
 
 /**
@@ -384,7 +400,9 @@ fun KeyPreviewRow(
     cornerRadius: Dp,
     keyBackground: KeyBackground,
     modifier: Modifier = Modifier,
+    labelScale: Float = 1f,
 ) {
+    CompositionLocalProvider(LocalKeyLabelScale provides labelScale) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(KEY_GAP),
@@ -411,6 +429,7 @@ fun KeyPreviewRow(
             }
         }
     }
+    }
 }
 
 /**
@@ -430,8 +449,12 @@ private suspend fun PointerInputScope.keyGesture(
     swipeUp: () -> Unit,
     /** How far the finger has to travel up before the hold-to-talk recording is thrown away. */
     cancelDistance: Float,
+    /** How far up backspace has to be dragged before "clear everything" lights up. */
+    clearDistance: Float,
     spaceRelease: (cancelled: Boolean) -> Unit,
     spaceCancelChanged: (Boolean) -> Unit,
+    clearAllArmedChanged: (Boolean) -> Unit,
+    clearAll: () -> Unit,
     cursorDrag: (Int) -> Unit,
 ) {
     awaitEachGesture {
@@ -445,6 +468,8 @@ private suspend fun PointerInputScope.keyGesture(
         // Set when this gesture opened a hold-to-talk session, so lifting the finger closes it.
         var holdToTalk = false
         var cancelArmed = false
+        // Backspace: sliding up cancels the repeat and lights the clear-everything option.
+        var clearArmed = false
         var cursorAccumulator = 0f
 
         val repeater: Job? = if (key.repeatable) {
@@ -453,12 +478,19 @@ private suspend fun PointerInputScope.keyGesture(
                 repeat()
                 delay(REPEAT_START_MS)
                 var held = REPEAT_START_MS
-                while (isActive && held < WORD_DELETE_AFTER_MS) {
+                while (isActive) {
                     repeat()
-                    delay(REPEAT_INTERVAL_MS)
-                    held += REPEAT_INTERVAL_MS
+                    // Holding backspace used to escalate into a word delete after a second, which
+                    // read as "it jumped and then ate half the line". Now it just gets faster, so
+                    // the caret never moves more than one character per tick.
+                    val interval = if (held < REPEAT_ACCELERATE_AFTER_MS) {
+                        REPEAT_INTERVAL_MS
+                    } else {
+                        REPEAT_FAST_INTERVAL_MS
+                    }
+                    delay(interval)
+                    held += interval
                 }
-                if (isActive) longPress()
             }
         } else {
             null
@@ -502,11 +534,26 @@ private suspend fun PointerInputScope.keyGesture(
                     spaceCancelChanged(armed)
                 }
             }
+            if (repeater != null && key.code == KeyCode.Backspace) {
+                val armed = slideUpCancels(
+                    dy = dy,
+                    threshold = clearDistance,
+                    currentlyArmed = clearArmed,
+                )
+                if (armed != clearArmed) {
+                    clearArmed = armed
+                    // Stop deleting while the option is lit: releasing will clear instead.
+                    if (armed) repeater.cancel()
+                    clearAllArmedChanged(armed)
+                }
+            }
             change.consume()
         }
 
         repeater?.cancel()
         onPressedChange(false)
+        if (clearArmed) clearAllArmedChanged(false)
+        if (released && clearArmed) clearAll()
         // A cancelled gesture (the system took the pointer) keeps recording on purpose: the
         // strip above the keys still shows that we are listening, and the mic key stops it.
         if (released && holdToTalk) spaceRelease(cancelArmed)
@@ -532,11 +579,12 @@ private fun KeyContent(key: KeyDef, contentColor: Color) {
 
 @Composable
 private fun KeyGlyph(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: Color) {
+    val scale = LocalKeyLabelScale.current
     Icon(
         imageVector = icon,
         contentDescription = label,
         tint = tint,
-        modifier = Modifier.size(22.dp),
+        modifier = Modifier.size(22.dp * scale),
     )
 }
 
@@ -547,12 +595,13 @@ private fun KeyGlyph(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
  */
 @Composable
 private fun BadgedLabel(key: KeyDef, contentColor: Color) {
+    val scale = LocalKeyLabelScale.current
     Box(modifier = Modifier.fillMaxWidth()) {
         if (key.badge.isNotEmpty()) {
             Text(
                 text = key.badge,
                 color = contentColor.copy(alpha = 0.55f),
-                fontSize = 11.sp,
+                fontSize = 11.sp * scale,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -578,8 +627,8 @@ private fun BadgedLabel(key: KeyDef, contentColor: Color) {
                 Text(
                     text = key.caption,
                     color = contentColor.copy(alpha = 0.75f),
-                    fontSize = 10.sp,
-                    lineHeight = 12.sp,
+                    fontSize = 10.sp * scale,
+                    lineHeight = 12.sp * scale,
                     fontWeight = FontWeight.Medium,
                     letterSpacing = 1.sp,
                     maxLines = 1,
@@ -596,10 +645,14 @@ private fun KeyLabel(
     style: TextStyle,
     modifier: Modifier = Modifier,
 ) {
+    val scale = LocalKeyLabelScale.current
     Text(
         text = text,
         color = color,
-        style = style,
+        style = style.copy(
+            fontSize = style.fontSize * scale,
+            lineHeight = style.lineHeight * scale,
+        ),
         textAlign = TextAlign.Center,
         maxLines = 1,
         modifier = modifier,
@@ -608,6 +661,9 @@ private fun KeyLabel(
 
 /** Gap between keys and between key rows; shared with the symbol bar so the two line up. */
 internal val KEY_GAP = 6.dp
+
+/** Label size multiplier, so one slider can resize the text on every key. */
+private val LocalKeyLabelScale = compositionLocalOf { 1f }
 
 /**
  * Slide-up-to-cancel, with hysteresis: arming takes a full [threshold] of upward travel, but the
@@ -622,9 +678,14 @@ internal fun slideUpCancels(dy: Float, threshold: Float, currentlyArmed: Boolean
 /** How far up the finger has to travel on the space bar to throw the recording away. */
 private val SPACE_CANCEL_DISTANCE = 56.dp
 
+/** How far up the finger has to travel on backspace for "clear everything" to light up. */
+private val CLEAR_ALL_DISTANCE = 44.dp
+
 private const val CANCEL_RELEASE_FRACTION = 0.55f
 
 private const val REPEAT_START_MS = 400L
 private const val REPEAT_INTERVAL_MS = 55L
-private const val WORD_DELETE_AFTER_MS = 900L
+/** After a while the repeat speeds up, which is the smooth version of "keep going". */
+private const val REPEAT_ACCELERATE_AFTER_MS = 1200L
+private const val REPEAT_FAST_INTERVAL_MS = 28L
 private const val LONG_PRESS_MS = 380L

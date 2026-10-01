@@ -49,6 +49,7 @@ fun SymbolPanel(
     cornerRadius: Dp,
     keyBackground: KeyBackground,
     callbacks: KeyCallbacks,
+    labelScale: Float = 1f,
     modifier: Modifier = Modifier,
 ) {
     val gridHeight = keyHeight * VISIBLE_ROWS + KEY_GAP * (VISIBLE_ROWS - 1)
@@ -76,6 +77,7 @@ fun SymbolPanel(
                         cornerRadius = cornerRadius,
                         keyBackground = keyBackground,
                         onClick = { callbacks.onKey(symbol) },
+                        labelScale = labelScale,
                     )
                 }
             }
