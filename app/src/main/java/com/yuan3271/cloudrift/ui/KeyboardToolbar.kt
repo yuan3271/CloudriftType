@@ -142,17 +142,29 @@ fun KeyboardToolbar(
 private fun UpdateMark(onClick: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(20.dp)
+            .size(22.dp)
             .clip(RoundedCornerShape(50))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Box(
             modifier = Modifier
-                .size(9.dp)
+                .size(16.dp)
                 .clip(RoundedCornerShape(50))
                 .background(UpdateAmber),
-        )
+            contentAlignment = Alignment.Center,
+        ) {
+            // A filled amber circle with an up arrow in it, so it reads as "there is something to
+            // take" rather than as a plain notification dot.
+            Icon(
+                imageVector = CloudriftIcons.ExpandMore,
+                contentDescription = "有新版本",
+                tint = UpdateArrow,
+                modifier = Modifier
+                    .size(11.dp)
+                    .rotate(180f),
+            )
+        }
     }
 }
 
@@ -219,3 +231,6 @@ private val TOOLBAR_HEIGHT = 46.dp
 
 /** Amber, so the mark reads as "something to look at" without shouting. */
 private val UpdateAmber = Color(0xFFFFB300)
+
+/** Dark brown on amber, which keeps the arrow legible on both light and dark keyboards. */
+private val UpdateArrow = Color(0xFF3A2A00)
