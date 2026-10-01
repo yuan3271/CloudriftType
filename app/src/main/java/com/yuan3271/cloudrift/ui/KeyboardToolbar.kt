@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.ui
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +47,7 @@ fun KeyboardToolbar(
     onLanguageClick: () -> Unit,
     onLanguageLongClick: () -> Unit,
     onThemeClick: () -> Unit,
+    onUpdateClick: () -> Unit,
     onVoiceClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onHideClick: () -> Unit,
@@ -83,6 +85,9 @@ fun KeyboardToolbar(
             description = "主题",
             onClick = onThemeClick,
         )
+        if (state.update != null && state.showUpdateDot) {
+            UpdateMark(onClick = onUpdateClick)
+        }
 
         Spacer(Modifier.weight(1f))
 
@@ -124,6 +129,29 @@ fun KeyboardToolbar(
             icon = CloudriftIcons.KeyboardHide,
             description = "收起键盘",
             onClick = onHideClick,
+        )
+    }
+}
+
+/**
+ * The quiet half of the update notice: a small yellow dot beside the theme key. It carries no text,
+ * so it never pushes the keys around, and the settings screen is where the version and the download
+ * button live.
+ */
+@Composable
+private fun UpdateMark(onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .clip(RoundedCornerShape(50))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(9.dp)
+                .clip(RoundedCornerShape(50))
+                .background(UpdateAmber),
         )
     }
 }
@@ -188,3 +216,6 @@ private fun SmallIconButton(
 }
 
 private val TOOLBAR_HEIGHT = 46.dp
+
+/** Amber, so the mark reads as "something to look at" without shouting. */
+private val UpdateAmber = Color(0xFFFFB300)

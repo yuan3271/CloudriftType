@@ -40,6 +40,24 @@ enum class ThemeSource {
  * left once a full width keyboard is up, so floating (a smaller, movable card) is the default and
  * full width is the opt in.
  */
+/**
+ * Candidate order for a reading that has more than one syllable.
+ *
+ * [LongFirst] is the sentence view: whole sentences, then the words they are made of, then single
+ * characters. [CharacterFirst] is the classic single character view: the characters of the syllable
+ * in front, then every word and sentence the reading can also make.
+ */
+enum class CandidateOrder {
+    LongFirst,
+    CharacterFirst,
+    ;
+
+    companion object {
+        fun fromKey(key: String?): CandidateOrder =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: LongFirst
+    }
+}
+
 enum class KeyboardFrame {
     Full,
     Floating,
@@ -177,6 +195,13 @@ data class AppSettings(
      * the key walks 中 ⇄ 英 unless the user asks for 日.
      */
     val japaneseEnabled: Boolean = false,
+
+    /** How often to look for a newer release; Never turns the check off completely. */
+    val updateCheckInterval: UpdateInterval = UpdateInterval.Daily,
+    /** The small yellow mark next to the theme key when an update is waiting. */
+    val showUpdateDot: Boolean = true,
+    /** Sentence first, or single characters first. */
+    val candidateOrder: CandidateOrder = CandidateOrder.LongFirst,
 
     val speech: ApiEndpoint = ApiEndpoint(
         baseUrl = DEFAULT_SPEECH_BASE_URL,

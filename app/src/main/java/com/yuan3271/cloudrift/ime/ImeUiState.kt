@@ -6,6 +6,7 @@ import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.data.SymbolWidth
+import com.yuan3271.cloudrift.data.UpdateInfo
 import com.yuan3271.cloudrift.data.UserStats
 import com.yuan3271.cloudrift.engine.Candidate
 import com.yuan3271.cloudrift.input.KeyboardPage
@@ -36,6 +37,10 @@ data class ImeUiState(
     val voiceAutoApplyDelayMs: Int = 1000,
     /** True while a finished transcript is counting down to applying itself. */
     val autoApplyPending: Boolean = false,
+    /** A newer release, when the checker has found one. */
+    val update: UpdateInfo? = null,
+    /** Whether the toolbar shows the little yellow update mark. */
+    val showUpdateDot: Boolean = true,
     val voice: VoiceState = VoiceState.Idle,
     /**
      * True while the user is holding the space bar to dictate. The keys stay on screen in

@@ -6,6 +6,7 @@ import com.yuan3271.cloudrift.engine.EngineKind
 import com.yuan3271.cloudrift.engine.EngineOutput
 import com.yuan3271.cloudrift.engine.InputEngine
 import com.yuan3271.cloudrift.data.UserProfile
+import com.yuan3271.cloudrift.data.CandidateOrder
 
 /**
  * Dictionary driven pinyin engine shared by the 26 key and the 9 key layouts.
@@ -19,6 +20,8 @@ class PinyinEngine(
     nineKey: Boolean,
     /** What this user has typed before; null in tests and before the profile is wired up. */
     private val profile: UserProfile? = null,
+    /** Single characters first, or whole sentences first; read on every evaluation. */
+    private val orderProvider: () -> CandidateOrder = { CandidateOrder.LongFirst },
 ) : InputEngine {
 
     override val kind: EngineKind = if (nineKey) EngineKind.Pinyin9 else EngineKind.Pinyin26
@@ -95,6 +98,11 @@ class PinyinEngine(
         candidates: List<Candidate>,
     ): List<Candidate> {
         if (syllables < 2) return candidates
+        if (orderProvider() == CandidateOrder.CharacterFirst) {
+            // Characters in front, everything else behind: a stable sort, so the engine's own
+            // ranking inside each group survives.
+            return candidates.sortedBy { if (it.text.length == 1) 0 else 1 }
+        }
         return candidates.sortedWith(
             compareBy(
                 { candidate ->

@@ -49,6 +49,9 @@ class SettingsRepository(context: Context) {
             spaceCursorControl = prefs.getBoolean(KEY_SPACE_CURSOR, defaults.spaceCursorControl),
             learningEnabled = prefs.getBoolean(KEY_LEARNING, defaults.learningEnabled),
             japaneseEnabled = prefs.getBoolean(KEY_JAPANESE, defaults.japaneseEnabled),
+            updateCheckInterval = UpdateInterval.fromKey(prefs.getString(KEY_UPDATE_INTERVAL, null)),
+            showUpdateDot = prefs.getBoolean(KEY_UPDATE_DOT, defaults.showUpdateDot),
+            candidateOrder = CandidateOrder.fromKey(prefs.getString(KEY_CANDIDATE_ORDER, null)),
             speech = migrateLegacyNls(readEndpoint(KEY_SPEECH_PREFIX, defaults.speech)),
             chat = readEndpoint(KEY_CHAT_PREFIX, defaults.chat),
             voiceCorrection = prefs.getBoolean(KEY_VOICE_CORRECTION, defaults.voiceCorrection),
@@ -83,6 +86,9 @@ class SettingsRepository(context: Context) {
             .putBoolean(KEY_SPACE_CURSOR, settings.spaceCursorControl)
             .putBoolean(KEY_LEARNING, settings.learningEnabled)
             .putBoolean(KEY_JAPANESE, settings.japaneseEnabled)
+            .putString(KEY_UPDATE_INTERVAL, settings.updateCheckInterval.name)
+            .putBoolean(KEY_UPDATE_DOT, settings.showUpdateDot)
+            .putString(KEY_CANDIDATE_ORDER, settings.candidateOrder.name)
             .putString(KEY_SPEECH_PREFIX + KEY_SUFFIX_BASE_URL, settings.speech.baseUrl)
             .putString(KEY_SPEECH_PREFIX + KEY_SUFFIX_API_KEY, settings.speech.apiKey)
             .putString(KEY_SPEECH_PREFIX + KEY_SUFFIX_MODEL, settings.speech.model)
@@ -147,6 +153,9 @@ class SettingsRepository(context: Context) {
         private const val KEY_SPACE_CURSOR = "space_cursor_control"
         private const val KEY_LEARNING = "learning_enabled"
         private const val KEY_JAPANESE = "japanese_enabled"
+        private const val KEY_UPDATE_INTERVAL = "update_check_interval"
+        private const val KEY_UPDATE_DOT = "update_dot"
+        private const val KEY_CANDIDATE_ORDER = "candidate_order"
         private const val KEY_VOICE_CORRECTION = "voice_correction"
         private const val KEY_VOICE_AUTO_APPLY = "voice_auto_apply_delay_ms"
         private const val KEY_AUTO_PUNCTUATION = "auto_punctuation"

@@ -131,6 +131,13 @@ class ImeController(
                 _state.value = _state.value.copy(userStats = stats)
             }
         }
+        scope.launch {
+            AppGraph.updates.available.collect { update ->
+                _state.value = _state.value.copy(update = update)
+            }
+        }
+        // One check per interval, in the background; the result is also cached across restarts.
+        AppGraph.updates.checkIfDue()
         clipboard.start()
         AppGraph.engines.warmUp()
         restoreLayout()
@@ -364,6 +371,9 @@ class ImeController(
     fun moveFloatingKeyboard(dx: Float, dy: Float) {
         windowHost?.moveInputWindowBy(dx, dy)
     }
+
+    /** The toolbar's yellow mark opens the settings screen, where the release is described. */
+    fun openUpdate() = openSettings()
 
     /**
      * The clipboard is its own panel rather than a sheet over the keys: history is the point, and
@@ -821,6 +831,7 @@ class ImeController(
             floatingWidthPercent = snapshot.floatingWidthPercent,
             floatingKeyHeightDp = snapshot.floatingKeyHeightDp,
             japaneseEnabled = snapshot.japaneseEnabled,
+            showUpdateDot = snapshot.showUpdateDot,
             showNumberRow = snapshot.showNumberRow,
             swipeUpSymbols = snapshot.swipeUpSymbols,
             spaceCursorControl = snapshot.spaceCursorControl,

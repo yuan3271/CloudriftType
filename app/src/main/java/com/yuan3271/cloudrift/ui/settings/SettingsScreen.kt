@@ -36,6 +36,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -55,12 +56,15 @@ import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.BuildConfig
 import com.yuan3271.cloudrift.data.ApiEndpoint
 import com.yuan3271.cloudrift.data.ApiStyle
+import com.yuan3271.cloudrift.data.CandidateOrder
 import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.data.UserStats
+import com.yuan3271.cloudrift.data.UpdateInfo
+import com.yuan3271.cloudrift.data.UpdateInterval
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
@@ -74,6 +78,7 @@ fun SettingsScreen(
     onUpdate: ((AppSettings) -> AppSettings) -> Unit,
     imeEnabled: Boolean = false,
     userStats: UserStats = UserStats(),
+    update: UpdateInfo? = null,
     actions: SettingsActions,
 ) {
     val grantState = rememberMicrophoneGranted()
@@ -125,6 +130,17 @@ fun SettingsScreen(
                 onGrantMicrophone = {
                     permissionLauncher.launch(SettingsActivity.MICROPHONE_PERMISSION)
                 },
+            )
+
+            UpdateCard(
+                update = update,
+                interval = settings.updateCheckInterval,
+                showDot = settings.showUpdateDot,
+                onInterval = { value -> onUpdate { it.copy(updateCheckInterval = value) } },
+                onShowDot = { value -> onUpdate { it.copy(showUpdateDot = value) } },
+                onCheckNow = actions.checkForUpdate,
+                onDownload = actions.downloadUpdate,
+                onOpenRelease = actions.openRelease,
             )
 
             SectionTitle("外观", CloudriftIcons.Palette)
@@ -314,6 +330,41 @@ fun SettingsScreen(
                 )
             }
 
+            SectionTitle("候选词顺序", CloudriftIcons.Spellcheck)
+            SettingsCard {
+                Text(
+                    text = "一句话里有多个词时，候选怎么排。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val orders = listOf(
+                        CandidateOrder.LongFirst to "长句优先",
+                        CandidateOrder.CharacterFirst to "单字优先",
+                    )
+                    orders.forEachIndexed { index, (order, label) ->
+                        SegmentedButton(
+                            selected = settings.candidateOrder == order,
+                            onClick = { onUpdate { it.copy(candidateOrder = order) } },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = orders.size),
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = if (settings.candidateOrder == CandidateOrder.LongFirst) {
+                        "先给整句（shishizhege → 实施这个），再给组成它的词（实施 / 试试），最后才是单字。"
+                    } else {
+                        "先给单字（shizhege → 是），再给同音的词组与整句。两个模式随时可切。"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             SectionTitle("自学习", CloudriftIcons.Spellcheck)
             SettingsCard {
                 Text(
@@ -422,6 +473,119 @@ fun SettingsScreen(
             }
 
             Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+/**
+ * The loud half of the update notice: the version that was found, directly under the enable card
+ * where the eye already is, with the two buttons and the check frequency.
+ */
+@Composable
+private fun UpdateCard(
+    update: UpdateInfo?,
+    interval: UpdateInterval,
+    showDot: Boolean,
+    onInterval: (UpdateInterval) -> Unit,
+    onShowDot: (Boolean) -> Unit,
+    onCheckNow: () -> Unit,
+    onDownload: () -> Unit,
+    onOpenRelease: () -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = if (update != null) {
+                MaterialTheme.colorScheme.tertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
+        ),
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = CloudriftIcons.Refresh,
+                    contentDescription = null,
+                    tint = if (update != null) {
+                        MaterialTheme.colorScheme.onTertiaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = if (update != null) {
+                        "检测到新版本 ${update.versionName}"
+                    } else {
+                        "已是最新版本"
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "当前 ${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (update != null) {
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "覆盖安装即可，设置、自学习记录和剪贴板历史都会保留。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onDownload) { Text("下载更新") }
+                    OutlinedButton(onClick = onOpenRelease) { Text("查看发布页") }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "检测频率",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                val options = listOf(
+                    UpdateInterval.Never to "不检测",
+                    UpdateInterval.Daily to "每天",
+                    UpdateInterval.Weekly to "每周",
+                    UpdateInterval.Monthly to "每月",
+                )
+                options.forEachIndexed { index, (value, label) ->
+                    SegmentedButton(
+                        selected = interval == value,
+                        onClick = { onInterval(value) },
+                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                    ) {
+                        Text(label, style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            SwitchRow(
+                title = "在键盘上显示黄色提示",
+                subtitle = "关掉后只在设置页提示新版本",
+                checked = showDot,
+                onCheckedChange = onShowDot,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onCheckNow) { Text("立即检测") }
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "版本来自 GitHub Releases",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

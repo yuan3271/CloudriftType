@@ -267,6 +267,7 @@ private fun KeyboardSurface(
                 },
                 onLanguageLongClick = onOpenLayoutPicker,
                 onThemeClick = controller::cycleThemeMode,
+                onUpdateClick = controller::openUpdate,
                 onVoiceClick = controller::toggleVoice,
                 onSettingsClick = onToggleQuickSettings,
                 onHideClick = controller::hideKeyboard,

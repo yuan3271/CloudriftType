@@ -18,6 +18,8 @@ object AppGraph {
         private set
     lateinit var profile: UserProfile
         private set
+    lateinit var updates: UpdateChecker
+        private set
     lateinit var engines: EngineRegistry
         private set
 
@@ -36,7 +38,16 @@ object AppGraph {
             appContext = context.applicationContext
             settings = SettingsRepository(appContext)
             profile = UserProfile(appContext, CoroutineScope(SupervisorJob() + Dispatchers.Default))
-            engines = EngineRegistry(appContext, profile)
+            updates = UpdateChecker(
+                appContext,
+                CoroutineScope(SupervisorJob() + Dispatchers.Default),
+                settingsProvider = { settings.current },
+            )
+            engines = EngineRegistry(
+                context = appContext,
+                profile = profile,
+                orderProvider = { settings.current.candidateOrder },
+            )
             initialized = true
         }
     }

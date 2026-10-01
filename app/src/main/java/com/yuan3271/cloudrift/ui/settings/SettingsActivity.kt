@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.net.Uri
 import android.provider.Settings
 import android.view.inputmethod.InputMethodInfo
 import android.view.inputmethod.InputMethodManager
@@ -11,6 +12,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,6 +29,8 @@ class SettingsActivity : ComponentActivity() {
         setContent {
             val settings by AppGraph.settings.state.collectAsStateWithLifecycle()
             val userStats by AppGraph.profile.stats.collectAsStateWithLifecycle()
+            val update by AppGraph.updates.available.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) { AppGraph.updates.checkIfDue() }
             CloudriftTheme(
                 themeMode = settings.themeMode,
                 themeSource = settings.themeSource,
@@ -38,11 +42,20 @@ class SettingsActivity : ComponentActivity() {
                     onUpdate = AppGraph.settings::update,
                     imeEnabled = rememberImeEnabled(),
                     userStats = userStats,
+                    update = update,
                     actions = SettingsActions(
                         requestMicrophoneOnStart = requestMicrophone,
                         openSystemKeyboardSettings = ::openSystemKeyboardSettings,
                         showKeyboardPicker = ::showKeyboardPicker,
                         clearLearning = AppGraph.profile::clear,
+                        checkForUpdate = { AppGraph.updates.checkIfDue(force = true) },
+                        downloadUpdate = { update?.let(AppGraph.updates::download) },
+                        openRelease = {
+                            val url = update?.releaseUrl ?: RELEASES_URL
+                            runCatching {
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            }
+                        },
                         finish = ::finish,
                     ),
                 )
@@ -64,6 +77,7 @@ class SettingsActivity : ComponentActivity() {
         const val EXTRA_REQUEST_MICROPHONE = "request_microphone"
         const val MICROPHONE_PERMISSION: String = Manifest.permission.RECORD_AUDIO
         const val IME_ID = "com.yuan3271.cloudrift/.ime.CloudriftImeService"
+        const val RELEASES_URL = "https://github.com/yuan3271/CloudriftType/releases"
     }
 }
 
@@ -73,6 +87,9 @@ data class SettingsActions(
     val openSystemKeyboardSettings: () -> Unit,
     val showKeyboardPicker: () -> Unit,
     val clearLearning: () -> Unit,
+    val checkForUpdate: () -> Unit,
+    val downloadUpdate: () -> Unit,
+    val openRelease: () -> Unit,
     val finish: () -> Unit,
 )
 

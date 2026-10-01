@@ -1,5 +1,9 @@
 # 云隙输入 · Cloudrift Type
 
+<p align="center">
+  <img src="tools/design/launcher-cutout-preview.png" width="132" alt="云隙输入应用图标">
+</p>
+
 一个 Android 输入法（IME），界面按 **Material 3 Expressive** 设计，支持中文（26 键 /
 9 键拼音）、日文（罗马音 / 假名）与英文，并内置基于 API Key 的语音输入。
 

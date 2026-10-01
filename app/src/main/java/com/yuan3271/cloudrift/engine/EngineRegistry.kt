@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.engine
 
 import android.content.Context
 import com.yuan3271.cloudrift.data.UserProfile
+import com.yuan3271.cloudrift.data.CandidateOrder
 import com.yuan3271.cloudrift.engine.english.EnglishEngine
 import com.yuan3271.cloudrift.engine.japanese.JapaneseEngine
 import com.yuan3271.cloudrift.engine.pinyin.PinyinDictionary
@@ -23,6 +24,8 @@ import kotlinx.coroutines.flow.asStateFlow
 class EngineRegistry(
     private val context: Context,
     private val profile: UserProfile? = null,
+    /** Read on every evaluation: the user can flip the order without rebuilding the engine. */
+    private val orderProvider: () -> CandidateOrder = { CandidateOrder.LongFirst },
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -31,8 +34,12 @@ class EngineRegistry(
     private val _dictionaryReady = MutableStateFlow(dictionary.isReady)
     val dictionaryReady: StateFlow<Boolean> = _dictionaryReady.asStateFlow()
 
-    private val pinyin26 by lazy { PinyinEngine(dictionary, nineKey = false, profile = profile) }
-    private val pinyin9 by lazy { PinyinEngine(dictionary, nineKey = true, profile = profile) }
+    private val pinyin26 by lazy {
+        PinyinEngine(dictionary, nineKey = false, profile = profile, orderProvider = orderProvider)
+    }
+    private val pinyin9 by lazy {
+        PinyinEngine(dictionary, nineKey = true, profile = profile, orderProvider = orderProvider)
+    }
     private val romaji by lazy { JapaneseEngine(EngineKind.Romaji) }
     private val latin by lazy { EnglishEngine() }
 
