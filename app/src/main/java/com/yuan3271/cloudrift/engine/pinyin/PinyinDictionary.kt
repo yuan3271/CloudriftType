@@ -22,6 +22,8 @@ data class WordEntry(val word: String, val reading: String, val score: Int)
 class PinyinDictionary(
     private val charTableSource: () -> BufferedReader,
     private val wordTableSource: () -> BufferedReader,
+    /** Optional: word-to-word scores; absent means the decoder falls back to word frequencies. */
+    private val bigramSource: (() -> BufferedReader)? = null,
 ) {
 
     private val charTable = HashMap<String, String>(1024)
@@ -54,6 +56,20 @@ class PinyinDictionary(
      * what jianpin is actually used for, and each bucket is capped so the index stays a few MB.
      */
     private val initialsIndex = HashMap<String, MutableList<WordEntry>>(1 shl 15)
+
+    /**
+     * Word-to-word scores, loaded from `pinyin_bigrams.txt`: how often the right word follows the
+     * left one in the bundled corpora. Word frequencies alone could not tell 我想喝杯水 from
+     * 我向河北谁 - both are made of real words - and adjacency is exactly that missing piece.
+     */
+    private var bigrams: HashMap<String, Int>? = null
+
+    /**
+     * The same table turned the other way round: word -> the words that follow it, best first.
+     * This is what the 联想 strip reads after a commit - "打完一个词，联想下一个词" is a lookup in
+     * this index, not a scan of the whole table.
+     */
+    private var successors: HashMap<String, MutableList<WordEntry>>? = null
 
     @Volatile
     private var t9Ready = false
@@ -236,6 +252,25 @@ class PinyinDictionary(
         return bucket.take(limit)
     }
 
+    /**
+     * The characters a single 首字母 can stand for, most likely first: the best character of each
+     * syllable that starts with [letter], syllables ordered by how common they are.
+     *
+     * The initials index only holds words of two characters or more, which is not enough: real
+     * 简拼 is 我 + 今天 + 去了 + 北京, and every one of those single characters has to come from
+     * somewhere or the run can never be decoded at all.
+     */
+    fun initialCharacters(letter: String, limit: Int): String {
+        val builder = StringBuilder(limit)
+        for (syllable in syllablesStartingWith(letter, limit * 2)) {
+            val chars = charTable[syllable] ?: continue
+            if (chars.isEmpty()) continue
+            builder.append(chars[0])
+            if (builder.length >= limit) break
+        }
+        return builder.toString()
+    }
+
     fun charsFor(syllable: String, limit: Int): String {
         val chars = charTable[syllable] ?: return ""
         return if (chars.length <= limit) chars else chars.substring(0, limit)
@@ -256,6 +291,48 @@ class PinyinDictionary(
      */
     fun completionWords(prefix: String, limit: Int): List<WordEntry> =
         collectCompletions(sortedReadings, prefix, limit) { wordTable[it]?.asList() }
+
+    /** Score for [right] directly following [left]; 0 when the pair was never seen. */
+    fun bigramScore(left: String, right: String): Int {
+        if (left.isEmpty() || right.isEmpty()) return 0
+        val table = bigrams ?: loadBigrams()
+        return table["$left\t$right"] ?: 0
+    }
+
+    private fun loadBigrams(): HashMap<String, Int> {
+        val table = HashMap<String, Int>(1 shl 14)
+        val byLeft = HashMap<String, MutableList<WordEntry>>(1 shl 13)
+        bigramSource?.invoke()?.use { reader ->
+            for (line in reader.lineSequence()) {
+                val first = line.indexOf('\t')
+                if (first <= 0) continue
+                val second = line.indexOf('\t', first + 1)
+                if (second <= 0) continue
+                val score = line.substring(second + 1).toIntOrNull() ?: continue
+                val left = line.substring(0, first)
+                val right = line.substring(first + 1, second)
+                table[line.substring(0, second)] = score
+                byLeft.getOrPut(left) { ArrayList(4) }.add(WordEntry(right, "", score))
+            }
+        }
+        for (row in byLeft.values) {
+            row.sortWith(compareByDescending<WordEntry> { it.score }.thenBy { it.word })
+        }
+        successors = byLeft
+        bigrams = table
+        return table
+    }
+
+    /**
+     * Words the corpus says tend to follow [left], best first. Empty when nothing is known, which
+     * is the signal for the keyboard to go back to showing the layout instead of predictions.
+     */
+    fun nextWords(left: String, limit: Int): List<WordEntry> {
+        if (left.isEmpty() || limit <= 0) return emptyList()
+        if (successors == null) loadBigrams()
+        val row = successors?.get(left) ?: return emptyList()
+        return if (row.size <= limit) row else row.subList(0, limit)
+    }
 
     fun syllablesStartingWith(prefix: String, limit: Int): List<String> {
         val merged = LinkedHashSet(charTable.keys.filter { it.startsWith(prefix) })
@@ -394,6 +471,7 @@ class PinyinDictionary(
     companion object {
         private const val ASSET_CHARS = "pinyin_chars.txt"
         private const val ASSET_WORDS = "pinyin_words.txt"
+        private const val ASSET_BIGRAMS = "pinyin_bigrams.txt"
         private const val BUFFER_SIZE = 1 shl 16
 
         /**
@@ -450,13 +528,19 @@ class PinyinDictionary(
                 wordTableSource = {
                     BufferedReader(InputStreamReader(assets.open(ASSET_WORDS), Charsets.UTF_8), BUFFER_SIZE)
                 },
+                bigramSource = {
+                    runCatching { assets.open(ASSET_BIGRAMS) }.getOrNull()?.let { stream ->
+                        BufferedReader(InputStreamReader(stream, Charsets.UTF_8), BUFFER_SIZE)
+                    } ?: BufferedReader(java.io.StringReader(""))
+                },
             )
 
         /** Test wiring: read the same files from disk. */
         fun fromReaders(
             charTable: () -> BufferedReader,
             wordTable: () -> BufferedReader,
+            bigramTable: (() -> BufferedReader)? = null,
         ): PinyinDictionary =
-            PinyinDictionary(charTable, wordTable)
+            PinyinDictionary(charTable, wordTable, bigramTable)
     }
 }

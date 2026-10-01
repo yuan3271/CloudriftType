@@ -71,7 +71,15 @@ interface InputEngine {
     /** The text that gets committed when the user presses space or enter mid-composition. */
     fun literal(raw: String): String = raw
 
+    /**
+     * Words that tend to follow [text], offered as a 联想 strip once a word has gone in and the
+     * reading buffer is empty again. Engines without an association model return nothing, which the
+     * keyboard reads as "show the layout instead".
+     */
+    fun associations(text: String, limit: Int = DEFAULT_ASSOCIATION_LIMIT): List<Candidate> = emptyList()
+
     companion object {
         const val DEFAULT_CANDIDATE_LIMIT = 48
+        const val DEFAULT_ASSOCIATION_LIMIT = 16
     }
 }

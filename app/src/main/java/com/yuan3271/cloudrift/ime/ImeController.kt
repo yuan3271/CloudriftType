@@ -322,6 +322,9 @@ class ImeController(
         // Pasted text is not a candidate pick: backspace should take it apart one character at a
         // time, not swallow the whole paste.
         lastCommit = null
+        // Nor is it something we can predict from: the 联想 strip described the previous caret
+        // position, not this one.
+        clearAssociations()
     }
 
     fun setQuickSettingsVisible(visible: Boolean) {
@@ -464,8 +467,37 @@ class ImeController(
         // A sentence candidate can be ten characters long; one backspace should take the whole
         // thing back, which is what every Chinese keyboard does after a word goes in.
         rememberCommit(candidate.text)
-        applyBuffer(remaining)
-        if (remaining.isEmpty()) clearBuffer()
+        if (remaining.isEmpty()) {
+            // Nothing left to compose, so the strip turns into 联想 for what just went in.
+            clearComposingQuietly()
+            showAssociations(candidate.text)
+        } else {
+            applyBuffer(remaining)
+        }
+    }
+
+    /**
+     * 打完一个词，联想下一个词: with the reading buffer empty, the candidate strip lists the words
+     * the association table says tend to follow what was just committed. Tapping one commits it and
+     * chains into its own predictions; typing anything replaces the strip with normal candidates.
+     */
+    private fun showAssociations(seed: String) {
+        val predictions = engine.associations(seed)
+        _state.value = _state.value.copy(
+            raw = "",
+            preview = "",
+            candidates = predictions,
+            candidatesExpanded = _state.value.candidatesExpanded && predictions.isNotEmpty(),
+        )
+    }
+
+    /**
+     * Drops the 联想 strip. Only ever called with an empty buffer, where the candidate list cannot
+     * be a composition - otherwise the words being composed would go with it.
+     */
+    private fun clearAssociations() {
+        if (_state.value.raw.isNotEmpty() || _state.value.candidates.isEmpty()) return
+        _state.value = _state.value.copy(candidates = emptyList(), candidatesExpanded = false)
     }
 
     fun toggleCandidatesExpanded() {
@@ -662,7 +694,10 @@ class ImeController(
 
     private fun backspace() {
         lastCharacter = null
-        if (takeBackLastCommit()) return
+        if (takeBackLastCommit()) {
+            clearAssociations()
+            return
+        }
         // A selected range is the user's target, not the text next to the caret, and
         // deleteSurroundingText is ignored by most editors while a selection is live - pressing the
         // key is what makes them delete the selection.
@@ -678,6 +713,9 @@ class ImeController(
             if (current.raw.length == 1) clearBuffer()
             return
         }
+        // Deleting into text that is already in the editor: the 联想 strip was about what used to
+        // be in front of the caret, so it goes away rather than predicting from stale text.
+        clearAssociations()
         selfEditCounter++
         editor.deleteSurroundingBefore(1)
         doubleSpaceArmed = false

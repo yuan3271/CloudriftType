@@ -298,6 +298,85 @@ class PinyinEngineTest {
     }
 
     @Test
+    fun `a readable full pinyin word is never buried by a 简拼 reading of the same letters`() {
+        // The bug this guards: "wo" also reads as w|o = 无藕, "women" as 无藕木耳南, "shang" as
+        // 时候按那个, "hao" as 黑暗藕. Those letters spell real pinyin, so the answer has to be 我 /
+        // 我们 / 上 / 好 - 简拼 is only an alternative when full pinyin cannot read the buffer at all.
+        // None of these contain i/u/ü, so they used to be the everyday words that broke.
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val cases = listOf(
+            "wo" to "我", "ta" to "他", "women" to "我们", "tamen" to "他们",
+            "zhege" to "这个", "nage" to "那个", "shang" to "上", "hao" to "好", "ma" to "吗",
+            "zhende" to "真的", "zenme" to "怎么", "shenme" to "什么", "mashang" to "马上",
+            "haode" to "好的", "wanshang" to "晚上", "ganshenme" to "干什么",
+            "zenmeyang" to "怎么样", "zenmeban" to "怎么办",
+        )
+        for ((code, expected) in cases) {
+            assertEquals("$code 被首字母劫持了", expected, engine.evaluate(code).candidates.first().text)
+        }
+    }
+
+    @Test
+    fun `简拼 is still reached after the fix`() {
+        // The other direction of the same requirement: removing the interference must not remove
+        // the feature. "nh" is consonant only, so it is exactly what 简拼 is for.
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("你好", engine.evaluate("nh").candidates.first().text)
+        val phrase = engine.evaluate("jtzmy").candidates.map { it.text }
+        assertTrue("expected a 今天 segmentation among $phrase", phrase.any { it.startsWith("今天") })
+    }
+
+    @Test
+    fun `简拼 does not invent a phrase out of lone characters`() {
+        // Every run of letters fits this shape, so it is noise, not an answer: "zzz" -> 组织 via the
+        // word index would leave the raw letters behind, and 在在 is two lone characters. A 简拼
+        // reading has to actually touch a word, which is what keeps the feature from spraying
+        // unrelated characters over the candidate bar.
+        val texts = PinyinEngine(dictionary, nineKey = false).evaluate("zzz").candidates.map { it.text }
+
+        assertEquals("zzz", texts.first())
+        assertTrue("lone characters must not be offered as a phrase: $texts", texts.none { it == "在在" })
+    }
+
+    @Test
+    fun `a rare reading does not shadow the word that owns the reading`() {
+        // pinyin-data lists 盒 as "hé, ān", so the cartesian product invented a reading 试剂盒 =
+        // "shijian" for a word that never reads that way, and it pushed 时间 off the first slot.
+        // The build now drops a reading a word only reaches through an alternate character when a
+        // word that spells the same syllables with primary readings is much more common.
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("时间", engine.evaluate("shijian").candidates.first().text)
+    }
+
+    @Test
+    fun `a sentence final particle follows the pair model`() {
+        // ba is both 把 and 吧 and the character table ranks 把 first, so the decoder used to force
+        // 我们走把. Letting a lower-ranked homophone in only when the pair model expects it here
+        // (走 -> 吧) is what makes the sentence come out right - so this engine has to be wired with
+        // the association table, unlike the rest of this class.
+        val paired = PinyinDictionary.fromReaders(
+            charTable = { reader("pinyin_chars.txt") },
+            wordTable = { reader("pinyin_words.txt") },
+            bigramTable = { reader("pinyin_bigrams.txt") },
+        )
+        paired.load()
+        val engine = PinyinEngine(paired, nineKey = false)
+
+        assertEquals("我们走吧", engine.evaluate("womenzouba").candidates.first().text)
+    }
+
+    @Test
+    fun `a spoken word outranks the news corpus favourite`() {
+        // jieba (a news corpus) puts 美食 above 没事; the self-authored colloquial corpus has it the
+        // other way round, and that is the order an IME should follow.
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("没事", engine.evaluate("meishi").candidates.first().text)
+    }
+
+    @Test
     fun `a run of initials decodes into a phrase`() {
         val engine = PinyinEngine(dictionary, nineKey = false)
         val candidates = engine.evaluate("jtzmy").candidates

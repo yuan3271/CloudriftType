@@ -69,7 +69,10 @@ fun CandidateBar(
                     itemsIndexed(state.candidates.take(MAX_VISIBLE)) { index, candidate ->
                         CandidatePill(
                             candidate = candidate,
-                            emphasised = index == 0,
+                            // The first candidate is the one space/enter would take - but only
+                            // while something is being composed. A 联想 strip has no default, so
+                            // its pills all carry the prediction tint.
+                            emphasised = index == 0 && state.isComposing,
                             onClick = { onCandidate(index) },
                         )
                     }

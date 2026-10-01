@@ -49,7 +49,11 @@ class PinyinEngine(
             // A reading that no single word covers is decoded as a whole sentence, and that
             // sentence is the answer for anything longer than a word.
             candidates.addAll(sentenceCandidates(buffer))
-            addInitialCandidates(buffer, candidates)
+            // No 首字母 here. The whole buffer already reads as full pinyin, and the alternative
+            // "one letter stands for one character" reading of it (wo -> 无藕) is not something
+            // anyone typed: showing it right next to 我 is how 简拼 used to bury the answer.
+            // 简拼 is consulted only in the two branches below, where full pinyin leaves part of
+            // the buffer unread - which is exactly the shape of a run of initials ("nh", "jtzmy").
             addSyllableCandidates(buffer, buffer.length, candidates, from = 0, until = topRank)
             addCompletionCandidates(buffer, head = buffer, out = candidates)
             addSyllableCandidates(buffer, buffer.length, candidates, from = topRank)
@@ -137,6 +141,40 @@ class PinyinEngine(
         if (candidate.unmatchedFrom < 0) 0 else candidate.text.length - candidate.unmatchedFrom
 
     override fun literal(raw: String): String = normalize(raw)
+
+    /**
+     * 联想: what the association table says tends to follow what was just committed.
+     *
+     * The context is the committed text itself, backing off to its tail, because a commit is not
+     * always one word: picking the sentence candidate 我今天去了北京 has to end up asking about
+     * 北京, not about the whole string, or there would be nothing to look up.
+     */
+    override fun associations(text: String, limit: Int): List<Candidate> {
+        if (!dictionary.isReady || text.isEmpty()) return emptyList()
+        for (context in associationContexts(text)) {
+            val words = dictionary.nextWords(context, limit)
+            if (words.isEmpty()) continue
+            return words.map { entry ->
+                Candidate(
+                    text = entry.word,
+                    consumed = 0,
+                    kind = CandidateKind.Prediction,
+                    score = entry.score,
+                )
+            }
+        }
+        return emptyList()
+    }
+
+    /** Longest first: the committed text, then its 4/3/2 character tails. */
+    private fun associationContexts(text: String): List<String> {
+        val contexts = LinkedHashSet<String>(4)
+        contexts.add(text)
+        for (length in 4 downTo 2) {
+            if (text.length > length) contexts.add(text.takeLast(length))
+        }
+        return contexts.toList()
+    }
 
     /**
      * Reorders the dictionary result with what this person actually does: a candidate they have
@@ -246,11 +284,16 @@ class PinyinEngine(
     private fun decodeTop(buffer: String, bounds: IntArray, count: Int): List<Pair<String, Float>> {
         val syllables = bounds.size - 1
         val paths = Array(syllables + 1) { ArrayList<Path>(count) }
-        paths[0].add(Path(0f, ""))
+        paths[0].add(Path(0f, "", ""))
         for (start in 0 until syllables) {
             if (paths[start].isEmpty()) continue
             val syllable = buffer.substring(bounds[start], bounds[start + 1])
-            val character = dictionary.charsFor(syllable, 1).firstOrNull()
+            // Not just the single best character: letters that read the same cover homophones
+            // (ba is 把 and 吧), and which one is right is not a per-character fact - it is what
+            // the pair model knows (走 is followed by 吧, never by 把). Ranking them by the table
+            // order with a small decay lets the association decide, which is how 我们走吧 stops
+            // coming out as 我们走把.
+            val characters = dictionary.charsFor(syllable, SENTENCE_CHAR_LIMIT)
             val last = minOf(syllables, start + MAX_SENTENCE_WORD_SYLLABLES)
             // Up to WORDS_PER_STEP words per span, so the second best reading of a span ("试试"
             // next to "实施") is a path of its own rather than being lost to the best one.
@@ -261,12 +304,36 @@ class PinyinEngine(
                 if (entries.isNotEmpty()) words[end] = entries
             }
             for (path in paths[start]) {
-                if (character != null) {
-                    push(paths[start + 1], path.score + CHARACTER_SCORE - UNIT_PENALTY, path.text + character, count)
+                for ((rank, character) in characters.withIndex()) {
+                    // The association model conditions on the last *unit*, character or word: after
+                    // a lone 我 the next word should be scored just like after a word, otherwise a
+                    // sentence decoded mostly into single characters gets no association at all.
+                    val pair = dictionary.bigramScore(path.lastToken, character.toString())
+                    // The best character of a syllable is always a path. A lower-ranked homophone
+                    // only joins in when the pair model actually expects it here (走 -> 吧), so the
+                    // bar does not fill with 我门/我闷-style variants of a word that is already right.
+                    if (rank > 0 && pair <= 0) continue
+                    push(
+                        paths[start + 1],
+                        path.score + CHARACTER_SCORE - rank * SENTENCE_CHAR_DECAY - UNIT_PENALTY +
+                            pair * BIGRAM_WEIGHT,
+                        path.text + character,
+                        count,
+                        lastToken = character.toString(),
+                    )
                 }
                 for ((end, entries) in words) {
                     for (entry in entries) {
-                        push(paths[end], path.score + entry.score - UNIT_PENALTY, path.text + entry.word, count)
+                        // Word frequency says 向河北 and 我想装 alike are real words; the pair score is
+                        // what knows 我 is followed by 想 far more often than by 向.
+                        val pair = dictionary.bigramScore(path.lastToken, entry.word)
+                        push(
+                            paths[end],
+                            path.score + entry.score - UNIT_PENALTY + pair * BIGRAM_WEIGHT,
+                            path.text + entry.word,
+                            count,
+                            lastToken = entry.word,
+                        )
                     }
                 }
             }
@@ -277,15 +344,21 @@ class PinyinEngine(
             .filter { it.first.isNotEmpty() }
     }
 
-    private fun push(paths: ArrayList<Path>, score: Float, text: String, count: Int) {
+    private fun push(
+        paths: ArrayList<Path>,
+        score: Float,
+        text: String,
+        count: Int,
+        lastToken: String = "",
+    ) {
         if (paths.any { it.text == text }) return
         if (paths.size >= count && paths.last().score >= score) return
-        paths.add(Path(score, text))
+        paths.add(Path(score, text, lastToken))
         paths.sortByDescending { it.score }
         while (paths.size > count) paths.removeAt(paths.size - 1)
     }
 
-    private data class Path(val score: Float, val text: String)
+    private data class Path(val score: Float, val text: String, val lastToken: String = "")
 
     /** The single best reading of the run of syllables, or null when none exists. */
     private fun decode(buffer: String, bounds: IntArray): String? =
@@ -428,6 +501,17 @@ class PinyinEngine(
 
         for (start in 0 until letters.length) {
             if (paths[start].isEmpty()) continue
+            // A single letter may stand for one character (我, 去, 了 ...). Without this step the
+            // run can never be cut the way it is actually typed - 简拼 is 我|今天|去|了|北京 - and
+            // the initials index has no single character words in it at all.
+            addInitialStep(
+                paths = paths,
+                start = start,
+                length = 1,
+                texts = dictionary.initialCharacters(letters.substring(start, start + 1), INITIALS_CHAR_LIMIT)
+                    .map { it.toString() },
+                scoreOf = { CHARACTER_SCORE.toInt() },
+            )
             val longest = minOf(MAX_INITIALS, letters.length - start)
             for (length in MIN_INITIALS..longest) {
                 val key = letters.substring(start, start + length)
@@ -441,8 +525,20 @@ class PinyinEngine(
                         val next = paths[start + length]
                         val text = path.text + word.word
                         if (next.any { it.text == text }) continue
+                        // The same association model the sentence decoder uses, and it is what this
+                        // path was missing: "wjtqlbj" reads as 我今天|去了|北京 rather than
+                        // 伪静态|权利|比较 not because either word is more frequent on its own, but
+                        // because one pair actually occurs in the corpus and the other does not.
+                        val pair = dictionary.bigramScore(path.lastWord, word.word)
                         next.add(
-                            InitialPath(start + length, text, path.score + word.score),
+                            InitialPath(
+                                consumed = start + length,
+                                text = text,
+                                score = path.score + word.score + pair * INITIALS_BIGRAM_WEIGHT -
+                                    INITIALS_UNIT_PENALTY,
+                                lastWord = word.word,
+                                usedWord = true,
+                            ),
                         )
                         next.sortByDescending { it.score }
                         while (next.size > INITIALS_PATHS) next.removeAt(next.size - 1)
@@ -455,6 +551,12 @@ class PinyinEngine(
         for (consumed in letters.length downTo MIN_INITIALS) {
             for (path in paths[consumed]) {
                 if (path.text.length < 2) continue
+                // A reading made only of lone characters is not 简拼, it is noise: every run of
+                // letters fits one ("women" -> 无藕木耳南, "zzz" -> 在在), and offering it is how
+                // the feature used to bury the word the user actually typed. Real 简拼 always
+                // touches a word - 你好 for "nh", 今天|怎么样 for "jtzmy" - so a path that never
+                // used the word index is dropped rather than ranked.
+                if (!path.usedWord) continue
                 ranked.add(
                     Candidate(
                         text = path.text,
@@ -472,8 +574,54 @@ class PinyinEngine(
         out.addAll(ranked.take(INITIALS_LIMIT))
     }
 
+    /**
+     * Extends every path that reaches [start] by one step covering [length] letters and producing
+     * one of [texts]. Both the single character step and the word step go through here so they are
+     * scored on the same scale: the unit penalty is what stops a long run of lone characters from
+     * beating a real word that covers the same letters, and the association score is what makes
+     * 我|今天 win over two unrelated words that happen to be frequent.
+     */
+    private fun addInitialStep(
+        paths: Array<ArrayList<InitialPath>>,
+        start: Int,
+        length: Int,
+        texts: List<String>,
+        scoreOf: (String) -> Int,
+    ) {
+        val end = start + length
+        if (texts.isEmpty() || end >= paths.size) return
+        val next = paths[end]
+        for (text in texts) {
+            for (path in paths[start]) {
+                val combined = path.text + text
+                if (next.any { it.text == combined }) continue
+                next.add(
+                    InitialPath(
+                        consumed = end,
+                        text = combined,
+                        // No association term here on purpose: a one letter step is not evidence of
+                        // what follows anything, and feeding it the 联想 score only let lone
+                        // characters outrank real words. The word step above keeps it.
+                        score = path.score + scoreOf(text) - INITIALS_UNIT_PENALTY,
+                        lastWord = text,
+                        usedWord = path.usedWord,
+                    ),
+                )
+            }
+        }
+        next.sortByDescending { it.score }
+        while (next.size > INITIALS_PATHS) next.removeAt(next.size - 1)
+    }
+
     /** One way of reading a run of initials: how much it ate, what it produced, how good it is. */
-    private data class InitialPath(val consumed: Int, val text: String, val score: Int)
+    private data class InitialPath(
+        val consumed: Int,
+        val text: String,
+        val score: Int,
+        val lastWord: String = "",
+        /** True once the path has touched the word index, i.e. it is 简拼 and not lone characters. */
+        val usedWord: Boolean = false,
+    )
 
     private data class Ranked(
         val continuesTypedSyllable: Boolean,
@@ -730,6 +878,14 @@ class PinyinEngine(
         /** Longest word the sentence decoder will try to fit in one step. */
         private const val MAX_SENTENCE_WORD_SYLLABLES = 6
         /**
+         * Characters the sentence decoder tries per syllable. The character table only ranks
+         * them, it does not score them, so this is about homophones that the pair model can tell
+         * apart (吧/把 after 走) - not about the long tail.
+         */
+        private const val SENTENCE_CHAR_LIMIT = 3
+        /** Charged per rank of character, so a lower-ranked homophone needs the pair model to win. */
+        private const val SENTENCE_CHAR_DECAY = 60f
+        /**
          * Words per span the decoder keeps as separate paths. Six is what it takes for "shishi" to
          * offer 试试 next to 实施, 事实 and 逝世: sentence candidates are paths, so a word that is
          * not in this list can never become one.
@@ -760,6 +916,22 @@ class PinyinEngine(
          */
         private const val UNIT_PENALTY = 1200f
         private const val CHARACTER_SCORE = 905f
+        /** How much a seen word pair (score 1..1000) is worth next to word frequencies. */
+        private const val BIGRAM_WEIGHT = 2f
+        /**
+         * The same idea for the 首字母 path, where the competition is between ways of cutting a
+         * run of initials into words. Word frequencies are close together there, so the pair has
+         * to outweigh a mild frequency difference to pick 我今天|去了 over 伪静态|权利.
+         */
+        private const val INITIALS_BIGRAM_WEIGHT = 3
+        /** How many characters one letter of 首字母 may stand for. */
+        private const val INITIALS_CHAR_LIMIT = 6
+        /**
+         * Per-unit cost of the 首字母 path, the same role [UNIT_PENALTY] plays in the sentence
+         * decoder: without it every letter could be covered by its own character and the longest
+         * run of lone characters would always win.
+         */
+        private const val INITIALS_UNIT_PENALTY = 1200
         /** Segmentations cache, bounded so a long session cannot grow it without limit. */
         private const val COVER_CACHE_LIMIT = 256
         /** Nine key signatures never get longer than the longest syllable's digit count. */

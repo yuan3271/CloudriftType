@@ -16,3 +16,5 @@ dist/
 tools/dictgen/raw/
 tools/dictgen/out/
 tools/dictgen/__pycache__/
+# A/B tables written by `build_bigram.py --variant-sweep`; regenerate on demand.
+tools/tune/bigrams/

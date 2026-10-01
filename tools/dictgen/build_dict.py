@@ -38,6 +38,18 @@ THUOCL_DIR = TOOLS / "clean"
 # It is the only conversational-frequency source in the build, which is what keeps 怎么样 above
 # 简体字 and 今天 above 几天 in the decoder.
 HSK = TOOLS / "raw/hsk_complete.json"
+# The self-authored modern colloquial corpus, also the training text of the association model. It
+# is the only source in the build that reflects how people *talk* rather than how a news corpus
+# writes, so it also nudges word frequencies: 没事 is said far more often than 美食, but jieba (a
+# news corpus) has them the other way round, which is exactly what "meishi" used to show.
+COLLOQUIAL_FILES = sorted((TOOLS / "raw").glob("corpus_*.txt"))
+COLLOQUIAL_WEIGHT = 0.5
+MAX_COLLOQUIAL_WORD = 4
+# The corpus only re-ranks words that are already common; it must not *discover* words. It is a few
+# thousand characters, far too little to judge a rare word, and letting it promote one pushes a
+# low-scoring entry into the shipped table where it can change a whole sentence decode (真不错
+# entered "zhenbucuo" that way and made 这个手机真不错 score worse than 这个首急诊不错).
+COLLOQUIAL_MIN_SCORE = 400
 
 THUOCL_FILES = [
     ("THUOCL_IT.txt", 0.95),
@@ -63,6 +75,13 @@ MAX_CHARS_PER_SYLLABLE = 100
 # roughly "four times rarer", enough for the primary reading to win a tie without hiding words
 # that are genuinely read the other way.
 ALTERNATE_READING_PENALTY = 120
+# A reading belongs to the word that spells it with primary readings. pinyin-data carries rare
+# and archaic readings too (盒 is listed hé,ān), so the cartesian product above invents readings a
+# word does not have: 试剂盒 reached "shijian" through 盒=ān and then outranked 时间. When a word
+# that reads the same syllables with no alternate is at least this many times more common, the
+# invented reading is dropped instead of shipped; a reading with no primary-reading word at all
+# (银行, whose 行 is genuinely háng here) keeps every entry.
+OWNED_READING_RATIO = 2.0
 # Multiplied into the score of a word that only a THUOCL domain list has, so a term that is
 # frequent inside its own tiny corpus does not outrank everyday words in sentence decoding.
 THUOCL_ONLY_DISCOUNT = 0.75
@@ -174,6 +193,35 @@ def hsk_bonus(rank: int) -> int:
     return 0
 
 
+def load_colloquial(vocabulary: set[str]) -> dict[str, int]:
+    """How often each known word is actually said in the self-authored colloquial corpus.
+
+    Segmenting by longest match against the words the build already knows is enough here: the
+    corpus is a few thousand characters of everyday speech, and the only thing wanted from it is
+    "does this word occur, and does it occur more than once".
+    """
+    counts: dict[str, int] = defaultdict(int)
+    for path in COLLOQUIAL_FILES:
+        if not path.exists():
+            print(f"! missing {path.name}", file=sys.stderr)
+            continue
+        text = "".join(
+            line for line in path.read_text(encoding="utf-8").splitlines()
+            if not line.startswith("#")
+        )
+        index = 0
+        while index < len(text):
+            for length in range(MAX_COLLOQUIAL_WORD, 0, -1):
+                token = text[index:index + length]
+                if token in vocabulary:
+                    counts[token] += 1
+                    index += length
+                    break
+            else:
+                index += 1
+    return counts
+
+
 def load_thuocl() -> dict[str, int]:
     words: dict[str, int] = {}
     for filename, source_weight in THUOCL_FILES:
@@ -263,6 +311,14 @@ def main() -> int:
         if bonus:
             word_scores[word] = word_scores.get(word, 0) + bonus
 
+    # Spoken frequency is not news frequency. A word that turns up in the everyday corpus at all
+    # gets a nudge on the same log scale, which is what keeps 没事 in front of 美食 - the news
+    # corpus has them the other way round and no amount of corpus size would fix that.
+    for word, count in load_colloquial(set(word_scores)).items():
+        if word_scores.get(word, 0) < COLLOQUIAL_MIN_SCORE:
+            continue
+        word_scores[word] = word_scores[word] + score_of(count, COLLOQUIAL_WEIGHT)
+
     by_reading: dict[str, list[tuple[str, int]]] = defaultdict(list)
     # A character's own frequency as a standalone word is the right signal for ordering single
     # syllable candidates. Summing the words it appears in is not: 尼 shows up in 印尼, 索尼,
@@ -293,12 +349,20 @@ def main() -> int:
             standalone[word] = max(standalone[word], score)
             continue
         for reading, alternates in readings:
-            by_reading[reading].append((word, max(1, score - alternates * ALTERNATE_READING_PENALTY)))
+            by_reading[reading].append(
+                (word, max(1, score - alternates * ALTERNATE_READING_PENALTY), alternates),
+            )
 
     rows: list[tuple[str, str, int]] = []
     for reading, entries in by_reading.items():
+        primary_best = max((score for _, score, alternates in entries if alternates == 0), default=0)
+        if primary_best > 0:
+            entries = [
+                entry for entry in entries
+                if entry[2] == 0 or entry[1] * OWNED_READING_RATIO > primary_best
+            ]
         entries.sort(key=lambda item: (-item[1], len(item[0]), item[0]))
-        for word, score in entries[:MAX_WORDS_PER_READING]:
+        for word, score, _ in entries[:MAX_WORDS_PER_READING]:
             rows.append((reading, word, score))
 
     # Greedy fill by score, bounded both per reading and in total. Readings that never win a
