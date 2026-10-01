@@ -319,7 +319,9 @@ class ImeController(
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
         editor.commit(text)
-        rememberCommit(text)
+        // Pasted text is not a candidate pick: backspace should take it apart one character at a
+        // time, not swallow the whole paste.
+        lastCommit = null
     }
 
     fun setQuickSettingsVisible(visible: Boolean) {
@@ -538,7 +540,9 @@ class ImeController(
         _state.value = _state.value.copy(autoApplyPending = false)
         selfEditCounter++
         editor.commit(ready.text)
-        rememberCommit(ready.text)
+        // A dictated sentence is not a candidate either. It used to be remembered like one, so the
+        // first backspace after speaking deleted the entire sentence instead of one character.
+        lastCommit = null
         voice.dismiss()
         updateEnterLabel()
     }
@@ -739,6 +743,16 @@ class ImeController(
         // candidate" - that is what Space is for. So "nihao" + Enter inserts "nihao".
         if (_state.value.isComposing) {
             commitRawLiteral()
+            return
+        }
+        val action = editorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
+        if (action == EditorInfo.IME_ACTION_NONE || action == EditorInfo.IME_ACTION_UNSPECIFIED) {
+            // A plain "换行" field: insert the newline ourselves. performEditorAction does nothing at
+            // all in most editors when the user has a selection, and committing replaces the
+            // selection, which is what pressing enter on selected text should do.
+            selfEditCounter++
+            editor.newline()
+            updateEnterLabel()
             return
         }
         selfEditCounter++
