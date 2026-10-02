@@ -28,8 +28,12 @@ class PinyinEngine(
 
     private val nineKey = nineKey
 
-    /** Cached segmentation results; typing is repetitive enough for this to pay off. */
-    private val coverCache = HashMap<String, Int>(64)
+    /**
+     * Cached segmentations; typing is repetitive enough for this to pay off. The branch decision
+     * and the sentence decoder read the same plan, so they cannot disagree about how much of the
+     * buffer is a run of syllables.
+     */
+    private val splitCache = HashMap<String, SplitPlan>(64)
 
     override fun evaluate(raw: String, limit: Int): EngineOutput {
         if (!dictionary.isReady || raw.isEmpty()) return EngineOutput()
@@ -408,21 +412,91 @@ class PinyinEngine(
     private data class SyllableSplit(val bounds: IntArray, val covered: Int, val fragment: String)
 
     /**
-     * Greedy syllable split of the part that can be read, plus whatever is left over. The leftover
-     * is not an error any more: it is the syllable the user is in the middle of typing.
+     * How the buffer is cut into syllables: how far [covered] the cut reaches, and the syllable
+     * length [steps] taken at every index on the way there.
+     */
+    private data class SplitPlan(val covered: Int, val steps: IntArray)
+
+    /**
+     * Syllable split of the part that can be read, plus whatever is left over. The leftover is not
+     * an error any more: it is the syllable the user is in the middle of typing.
      */
     private fun syllableSplit(buffer: String): SyllableSplit? {
-        val bounds = ArrayList<Int>(buffer.length + 1)
+        val plan = splitPlan(buffer)
+        if (plan.covered == 0) return null
+        val bounds = ArrayList<Int>(8)
         bounds.add(0)
         var index = 0
-        while (index < buffer.length) {
-            val step = matchSyllable(buffer, index)
+        while (index < plan.covered) {
+            val step = plan.steps[index]
             if (step == 0) break
             index += step
             bounds.add(index)
         }
-        if (bounds.size < 2) return null
         return SyllableSplit(bounds.toIntArray(), index, buffer.substring(index))
+    }
+
+    /**
+     * Cuts the buffer into syllables the way the reader typed them, with one correction.
+     *
+     * Longest match is the rule, and it stays the rule - but on its own it can walk into a syllable
+     * the dictionary has nothing behind. "jidangeng" then cuts as ji + dang + eng, and because
+     * "eng" is a syllable of the table with no character and no word of its own, the sentence
+     * decoder's lattice dead-ends on the last position and the whole sentence disappears: the bar
+     * showed 激荡 and single characters where 鸡蛋羹 belongs. It bites hardest on long buffers,
+     * where the chance that one syllable of the run is unusable is that much higher.
+     *
+     * So every position is planned from the end backwards. The syllable that covers the most
+     * letters wins; between ways of covering the same letters, the one with fewer syllables the
+     * dictionary cannot convert, then the longer first syllable. Nothing else moves: a plan only
+     * differs from longest match where longest match would dead-end.
+     */
+    private fun splitPlan(buffer: String): SplitPlan {
+        splitCache[buffer]?.let { return it }
+        val size = buffer.length
+        val reach = IntArray(size + 1) { it }
+        val dead = IntArray(size + 1)
+        val steps = IntArray(size + 1)
+        val maxLength = if (nineKey) MAX_T9_SYLLABLE_LENGTH else PinyinSyllables.maxLength
+        for (start in size - 1 downTo 0) {
+            var bestReach = start
+            var bestDead = 0
+            var bestStep = 0
+            val upper = minOf(size, start + maxLength)
+            // Longest first, so an equally good shorter syllable never displaces a longer one.
+            for (end in upper downTo start + 1) {
+                if (!isSyllableToken(buffer, start, end)) continue
+                val candidateReach = reach[end]
+                if (candidateReach < bestReach) continue
+                val candidateDead = dead[end] + if (converts(buffer, start, end)) 0 else 1
+                if (candidateReach > bestReach || candidateDead < bestDead) {
+                    bestReach = candidateReach
+                    bestDead = candidateDead
+                    bestStep = end - start
+                }
+            }
+            reach[start] = bestReach
+            dead[start] = bestDead
+            steps[start] = bestStep
+        }
+        val plan = SplitPlan(reach[0], steps)
+        if (splitCache.size > COVER_CACHE_LIMIT) splitCache.clear()
+        splitCache[buffer] = plan
+        return plan
+    }
+
+    /**
+     * Whether the dictionary can turn this syllable into text at all. A syllable that is only in
+     * the table - "eng", "shei", "fiao" - has nothing to show, and a split that ends on one is a
+     * split the decoder cannot finish.
+     */
+    private fun converts(buffer: String, start: Int, end: Int): Boolean {
+        val token = buffer.substring(start, end)
+        return if (nineKey) {
+            dictionary.t9CharsFor(token, 1).isNotEmpty()
+        } else {
+            dictionary.charsFor(token, 1).isNotEmpty()
+        }
     }
 
     private fun addWordCandidates(reading: String, consumed: Int, out: MutableList<Candidate>) {
@@ -974,49 +1048,38 @@ class PinyinEngine(
      * Length of the longest prefix of [buffer] that is a sequence of complete syllables.
      * Returns 0 when even the first character cannot start a syllable.
      */
-    private fun longestCover(buffer: String): Int {
-        coverCache[buffer]?.let { return it }
-        val result = coverFrom(buffer, 0)
-        if (coverCache.size > COVER_CACHE_LIMIT) coverCache.clear()
-        coverCache[buffer] = result
-        return result
-    }
-
-    private fun coverFrom(buffer: String, start: Int): Int {
-        var index = start
-        var lastBoundary = start
-        while (index < buffer.length) {
-            val step = matchSyllable(buffer, index)
-            if (step == 0) break
-            index += step
-            lastBoundary = index
-        }
-        return lastBoundary - start
-    }
+    private fun longestCover(buffer: String): Int = splitPlan(buffer).covered
 
     private fun firstSyllableLength(buffer: String): Int = matchSyllable(buffer, 0)
 
     /**
-     * Tries to consume one syllable at [index]. Latin input matches the table directly; nine
-     * key input matches the syllable's keypad signature, preferring the longest candidate
-     * that is either a table syllable or has a nine key reading in the dictionary.
+     * Tries to consume one syllable at [index]: the longest token that can stand as a syllable
+     * there. See [isSyllableToken] for what "can stand" means.
      */
     private fun matchSyllable(buffer: String, index: Int): Int {
         if (index >= buffer.length) return 0
         val maxLength = if (nineKey) MAX_T9_SYLLABLE_LENGTH else PinyinSyllables.maxLength
         val upper = minOf(buffer.length, index + maxLength)
-        var best = 0
-        for (end in index + 1..upper) {
-            val token = buffer.substring(index, end)
-            val match = if (nineKey) matchesNineKey(token) else PinyinSyllables.isSyllable(token)
-            // One letter syllables (a/e/o/m/n) are interjections: nobody types "nhao" meaning
-            // 嗯好. Counting them as a syllable makes a 首字母+全拼 run look like full pinyin
-            // (n | hao) and hides the reading the user meant (n + hao -> 你好), so a single
-            // letter only stands on its own at the end of the buffer, where it cannot be the
-            // initial of the syllable that follows it.
-            if (match && (nineKey || end - index > 1 || end == buffer.length)) best = end - index
+        for (end in upper downTo index + 1) {
+            if (isSyllableToken(buffer, index, end)) return end - index
         }
-        return best
+        return 0
+    }
+
+    /**
+     * Whether `buffer[start, end)` reads as one syllable here. Latin input matches the table
+     * directly; nine key input matches the syllable's keypad signature, either a table syllable or
+     * one with a nine key reading in the dictionary.
+     *
+     * One letter syllables (a/e/o/m/n) are interjections: nobody types "nhao" meaning 嗯好.
+     * Counting them as a syllable makes a 首字母+全拼 run look like full pinyin (n | hao) and hides
+     * the reading the user meant (n + hao -> 你好), so a single letter only stands on its own at
+     * the end of the buffer, where it cannot be the initial of the syllable that follows it.
+     */
+    private fun isSyllableToken(buffer: String, start: Int, end: Int): Boolean {
+        val token = buffer.substring(start, end)
+        val match = if (nineKey) matchesNineKey(token) else PinyinSyllables.isSyllable(token)
+        return match && (nineKey || end - start > 1 || end == buffer.length)
     }
 
     private fun matchesNineKey(digits: String): Boolean {

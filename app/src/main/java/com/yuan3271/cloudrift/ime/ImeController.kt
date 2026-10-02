@@ -164,6 +164,14 @@ class ImeController(
     }
 
     /**
+     * The keyboard window is gone. Anything still recording has nowhere to show its result, so
+     * the microphone is handed back to the system here rather than at the two minute cap.
+     */
+    fun onWindowHidden() {
+        voice.releaseMicrophone()
+    }
+
+    /**
      * Called by the service when the editor's selection moves. A move that we did not cause
      * means the user tapped somewhere else, so the pending reading is committed.
      */

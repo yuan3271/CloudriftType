@@ -35,6 +35,10 @@ class AudioRecorder(val file: File) {
     @SuppressLint("MissingPermission")
     fun start(scope: CoroutineScope, onLevel: (Float) -> Unit) {
         require(!isRecording) { "recorder already running" }
+        // A track left behind by an earlier attempt is still holding the microphone; opening a
+        // second one would leak it for good.
+        record?.let { runCatching { it.release() } }
+        record = null
         val minBuffer = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL, ENCODING)
         val bufferSize = if (minBuffer > 0) minBuffer * 2 else SAMPLE_RATE
         val recorder = AudioRecord(
@@ -44,34 +48,44 @@ class AudioRecorder(val file: File) {
             ENCODING,
             bufferSize,
         )
-        check(recorder.state == AudioRecord.STATE_INITIALIZED) { "microphone unavailable" }
-        record = recorder
-        file.parentFile?.mkdirs()
-        bytesWritten = 0
-        recorder.startRecording()
-
-        job = scope.launch(Dispatchers.IO) {
-            RandomAccessFile(file, "rw").use { handle ->
-                handle.setLength(0)
-                // Leave room for the WAV header; the real one is written on stop.
-                handle.write(ByteArray(HEADER_SIZE))
-                val buffer = ShortArray(bufferSize / 2)
-                while (isActive) {
-                    val read = recorder.read(buffer, 0, buffer.size)
-                    if (read <= 0) continue
-                    val bytes = ByteArray(read * 2)
-                    var peak = 0
-                    for (index in 0 until read) {
-                        val sample = buffer[index]
-                        bytes[index * 2] = (sample.toInt() and 0xFF).toByte()
-                        bytes[index * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
-                        peak = maxOf(peak, abs(sample.toInt()))
+        // From here on the track owns the microphone, so every way out has to release it. The
+        // device refuses the track when somebody else has the microphone (a call, another
+        // recorder), and dropping the object instead of releasing it used to leave the input
+        // claimed by this process - the microphone stayed "in use" long after dictation ended.
+        try {
+            check(recorder.state == AudioRecord.STATE_INITIALIZED) { "microphone unavailable" }
+            file.parentFile?.mkdirs()
+            bytesWritten = 0
+            recorder.startRecording()
+            record = recorder
+            job = scope.launch(Dispatchers.IO) {
+                RandomAccessFile(file, "rw").use { handle ->
+                    handle.setLength(0)
+                    // Leave room for the WAV header; the real one is written on stop.
+                    handle.write(ByteArray(HEADER_SIZE))
+                    val buffer = ShortArray(bufferSize / 2)
+                    while (isActive) {
+                        val read = recorder.read(buffer, 0, buffer.size)
+                        if (read <= 0) continue
+                        val bytes = ByteArray(read * 2)
+                        var peak = 0
+                        for (index in 0 until read) {
+                            val sample = buffer[index]
+                            bytes[index * 2] = (sample.toInt() and 0xFF).toByte()
+                            bytes[index * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+                            peak = maxOf(peak, abs(sample.toInt()))
+                        }
+                        handle.write(bytes)
+                        bytesWritten += bytes.size
+                        onLevel(min(1f, peak / 32768f * LEVEL_GAIN))
                     }
-                    handle.write(bytes)
-                    bytesWritten += bytes.size
-                    onLevel(min(1f, peak / 32768f * LEVEL_GAIN))
                 }
             }
+        } catch (e: Exception) {
+            record = null
+            job = null
+            runCatching { recorder.release() }
+            throw e
         }
     }
 
@@ -80,12 +94,14 @@ class AudioRecorder(val file: File) {
         val recorder = record ?: return 0
         val writer = job
         job = null
+        record = null
         // Stop the device first so the blocking read() inside the writer returns, then wait
         // for the writer to close the file before rewriting the header.
         runCatching { recorder.stop() }
         runBlocking { withTimeoutOrNull(WRITER_JOIN_TIMEOUT_MS) { writer?.cancelAndJoin() } }
-        recorder.release()
-        record = null
+        // release() even if stop() threw: the track is what holds the microphone, and this is the
+        // only place that lets it go.
+        runCatching { recorder.release() }
         val written = bytesWritten
         runCatching { writeHeader(file, written) }
         val frames = written / 2

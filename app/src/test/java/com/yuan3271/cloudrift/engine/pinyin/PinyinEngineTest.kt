@@ -368,6 +368,28 @@ class PinyinEngineTest {
     }
 
     @Test
+    fun `an unconvertible syllable does not take the whole sentence down`() {
+        // "jidangeng" splits as ji + dang + eng under longest match, and "eng" is a syllable of the
+        // table with no character and no word of its own. The sentence lattice then dead-ends on its
+        // last position and the bar showed 激荡 plus single characters - nothing at all for a long
+        // buffer, because the longer the run the likelier one syllable of it is unusable. Splitting
+        // with one step of lookahead (ji + dan + geng) is what lets the sentence survive.
+        val paired = PinyinDictionary.fromReaders(
+            charTable = { reader("pinyin_chars.txt") },
+            wordTable = { reader("pinyin_words.txt") },
+            bigramTable = { reader("pinyin_bigrams.txt") },
+        )
+        paired.load()
+        val engine = PinyinEngine(paired, nineKey = false)
+
+        assertEquals("鸡蛋羹", engine.evaluate("jidangeng").candidates.first().text)
+        assertEquals(
+            "今天的晚饭是红烧肉和鸡蛋羹",
+            engine.evaluate("jintiandewanfanshihongshaorouhejidangeng").candidates.first().text,
+        )
+    }
+
+    @Test
     fun `a spoken word outranks the news corpus favourite`() {
         // jieba (a news corpus) puts 美食 above 没事; the self-authored colloquial corpus has it the
         // other way round, and that is the order an IME should follow.

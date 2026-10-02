@@ -50,13 +50,27 @@ class VoiceInputController(
 
     val isIdle: Boolean get() = _state.value is VoiceState.Idle
 
+    /**
+     * The only way [VoiceState] is ever published, so the microphone can never outlive the state
+     * that is allowed to hold it: the moment the state stops being Recording, the track is
+     * released. Transitions out of Recording happen from a tap, an error and a two minute timer,
+     * and a state machine that only remembers to stop the recorder on some of them is exactly how
+     * the microphone stayed claimed for good.
+     */
+    private fun publish(state: VoiceState) {
+        if (state !is VoiceState.Recording) stopCapture()
+        _state.value = state
+    }
+
     fun start(settings: AppSettings) {
         if (!isIdle) return
         activeSettings = settings
         if (!hasMicrophonePermission()) {
-            _state.value = VoiceState.Failed(
-                message = "需要麦克风权限才能使用语音输入",
-                needsMicrophonePermission = true,
+            publish(
+                VoiceState.Failed(
+                    message = "需要麦克风权限才能使用语音输入",
+                    needsMicrophonePermission = true,
+                ),
             )
             return
         }
@@ -65,14 +79,18 @@ class VoiceInputController(
         recorder = newRecorder
         startedAt = System.currentTimeMillis()
         smoothedLevel = 0f
-        _state.value = VoiceState.Recording(0, 0f, cancelArmed = false)
+        publish(VoiceState.Recording(0, 0f, cancelArmed = false))
         try {
             newRecorder.start(scope) { peak ->
                 smoothedLevel = smoothedLevel * 0.7f + peak * 0.3f
             }
         } catch (e: Exception) {
+            // The recorder releases its own track before rethrowing (see AudioRecorder.start);
+            // cancel() is what also drops the file it may have opened, so a failed attempt leaves
+            // neither a microphone held nor a stray wav in the cache.
+            newRecorder.cancel()
             recorder = null
-            _state.value = VoiceState.Failed(e.message ?: "无法访问麦克风")
+            publish(VoiceState.Failed(e.message ?: "无法访问麦克风"))
             return
         }
         ticker = scope.launch {
@@ -87,17 +105,14 @@ class VoiceInputController(
                     activeSettings?.let { stopAndProcess(it) }
                     break
                 }
-                _state.value = current.copy(
-                    elapsedMs = elapsed,
-                    level = smoothedLevel,
-                )
+                publish(current.copy(elapsedMs = elapsed, level = smoothedLevel))
             }
         }
     }
 
     fun setCancelArmed(armed: Boolean) {
         val current = _state.value
-        if (current is VoiceState.Recording) _state.value = current.copy(cancelArmed = armed)
+        if (current is VoiceState.Recording) publish(current.copy(cancelArmed = armed))
     }
 
     /** Stops capture and runs the pipeline. [settings] is read once so a mid flight edit
@@ -111,27 +126,55 @@ class VoiceInputController(
         val file = active.file
         if (duration < MIN_DURATION_MS) {
             file.delete()
-            _state.value = VoiceState.Failed("录音太短，请再说一次")
+            publish(VoiceState.Failed("录音太短，请再说一次"))
             return
         }
-        _state.value = VoiceState.Transcribing(duration)
+        publish(VoiceState.Transcribing(duration))
         work = scope.launch { runPipeline(settings, file, duration) }
     }
 
     fun cancel() {
+        stopCapture()
+        work?.cancel()
+        work = null
+        publish(VoiceState.Idle)
+    }
+
+    /**
+     * Lets go of the microphone without touching a pipeline that already finished with it.
+     *
+     * Called when the keyboard window goes away, where the recording has no way to be listened
+     * to any more: a dictation the user can no longer see must not keep the microphone claimed.
+     * Transcribing / correcting / ready are left alone - the track is already released by then,
+     * and there is a result worth keeping.
+     */
+    fun releaseMicrophone() {
+        if (_state.value !is VoiceState.Recording) return
+        cancel()
+    }
+
+    /**
+     * Discards the result without committing it.
+     *
+     * The recording panel and the result panel funnel their 取消 into this one method, so it has
+     * to be able to end a *running* recording, not just drop a finished one. It used to only clear
+     * the state, which left the AudioRecord open: the ticker saw a state that was no longer
+     * recording and stopped checking, so the two minute cap never fired, and the capture loop went
+     * on reading the microphone until the process died. That is what "the app holds the microphone
+     * when it is not using it" looked like from the outside.
+     */
+    fun dismiss() {
+        stopCapture()
+        cleanupFiles()
+        publish(VoiceState.Idle)
+    }
+
+    /** Ends capture and hands the microphone back; the state is left to the caller. */
+    private fun stopCapture() {
         ticker?.cancel()
         ticker = null
         recorder?.cancel()
         recorder = null
-        work?.cancel()
-        work = null
-        _state.value = VoiceState.Idle
-    }
-
-    /** Discards the finished result without committing it. */
-    fun dismiss() {
-        cleanupFiles()
-        _state.value = VoiceState.Idle
     }
 
     private suspend fun runPipeline(settings: AppSettings, file: File, duration: Long) {
@@ -143,7 +186,7 @@ class VoiceInputController(
             var text = transcript
             var corrected = false
             if (settings.voiceCorrection && canCorrect(settings.chat)) {
-                _state.value = VoiceState.Correcting(transcript)
+                publish(VoiceState.Correcting(transcript))
                 val fixed = withContext(Dispatchers.IO) {
                     runCatching {
                         chatClient.correct(
@@ -162,11 +205,11 @@ class VoiceInputController(
                 text = ensureSentencePunctuation(transcript)
                 corrected = text != transcript
             }
-            _state.value = VoiceState.Ready(transcript = transcript, text = text, corrected = corrected)
+            publish(VoiceState.Ready(transcript = transcript, text = text, corrected = corrected))
         } catch (e: VoiceInputException) {
-            _state.value = VoiceState.Failed(e.message ?: "语音识别失败")
+            publish(VoiceState.Failed(e.message ?: "语音识别失败"))
         } catch (e: Exception) {
-            _state.value = VoiceState.Failed(e.message ?: "语音识别失败")
+            publish(VoiceState.Failed(e.message ?: "语音识别失败"))
         } finally {
             withContext(Dispatchers.IO) { runCatching { file.delete() } }
         }

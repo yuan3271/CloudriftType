@@ -72086,7 +72086,7 @@ jingbuzhu	经不住	374
 jingcai	竞猜	358
 jingcai	精彩	967
 jingcai	精采	343
-jingcai	青菜	755
+jingcai	青菜	759
 jingcaifencheng	精彩纷呈	311
 jingcaijuelun	精彩绝伦	268
 jingcaijueyan	惊才绝艳	268
@@ -74169,7 +74169,7 @@ jintangxiangonganju	金堂县公安局	288
 jintanshi	金坛市	432
 jintanxian	金坛县	250
 jinteng	近藤	365
-jintian	今天	1231
+jintian	今天	1233
 jintian	锦田	254
 jintiancun	金田村	286
 jintianhe	金天翮	246
@@ -114327,7 +114327,7 @@ qingbu	声部	274
 qingbu	青布	283
 qingbuzijin	情不自禁	672
 qingcai	精彩	847
-qingcai	青菜	875
+qingcai	青菜	879
 qingcang	清仓	545
 qingcang	青藏	472
 qingcanggaoyuan	青藏高原	525
@@ -148034,7 +148034,7 @@ waner	碗儿	260
 wanfa	万发	295
 wanfa	玩法	398
 wanfalang	万法郎	276
-wanfan	晚饭	665
+wanfan	晚饭	769
 wanfang	万方	483
 wanfen	万份	413
 wanfen	万分	582

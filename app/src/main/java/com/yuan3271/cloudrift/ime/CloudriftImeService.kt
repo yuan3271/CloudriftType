@@ -181,6 +181,11 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         super.onFinishInputView(finishingInput)
     }
 
+    override fun onWindowHidden() {
+        controller?.onWindowHidden()
+        super.onWindowHidden()
+    }
+
     override fun onUpdateSelection(
         oldSelStart: Int,
         oldSelEnd: Int,
