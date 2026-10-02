@@ -18,12 +18,17 @@ strip lists a word's successors after it is committed.
 
 Licensing
 ---------
-The default corpus is the self-authored everyday text in tools/dictgen/raw/corpus_*.txt (this
-project's own, modern colloquial). `--classics` adds the public-domain Gutenberg novels
-(18th/19th century); no text is ever shipped, only the counts derived from it. The word list that
-drives segmentation is the MIT asset built by build_dict.py, and the traditional -> simplified
-normalisation used for the classical texts comes from OpenCC under tools/dictgen/opencc
-(Apache-2.0). See NOTICE.md.
+Two corpora build the table. The backbone is this project's own everyday text in
+tools/dictgen/raw/corpus_*.txt (MIT, written for this project) - small, but the only text that
+reflects how the keyboard is actually used. On top of it comes **Tatoeba's cmn export** (89k
+human-written sentences, CC BY 2.0 FR: attribution only, no share-alike and no non-commercial
+clause), which is what finally gives the pair counts enough support to be worth discounting.
+`--classics` additionally reads the public-domain Gutenberg novels (18th/19th century).
+
+No text is ever shipped, only the counts derived from it; `tools/dictgen/fetch_corpora.sh`
+re-downloads the Tatoeba snapshot. The word list that drives segmentation is the MIT asset built
+by build_dict.py, and the traditional -> simplified normalisation comes from OpenCC under
+tools/dictgen/opencc (Apache-2.0). See NOTICE.md.
 
 Usage:
     python3 tools/dictgen/build_bigram.py                  # modern colloquial only
@@ -34,10 +39,12 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import bz2
 import math
 import pathlib
 import re
 from collections import Counter
+from dataclasses import dataclass
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 RAW = ROOT / "tools/dictgen/raw"
@@ -46,6 +53,31 @@ ASSETS = ROOT / "app/src/main/assets"
 SWEEP_DIR = ROOT / "tools/tune/bigrams"
 
 HAN = re.compile(r"[\u4e00-\u9fff]+")
+HAN_CHAR = re.compile(r"[\u4e00-\u9fff]")
+# Sentences only survive if they are Chinese and punctuation - a Latin name ("Tom 跑得比 Bob
+# 快") would otherwise be segmented into characters that never belong together.
+SENTENCE_PUNCT = frozenset("，。！？、；：“”‘’（）《》〈〉「」『』…—～·　")
+
+# Tatoeba's cmn export: human-written everyday sentences, CC BY 2.0 FR. Optional at build time so
+# the script still runs on a checkout that has not fetched it.
+TATOEBA = RAW / "tatoeba_cmn_sentences.tsv.bz2"
+# One Tatoeba occurrence counts once; the hand-written corpus is scaled up instead (see
+# DAILY_WEIGHT), because the thing being expressed is "how many occurrences is a hand-written
+# one worth", and a fractional Tatoeba count would break the absolute discounting below 1.
+TATOEBA_WEIGHT = 1.0
+# How many occurrences one *hand-written* one is worth. The two corpora differ in size by ~500x,
+# so mixing raw counts lets Tatoeba's generic distribution outvote the keyboard's own opinion
+# (今天|天气 lost to 今天|是, and 联想 dropped to 8/14). Weighting the hand-written corpus is how
+# the deliberate part of the corpus keeps its say: for a context it knows, it holds
+# DAILY_WEIGHT/(DAILY_WEIGHT + Tatoeba count) of the probability mass, and for a context it does
+# not know, Tatoeba carries it alone - which is the behaviour wanted in both cases.
+DAILY_WEIGHT = 600.0
+# A pair seen once in 89k sentences is a coincidence, not a collocation. The hand-written corpus
+# is the opposite - one occurrence is all the evidence there is - so the floor is per source.
+TATOEBA_MIN_COUNT = 2
+# Longest sentence kept. Tatoeba reaches 40+ characters, and a long translated sentence is a lot
+# of extra pairs for very little signal about what people type next.
+MAX_TATOEBA_CHARS = 30
 
 # One unit never exceeds this many characters, which is what keeps the segmentation DP small.
 MAX_WORD_LENGTH = 6
@@ -69,7 +101,8 @@ UNIT_COST = 6.0
 # The everyday corpus is the default source, so it needs no weight of its own. When --classics is
 # on, this is what keeps an everyday collocation (马上|就到) from being drowned out by a classical
 # formula (孔明|曰) that happens to appear hundreds of times in a novel.
-DAILY_WEIGHT = 20
+# (The weight itself is defined with the Tatoeba constants above - the same lever keeps the
+# hand-written lines in proportion with whichever larger corpus is switched on.)
 
 
 # --------------------------------------------------------------- traditional -> simplified
@@ -177,22 +210,80 @@ def segment(text: str, words: dict[str, int], floor: int) -> list[str]:
     return out[::-1]
 
 
+def usable_sentence(text: str) -> bool:
+    """True for a sentence the association model should learn from: Chinese only, sane length."""
+    if not 2 <= len(HAN_CHAR.findall(text)) <= MAX_TATOEBA_CHARS:
+        return False
+    return all(HAN_CHAR.match(char) or char in SENTENCE_PUNCT for char in text)
+
+
+def count_tatoeba_pairs(
+    words: dict[str, int],
+    floor: int,
+    tables: tuple[dict[str, str], dict[str, str], frozenset[str], int],
+    keep_char_pairs: bool,
+) -> Counter[tuple[str, str]]:
+    """Adjacent-unit counts from the Tatoeba cmn export, raw (not yet weighted)."""
+    pairs: Counter[tuple[str, str]] = Counter()
+    if not TATOEBA.exists():
+        print(f"! missing {TATOEBA.name}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
+        return pairs
+    seen: set[str] = set()
+    with bz2.open(TATOEBA, "rt", encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 3 or not usable_sentence(parts[2]):
+                continue
+            sentence = to_simplified(parts[2], tables)
+            # Translations are contributed by many people; the same sentence counts once.
+            if sentence in seen:
+                continue
+            seen.add(sentence)
+            for run in HAN.findall(sentence):
+                units = segment(run, words, floor)
+                for left, right in zip(units, units[1:]):
+                    if not keep_char_pairs and len(left) == 1 and len(right) == 1:
+                        continue
+                    pairs[(left, right)] += 1
+    print(f"  Tatoeba: {len(seen):,} 句，{len(pairs):,} 个词对（≥{TATOEBA_MIN_COUNT} 次才计入）")
+    return Counter({pair: count for pair, count in pairs.items() if count >= TATOEBA_MIN_COUNT})
+
+
+@dataclass(frozen=True)
+class Sources:
+    """Which corpora to read and how loud each one is."""
+
+    classics: bool = False
+    tatoeba: bool = True
+    tatoeba_weight: float = TATOEBA_WEIGHT
+    daily_weight: float = DAILY_WEIGHT
+    char_pairs: bool = True
+
+
 def build_pairs(
     words: dict[str, int],
     floor: int,
     tables: tuple[dict[str, str], dict[str, str], frozenset[str], int],
-    use_classics: bool,
-    keep_char_pairs: bool,
-) -> Counter[tuple[str, str]]:
+    sources: Sources,
+) -> tuple[Counter[tuple[str, str]], frozenset[tuple[str, str]]]:
+    """Weighted pair counts, plus the pairs the hand-written corpus itself contributed.
+
+    The second value matters because the hand-written corpus is the only source that encodes how
+    this keyboard is meant to be used: its pairs must survive both the min-count filter and the
+    MAX_BIGRAMS cap even when a large corpus would outrank them on raw counts.
+    """
     pairs: Counter[tuple[str, str]] = Counter()
-    sources = sorted(RAW.glob("corpus_*.txt"))
-    if use_classics:
-        sources += sorted(RAW.glob("novel_*.txt"))
-    for path in sources:
+    curated: set[tuple[str, str]] = set()
+    paths = sorted(RAW.glob("corpus_*.txt"))
+    if sources.classics:
+        paths += sorted(RAW.glob("novel_*.txt"))
+    # The weight only exists to keep the hand-written lines in proportion with a much larger
+    # corpus; with no larger corpus there is nothing to weigh them against.
+    external = sources.classics or sources.tatoeba
+    for path in paths:
         text = to_simplified(path.read_text(encoding="utf-8", errors="ignore"), tables)
-        # The weight only exists to keep the two source classes in proportion; with the classics
-        # off there is nothing to weigh the everyday lines against.
-        weight = DAILY_WEIGHT if (use_classics and path.name.startswith("corpus_")) else 1
+        is_curated = path.name.startswith("corpus_")
+        weight = sources.daily_weight if (external and is_curated) else 1
         sentences = 0
         for line in text.splitlines():
             if line.startswith("#"):
@@ -203,11 +294,18 @@ def build_pairs(
                 for left, right in zip(units, units[1:]):
                     # Both sides being a single character is the noisiest class of pair (的|了 is
                     # everywhere and says little), so it is opt-in.
-                    if not keep_char_pairs and len(left) == 1 and len(right) == 1:
+                    if not sources.char_pairs and len(left) == 1 and len(right) == 1:
                         continue
                     pairs[(left, right)] += weight
+                    if is_curated:
+                        curated.add((left, right))
         print(f"  {path.name}: {sentences:,} 句，累计 {len(pairs):,} 个词对")
-    return pairs
+    if sources.tatoeba:
+        weight = int(round(sources.tatoeba_weight))
+        extra = count_tatoeba_pairs(words, floor, tables, sources.char_pairs)
+        for pair, count in extra.items():
+            pairs[pair] += count * weight
+    return pairs, frozenset(curated)
 
 
 # --------------------------------------------------------------- scoring
@@ -251,6 +349,7 @@ def write_table(
     pairs: Counter[tuple[str, str]],
     mode: str,
     min_count: int,
+    always_keep: frozenset[tuple[str, str]] = frozenset(),
 ) -> list[tuple[tuple[str, str], int, int]]:
     # Statistics come from the *unfiltered* counts: a continuation that the min-count filter drops
     # still happened, and the discount has to account for it.
@@ -264,9 +363,15 @@ def write_table(
             singletons[left] += 1
     tail_total = sum(right_totals.values()) or 1
 
-    kept = [(pair, count) for pair, count in pairs.items() if count >= min_count]
+    kept = [
+        (pair, count) for pair, count in pairs.items()
+        if count >= min_count or pair in always_keep
+    ]
     kept.sort(key=lambda item: -item[1])
-    kept = kept[:MAX_BIGRAMS]
+    # The hand-written pairs are never what the cap evicts; the large corpus fills what is left.
+    head = [item for item in kept if item[0] in always_keep]
+    tail = [item for item in kept if item[0] not in always_keep]
+    kept = head + tail[: max(0, MAX_BIGRAMS - len(head))]
 
     pair_total = sum(count for _, count in kept) or 1
 
@@ -306,6 +411,11 @@ def main() -> int:
     parser.add_argument("--out", default=str(ASSETS / "pinyin_bigrams.txt"))
     parser.add_argument("--classics", dest="classics", action="store_true", default=False)
     parser.add_argument("--no-classics", dest="classics", action="store_false")
+    # Tatoeba is on by default: it is permissively licensed *and* modern, unlike the classics.
+    parser.add_argument("--tatoeba", dest="tatoeba", action="store_true", default=True)
+    parser.add_argument("--no-tatoeba", dest="tatoeba", action="store_false")
+    parser.add_argument("--tatoeba-weight", type=float, default=TATOEBA_WEIGHT)
+    parser.add_argument("--daily-weight", type=float, default=DAILY_WEIGHT)
     # Character-to-character pairs are what 联想 needs most: after a lone 我 the next thing typed
     # is usually another single character (想, 觉得's 觉...). They cost a little accuracy in the
     # sentence decoder, which is why the sweep still measures both.
@@ -323,29 +433,43 @@ def main() -> int:
     print(f"繁简表: {len(tables[0])} 词组 / {len(tables[1])} 单字（OpenCC，Apache-2.0）")
 
     if not args.variant_sweep:
-        pairs = build_pairs(words, floor, tables, args.classics, args.char_pairs)
-        rows = write_table(pathlib.Path(args.out), pairs, args.score, args.min_count)
+        sources = Sources(
+            classics=args.classics,
+            tatoeba=args.tatoeba,
+            tatoeba_weight=args.tatoeba_weight,
+            daily_weight=args.daily_weight,
+            char_pairs=args.char_pairs,
+        )
+        pairs, curated = build_pairs(words, floor, tables, sources)
+        rows = write_table(pathlib.Path(args.out), pairs, args.score, args.min_count, curated)
         report("shipped", pathlib.Path(args.out), pairs, rows, args.min_count)
+        print(f"  自撰语料词对 {len(curated):,} 个（全部保留，不受词对上限影响）")
         return 0
 
     # A sweep of the design space, so the engine can be tuned against the benchmark instead of
     # against a feeling: what do the classics add, does the conditional score help, do character
-    # pairs earn their bytes.
-    variants = [
-        ("no-bigram", False, False, "conditional"),
-        ("classics-joint", True, False, "joint"),
-        ("classics-conditional", True, False, "conditional"),
-        ("classics-chars-conditional", True, True, "conditional"),
-        ("daily-conditional", False, False, "conditional"),
+    # pairs earn their bytes, how loud should Tatoeba be next to the hand-written corpus.
+    variants: list[tuple[str, Sources | None]] = [
+        ("no-bigram", None),
+        ("daily-conditional", Sources(tatoeba=False, char_pairs=False)),
+        ("daily-chars-conditional", Sources(tatoeba=False)),
+        ("tatoeba-dw100", Sources(daily_weight=100)),
+        ("tatoeba-dw300", Sources(daily_weight=300)),
+        ("tatoeba-dw600", Sources(daily_weight=600)),
+        ("tatoeba-dw2000", Sources(daily_weight=2000)),
+        ("classics-conditional", Sources(tatoeba=False, classics=True, char_pairs=False)),
+        ("classics-chars-conditional", Sources(tatoeba=False, classics=True)),
     ]
-    for name, classics, char_pairs, mode in variants:
-        if name == "no-bigram":
+    for name, sources in variants:
+        if sources is None:
             SWEEP_DIR.mkdir(parents=True, exist_ok=True)
             (SWEEP_DIR / "no-bigram.txt").write_text("", encoding="utf-8")
             print("no-bigram: 空表（无联想的基线）")
             continue
-        pairs = build_pairs(words, floor, tables, classics, char_pairs)
-        rows = write_table(SWEEP_DIR / f"{name}.txt", pairs, mode, args.min_count)
+        pairs, curated = build_pairs(words, floor, tables, sources)
+        rows = write_table(
+            SWEEP_DIR / f"{name}.txt", pairs, "conditional", args.min_count, curated,
+        )
         report(name, SWEEP_DIR / f"{name}.txt", pairs, rows, args.min_count)
     return 0
 

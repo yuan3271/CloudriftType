@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -476,8 +480,10 @@ fun SettingsScreen(
             SettingsCard {
                 LabelValue("版本", BuildConfig.VERSION_NAME)
                 LabelValue("图标", "云隙图标集（自绘）")
-                LabelValue("中文词库", "jieba 词频（MIT）+ pinyin4j 读音（BSD）")
+                LabelValue("中文词库", "jieba 词频 + THUOCL 领域词 + pinyin-data 读音 + pypinyin 词条读音（均 MIT）")
+                LabelValue("联想语料", "自撰口语语料 + Tatoeba 中文句子（CC BY 2.0 FR）")
                 LabelValue("界面", "Material 3 Expressive")
+                ThirdPartyNoticeRow()
             }
 
             Spacer(Modifier.height(24.dp))
@@ -1112,6 +1118,69 @@ private fun LabelValue(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/**
+ * 第三方资源声明.
+ *
+ * The licence text ships *inside* the APK (`assets/NOTICE.md`) and is shown here, because the
+ * attribution a CC BY corpus requires has to travel with the app that uses it - a NOTICE.md in
+ * the repository does not reach anyone who installs the keyboard. The asset is a copy of the
+ * repository's NOTICE.md; NoticeAssetTest fails the build if the two drift apart.
+ */
+@Composable
+private fun ThirdPartyNoticeRow() {
+    val context = LocalContext.current
+    var notice by remember { mutableStateOf<String?>(null) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                notice = runCatching {
+                    context.assets.open("NOTICE.md").bufferedReader().use { it.readText() }
+                }.getOrNull().orEmpty()
+            }
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "第三方资源声明",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(76.dp),
+        )
+        Text(
+            text = "查看完整许可与语料来源",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+    }
+
+    notice?.let { text ->
+        AlertDialog(
+            onDismissRequest = { notice = null },
+            confirmButton = {
+                TextButton(onClick = { notice = null }) { Text("关闭") }
+            },
+            title = { Text("第三方资源声明") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
         )
     }
 }

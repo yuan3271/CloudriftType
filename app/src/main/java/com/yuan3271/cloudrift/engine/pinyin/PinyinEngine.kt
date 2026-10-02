@@ -1204,6 +1204,16 @@ class PinyinEngine(
         private const val COVER_CACHE_LIMIT = 256
         /** Nine key signatures never get longer than the longest syllable's digit count. */
         private const val MAX_T9_SYLLABLE_LENGTH = 6
-        private const val INITIALS_PATHS = 8
+        /**
+         * How many partial readings one position of a 首字母/混合 run may keep.
+         *
+         * This is a beam width, and it has to be wide enough that a correct reading is not
+         * evicted at an intermediate position by a *different* segmentation of the same letters
+         * that happens to score higher there. With the hand-written corpus alone 8 was enough;
+         * with Tatoeba's pairs the mixed run "jintianwsm" lost 今天|为什么 to 及|那天|晚上|吗
+         * (那天|晚上 is a real pair) because eight higher-scoring partial paths filled the beam
+         * first. The cost of the wider beam is a few dozen objects per keystroke.
+         */
+        private const val INITIALS_PATHS = 24
     }
 }

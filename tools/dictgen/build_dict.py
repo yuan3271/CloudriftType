@@ -6,6 +6,13 @@
 | jieba `dict.txt` | MIT | broad word list with corpus frequency |
 | THUOCL (THUNLP) | MIT | domain vocabulary: IT, 医学, 法律, 成语 ... |
 | pinyin-data (mozillazg) | MIT | per character readings, ordered by commonness |
+| pypinyin (mozillazg) | MIT | per *word* readings, which is the one thing per-character data cannot say |
+
+The last table is what `tools/dictgen/fetch_corpora.sh` + `prepare_pypinyin.py` produce in
+`clean/pypinyin_phrases.txt`. Without it a word's reading is the cartesian product of its
+characters, so 银行 is found as yínháng only because the ranking happens to prefer háng there;
+for 重庆/长处/音乐 the uncommon reading *is* the right one and the product costs the word the
+alternate-reading penalty.
 
 Everything here is deliberately MIT so the app can stay MIT. 雾凇拼音 was evaluated and
 rejected: it is GPL-3.0-only and some of its upstream corpora are CC BY-SA or unlicensed.
@@ -33,6 +40,9 @@ ASSETS = ROOT / "app/src/main/assets"
 
 JIEBA = TOOLS / "raw_jieba_dict.txt"
 PYINYIN_DATA = TOOLS / "clean/pinyin_data.txt"
+# Word -> reading, from pypinyin (MIT). Optional at build time: without it every word falls back
+# to the per-character product exactly as before.
+PYPINYIN_PHRASES = TOOLS / "clean/pypinyin_phrases.txt"
 THUOCL_DIR = TOOLS / "clean"
 # Optional: HSK vocabulary with a corpus rank per word (MIT, drkameleon/complete-hsk-vocabulary).
 # It is the only conversational-frequency source in the build, which is what keeps 怎么样 above
@@ -245,7 +255,29 @@ def load_thuocl() -> dict[str, int]:
     return words
 
 
-def readings_for(word: str, char_readings: dict[str, list[str]]) -> list[tuple[str, int]]:
+def load_phrase_readings() -> dict[str, list[str]]:
+    """pypinyin's word -> syllables: one entry per character, tones already dropped."""
+    if not PYPINYIN_PHRASES.exists():
+        print(
+            f"! missing {PYPINYIN_PHRASES.name}（跑 tools/dictgen/fetch_corpora.sh 生成）",
+            file=sys.stderr,
+        )
+        return {}
+    readings: dict[str, list[str]] = {}
+    with PYPINYIN_PHRASES.open(encoding="utf-8") as handle:
+        for line in handle:
+            word, _, value = line.rstrip("\n").partition("\t")
+            syllables = value.split()
+            if word and len(syllables) == len(word):
+                readings[word] = syllables
+    return readings
+
+
+def readings_for(
+    word: str,
+    char_readings: dict[str, list[str]],
+    phrase_readings: dict[str, list[str]],
+) -> list[tuple[str, int]]:
     """Cartesian product of per character readings, capped, primary first.
 
     Returns (reading, alternates) pairs: ``alternates`` counts how many characters used a reading
@@ -253,7 +285,14 @@ def readings_for(word: str, char_readings: dict[str, list[str]]) -> list[tuple[s
     and taking those as equals used to invent readings like "qichi" for 支持, which then won
     sentence decoding over the real "zhichi". The count lets the caller charge for the guess
     instead of banning it - genuinely polyphonic words such as 音乐 need the alternate.
+
+    A word in pypinyin's table skips the product entirely: its reading is stated, so it enters the
+    lattice with the right syllables and no penalty. 医学's 乐 is yuè only because the word says
+    so; guessing it costs score the word should have had.
     """
+    stated = phrase_readings.get(word)
+    if stated:
+        return [("".join(stated), 0)]
     combinations: list[tuple[list[str], int]] = [([], 0)]
     for char in word:
         options = char_readings.get(char)
@@ -290,7 +329,11 @@ def main() -> int:
     jieba = load_jieba()
     thuocl = load_thuocl()
     hsk = load_hsk()
-    print(f"jieba: {len(jieba)} words, THUOCL: {len(thuocl)} words, HSK: {len(hsk)} words")
+    phrases = load_phrase_readings()
+    print(
+        f"jieba: {len(jieba)} words, THUOCL: {len(thuocl)} words, HSK: {len(hsk)} words, "
+        f"pypinyin: {len(phrases)} word readings",
+    )
 
     word_scores: dict[str, int] = dict(jieba)
     # Domain vocabulary complements the corpus list rather than overriding it. A word that only a
@@ -335,7 +378,7 @@ def main() -> int:
         syllable_weight[primary] = syllable_weight.get(primary, 0) + weight
 
     for word, score in word_scores.items():
-        readings = readings_for(word, char_readings)
+        readings = readings_for(word, char_readings, phrases)
         if not readings:
             continue
         # Longer words contribute less per character so common single characters do not get
