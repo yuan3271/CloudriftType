@@ -473,6 +473,11 @@ APK 内的 `pinyin_chars/words/bigrams.txt` 与 `NOTICE.md` 与仓库逐字节�
 
 ### 验证
 
+**产物与发布**：`dist/cloudrift-type-0.2.28-release.apk`（12,387,001 字节，签名 CN=yuan3271），
+tag `v0.2.28`，Release「云隙输入 0.2.28」已上传该资产；回验用资产 API 的 `digest` 字段
+（sha256 `7f70254d786f62fc…`）与本地一致，`/releases/latest` 已指向 0.2.28。`github.com:443`
+仍不可达，提交与标签继续走 Git Data API（判据：远端 tree 与本地 tree 相同，`460e77c1`）。
+
 116 个用例全绿（本轮改动集中在 Android 侧：协程兜底、Compose 动画、语音状态机与面板开关，
 没有可脱离设备跑的单元测试——**未真机验证**，这条照实记）。版本号 0.2.28（versionCode 32）。
 
