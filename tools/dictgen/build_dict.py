@@ -85,13 +85,18 @@ MAX_CHARS_PER_SYLLABLE = 100
 # roughly "four times rarer", enough for the primary reading to win a tie without hiding words
 # that are genuinely read the other way.
 ALTERNATE_READING_PENALTY = 120
-# A reading belongs to the word that spells it with primary readings. pinyin-data carries rare
-# and archaic readings too (盒 is listed hé,ān), so the cartesian product above invents readings a
-# word does not have: 试剂盒 reached "shijian" through 盒=ān and then outranked 时间. When a word
-# that reads the same syllables with no alternate is at least this many times more common, the
-# invented reading is dropped instead of shipped; a reading with no primary-reading word at all
-# (银行, whose 行 is genuinely háng here) keeps every entry.
-OWNED_READING_RATIO = 2.0
+# A reading belongs to the word that spells it with primary readings. pinyin-data carries rare and
+# archaic readings too (半 is listed bàn,pàn), so the cartesian product above invents readings a
+# word does not have: 半点 reached "pandian" through 半=pàn and then outranked 盘点, which is the
+# wrong answer in front of the right one for anyone who simply types the word.
+#
+# A charge for the guess is not enough to stop that. The alternate reading is the *rarer* one, but
+# the word carrying it can still be the more common word, and then it wins on frequency alone
+# (半点 is more common than 盘点). So when some word already spells these exact syllables with
+# primary readings, an entry that needed a guess is dropped: that reading is taken, and the guess
+# is not how anyone reaches the word. A reading no primary-reading word spells - 进行's "jinhang",
+# 银行's "yinhang" - has nothing to compete with and keeps its entry, so an accent that cannot tell
+# xing from hang still reaches the word.
 # Multiplied into the score of a word that only a THUOCL domain list has, so a term that is
 # frequent inside its own tiny corpus does not outrank everyday words in sentence decoding.
 THUOCL_ONLY_DISCOUNT = 0.75
@@ -273,10 +278,29 @@ def load_phrase_readings() -> dict[str, list[str]]:
     return readings
 
 
+def attested_readings(phrase_readings: dict[str, list[str]]) -> dict[str, set[str]]:
+    """Which readings pypinyin ever gives one character, across the whole phrase table.
+
+    This is the evidence a second reading needs before the cartesian product may use it. 半 is
+    listed bàn,pàn, and 最 is zuì,cuō, but no word in a 47k word table reads them that way - so
+    "pandian" and "cuohou" were invented for 半点 and 最后 and only made the table look fuzzy.
+    重 really is chóng in 重庆 and 行 really is háng in 银行, and both show up here because
+    pypinyin states them for a word; that is the difference the product needs to see.
+    """
+    attested: dict[str, set[str]] = defaultdict(set)
+    for word, syllables in phrase_readings.items():
+        if len(syllables) != len(word):
+            continue
+        for char, syllable in zip(word, syllables):
+            attested[char].add(syllable)
+    return attested
+
+
 def readings_for(
     word: str,
     char_readings: dict[str, list[str]],
     phrase_readings: dict[str, list[str]],
+    attested: dict[str, set[str]],
 ) -> list[tuple[str, int]]:
     """Cartesian product of per character readings, capped, primary first.
 
@@ -285,6 +309,10 @@ def readings_for(
     and taking those as equals used to invent readings like "qichi" for 支持, which then won
     sentence decoding over the real "zhichi". The count lets the caller charge for the guess
     instead of banning it - genuinely polyphonic words such as 音乐 need the alternate.
+
+    A character's second reading is only offered when [attested] shows pypinyin using it for some
+    word: an unattested one is a rare or archaic reading that no word is spelled with, and the
+    product can only turn it into noise. 音乐 is stated by pypinyin and skips this entirely.
 
     A word in pypinyin's table skips the product entirely: its reading is stated, so it enters the
     lattice with the right syllables and no penalty. 医学's 乐 is yuè only because the word says
@@ -298,7 +326,10 @@ def readings_for(
         options = char_readings.get(char)
         if not options:
             return []
-        take = options[:2]
+        used = attested.get(char, ())
+        take = [option for index, option in enumerate(options[:2]) if index == 0 or option in used]
+        if not take:
+            take = options[:1]
         if len(combinations) * len(take) > MAX_COMBINATIONS:
             take = options[:1]
         combinations = [
@@ -330,6 +361,7 @@ def main() -> int:
     thuocl = load_thuocl()
     hsk = load_hsk()
     phrases = load_phrase_readings()
+    attested = attested_readings(phrases)
     print(
         f"jieba: {len(jieba)} words, THUOCL: {len(thuocl)} words, HSK: {len(hsk)} words, "
         f"pypinyin: {len(phrases)} word readings",
@@ -378,7 +410,7 @@ def main() -> int:
         syllable_weight[primary] = syllable_weight.get(primary, 0) + weight
 
     for word, score in word_scores.items():
-        readings = readings_for(word, char_readings, phrases)
+        readings = readings_for(word, char_readings, phrases, attested)
         if not readings:
             continue
         # Longer words contribute less per character so common single characters do not get
@@ -400,10 +432,7 @@ def main() -> int:
     for reading, entries in by_reading.items():
         primary_best = max((score for _, score, alternates in entries if alternates == 0), default=0)
         if primary_best > 0:
-            entries = [
-                entry for entry in entries
-                if entry[2] == 0 or entry[1] * OWNED_READING_RATIO > primary_best
-            ]
+            entries = [entry for entry in entries if entry[2] == 0]
         entries.sort(key=lambda item: (-item[1], len(item[0]), item[0]))
         for word, score, _ in entries[:MAX_WORDS_PER_READING]:
             rows.append((reading, word, score))

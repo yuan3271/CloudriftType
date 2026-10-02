@@ -100,6 +100,28 @@ class PinyinEngineTest {
     }
 
     @Test
+    fun `a guessed second reading never displaces the word that owns it`() {
+        // 半 is listed bàn,pàn, so the per-character product used to file 半点 under "pandian" as
+        // well - and because 半点 is the more common word, it came out *first* for anyone typing
+        // 盘点. The reading belongs to 盘点 and the guess has no business leading it.
+        val output = PinyinEngine(dictionary, nineKey = false).evaluate("pandian")
+        val texts = output.candidates.map { it.text }
+
+        assertEquals(texts.toString(), "盘点", texts.first())
+        assertTrue("expected no 半点 under pandian, got $texts", "半点" !in texts)
+    }
+
+    @Test
+    fun `genuinely polyphonic words keep their reading`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        // 重 is zhòng,chóng and 行 is xíng,háng: both words are read with the second reading and
+        // have to survive the rule above, which only drops readings another word already spells.
+        assertEquals("重新", engine.evaluate("chongxin").candidates.first().text)
+        assertEquals("银行", engine.evaluate("yinhang").candidates.first().text)
+    }
+
+    @Test
     fun `a word shows up before the whole reading is typed`() {
         // The complaint that started this: 你好 has to be there after "nih", not only after "nihao".
         val output = PinyinEngine(dictionary, nineKey = false).evaluate("nih")
