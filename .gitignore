@@ -17,6 +17,9 @@ dist/
 # frequencies need it to reproduce those assets, so it *is* versioned.
 tools/dictgen/raw/*
 !tools/dictgen/raw/corpus_*.txt
+# phrase-pinyin-data 的 41 万条词级读音表：默认构建（--phrase-readings base）用不到它，
+# 7 MB 换一个默认关闭的开关不划算。要跑 large 变体就先执行 fetch_corpora.sh。
+tools/dictgen/clean/phrase_pinyin_large.txt
 tools/dictgen/out/
 tools/dictgen/__pycache__/
 # A/B tables written by `build_bigram.py --variant-sweep`; regenerate on demand.

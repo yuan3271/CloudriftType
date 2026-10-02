@@ -4,12 +4,19 @@
 | Source | Licence | What it contributes |
 | --- | --- | --- |
 | jieba `dict.txt` | MIT | broad word list with corpus frequency |
-| THUOCL (THUNLP) | MIT | domain vocabulary: IT, 医学, 法律, 成语 ... |
+| THUOCL (THUNLP) | MIT | domain vocabulary: IT, 医学, 法律, 饮食 ... |
+| ivankra/hsk30 | MIT | 日常词汇表：HSK 3.0 的 1.1 万条，按等级分档 |
+| drkameleon/complete-hsk-vocabulary | MIT | 口语词频（HSK 2.0 语料频次） |
+| mozillazg/phrase-pinyin-data | MIT | 41 万条**词级读音**（可选，见 --phrase-readings） |
 | pinyin-data (mozillazg) | MIT | per character readings, ordered by commonness |
 | pypinyin (mozillazg) | MIT | per *word* readings, which is the one thing per-character data cannot say |
 | Unihan (Unicode) | Unicode License v3 | how often each *reading* of a character is used (`kHanyuPinlu`, `kMandarin`) |
 | hugg95/university-data | MIT | 全国普通高等学校名单（院校名） |
 | mumuy/data_location | MIT | 省 / 市 / 区县名（GB/T 2260 行政区划） |
+
+成语表（chinese-xinhua 的 idiom.json、THUOCL 的成语表、5 万成语表）**不进词表**：一是用户
+要的是"日常词汇表"，二是实测确实是负收益（见 CHENGYU 一节的历史记录）。词表要的是"人们天天
+打的词"，成语是另一件事。
 
 The last table is what `tools/dictgen/fetch_corpora.sh` + `prepare_pypinyin.py` produce in
 `clean/pypinyin_phrases.txt`. Without it a word's reading is the cartesian product of its
@@ -30,6 +37,7 @@ Usage: python3 tools/dictgen/build_dict.py
 from __future__ import annotations
 
 import argparse
+import csv
 
 import json
 import math
@@ -48,6 +56,9 @@ PYINYIN_DATA = TOOLS / "clean/pinyin_data.txt"
 # Word -> reading, from pypinyin (MIT). Optional at build time: without it every word falls back
 # to the per-character product exactly as before.
 PYPINYIN_PHRASES = TOOLS / "clean/pypinyin_phrases.txt"
+# 第二张词级读音表：phrase-pinyin-data 的 large 表（MIT，41 万条），由 prepare_phrase_pinyin.py
+# 生成。默认**不加载**，`--phrase-readings large` 打开，基准测试决定它值不值这份体积。
+PHRASE_PINYIN_LARGE = TOOLS / "clean/phrase_pinyin_large.txt"
 THUOCL_DIR = TOOLS / "clean"
 # Optional: HSK vocabulary with a corpus rank per word (MIT, drkameleon/complete-hsk-vocabulary).
 # It is the only conversational-frequency source in the build, which is what keeps 怎么样 above
@@ -76,7 +87,6 @@ THUOCL_FILES = [
     ("THUOCL_medical.txt", 0.9),
     ("THUOCL_law.txt", 0.9),
     ("THUOCL_caijing.txt", 0.9),
-    ("THUOCL_chengyu.txt", 1.0),
     ("THUOCL_food.txt", 0.85),
     ("THUOCL_animal.txt", 0.85),
     ("THUOCL_poem.txt", 0.8),
@@ -126,12 +136,28 @@ EXTRA_NAMED_LISTS = [
 # 词条语料（不是专名，也不是频率表）：新华字典的词条/成语（**带拼音**，等于多一份词级读音），
 # 以及一份 5 万条的成语表。三份都来自 MIT / Apache-2.0 的数据集，见 NOTICE.md。
 EXTRA_WORD_LISTS = [
-    ("raw/ci.json", "word", 0.7, 1200),
-    ("raw/idiom.json", "word", 0.8, 900),
-    ("chengyu_5w.txt", None, 0.6, 700),
     # 网络常用词（本项目自撰，MIT）：哔哩哔哩、微信、淘宝这类词进不了新闻语料，但天天有人打。
     ("clean/net_words.txt", None, 1.0, 2000),
 ]
+
+# 新华字典的词语表（`raw/ci.json`，pwxcoo/chinese-xinhua，MIT）**不进词表**。
+#
+# 它有 26 万条词条，但键是 `ci` 而不是 `word`——写成 `word` 的那一版每一条都读出空串，于是它
+# 从来没有真正进过词表（唯一线索是构建日志里"词条语料: 92 个"）。把键修正之后实测是明确的
+# 负收益：广谱回归台全拼 453 → 421、首字母 82 → 70，并撞坏两条既有测试。原因和成语表一样——
+# 词典词条按"词典收录"排序，不代表有人打；它们把字符权重和候选位次一起搅乱了。词表要的是
+# 日常词汇，不是词典收词。
+
+# 日常词汇表：HSK 3.0（ivankra/hsk30，MIT，11,092 条）。
+#
+# 等级就是"多日常"的现成刻度：一级是"每天都会说"，七级往上偏阅读。它做两件事——补**覆盖**
+# （jieba 里没有的日常词）与补**排序**（新闻语料里 阿姨/方便面 这种词并不显眼）。
+# 等级 -> **保底分**（不是加分）。加分会让"日常词"整体上浮，把语料已经排好的次序掀掉：美食 是
+# 三级，加 270 分直接从 603 冲到 873，压过了同一读音下更口语的 没事（648），`meishi` 的首选
+# 当场退回新闻语料的偏好。保底只做一件事——保证这个词**在词表里、排得进候选**，不去动已经比
+# 它高的词。
+HSK30 = TOOLS / "raw/hsk30.csv"
+HSK30_FLOOR = {1: 480, 2: 400, 3: 330, 4: 270, 5: 220, 6: 180, 7: 140}
 # A second reading earns its own entry in the character table when the frequency dictionary shows
 # it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
 # jiào in 15%). Below that the reading exists but is rare enough that the primary placement is
@@ -248,6 +274,31 @@ def hsk_bonus(rank: int) -> int:
     return 0
 
 
+def load_hsk30() -> dict[str, int]:
+    """日常词汇表（HSK 3.0，ivankra/hsk30，MIT）-> 词 : 等级保底分。
+
+    表里带的拼音**不用**：`àihào` 这种写法没有音节分隔，切错一个字就会给整张表定错音；读音交给
+    pypinyin / phrase-pinyin-data 那两张词级读音表。这里只要词形与等级。
+    """
+    if not HSK30.exists():
+        print(f"! missing {HSK30.name}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
+        return {}
+    bonus: dict[str, int] = {}
+    with HSK30.open(encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            word = (row.get("Simplified") or "").strip()
+            try:
+                level = int((row.get("Level") or "").strip())
+            except ValueError:
+                continue
+            if not (2 <= len(word) <= MAX_WORD_LENGTH) or not HAN.match(word):
+                continue
+            value = HSK30_FLOOR.get(level, 0)
+            if value:
+                bonus[word] = max(bonus.get(word, 0), value)
+    return bonus
+
+
 def load_colloquial(vocabulary: set[str]) -> dict[str, int]:
     """How often each known word is actually said in the self-authored colloquial corpus.
 
@@ -300,22 +351,50 @@ def load_thuocl() -> dict[str, int]:
     return words
 
 
-def load_phrase_readings() -> dict[str, list[str]]:
-    """pypinyin's word -> syllables: one entry per character, tones already dropped."""
-    if not PYPINYIN_PHRASES.exists():
-        print(
-            f"! missing {PYPINYIN_PHRASES.name}（跑 tools/dictgen/fetch_corpora.sh 生成）",
-            file=sys.stderr,
-        )
-        return {}
+def load_phrase_readings(paths: list[pathlib.Path]) -> dict[str, list[str]]:
+    """word -> 词级读音（「空格分开的音节」），一个字可以有多条：朝阳 zhāo yáng 与 cháo yáng
+    都对，合并时不该丢掉任何一条。
+
+    读的是 ``<word>\\t<syllable> <syllable>`` 形状的表，两张表同形：pypinyin（47k，基准一直
+    跑的就是它）与 phrase-pinyin-data 的 large 表（41 万条，[PHRASE_PINYIN_LARGE]）。
+    """
     readings: dict[str, list[str]] = {}
-    with PYPINYIN_PHRASES.open(encoding="utf-8") as handle:
-        for line in handle:
-            word, _, value = line.rstrip("\n").partition("\t")
-            syllables = value.split()
-            if word and len(syllables) == len(word):
-                readings[word] = syllables
+    for path in paths:
+        if not path.exists():
+            print(
+                f"! missing {path.name}（跑 tools/dictgen/fetch_corpora.sh 生成）",
+                file=sys.stderr,
+            )
+            continue
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                word, _, value = line.rstrip("\n").partition("\t")
+                syllables = value.split()
+                if not word or len(syllables) != len(word):
+                    continue
+                joined = " ".join(syllables)
+                bucket = readings.setdefault(word, [])
+                if joined not in bucket:
+                    bucket.append(joined)
     return readings
+
+
+def load_coverage_words() -> set[str]:
+    """large 表里的**词形**（不要读音，读音已经在 [load_phrase_readings] 里了）。
+
+    `--word-coverage` 用它给词表补覆盖：一张 41 万条的词表里，jieba 与新华字典都没有的词就是
+    "以前根本打不出来"的那一批。
+    """
+    if not PHRASE_PINYIN_LARGE.exists():
+        print(f"! missing {PHRASE_PINYIN_LARGE.name}（跑 fetch_corpora.sh 生成）", file=sys.stderr)
+        return set()
+    words: set[str] = set()
+    with PHRASE_PINYIN_LARGE.open(encoding="utf-8") as handle:
+        for line in handle:
+            word = line.split("\t", 1)[0].strip()
+            if 2 <= len(word) <= MAX_WORD_LENGTH and HAN.match(word):
+                words.add(word)
+    return words
 
 
 def attested_readings(phrase_readings: dict[str, list[str]]) -> dict[str, set[str]]:
@@ -328,11 +407,13 @@ def attested_readings(phrase_readings: dict[str, list[str]]) -> dict[str, set[st
     pypinyin states them for a word; that is the difference the product needs to see.
     """
     attested: dict[str, set[str]] = defaultdict(set)
-    for word, syllables in phrase_readings.items():
-        if len(syllables) != len(word):
-            continue
-        for char, syllable in zip(word, syllables):
-            attested[char].add(syllable)
+    for word, readings in phrase_readings.items():
+        for reading in readings:
+            syllables = reading.split(" ")
+            if len(syllables) != len(word):
+                continue
+            for char, syllable in zip(word, syllables):
+                attested[char].add(syllable)
     return attested
 
 
@@ -361,7 +442,7 @@ def readings_for(
     """
     stated = phrase_readings.get(word)
     if stated:
-        return [("".join(stated), 0)]
+        return [(reading.replace(" ", ""), 0) for reading in stated]
     # 专名（院校 / 行政区划）只用本音：`中国人民大学` 的 `大` 不该被异读拼成 dàixué，
     # `内蒙古自治区` 的 `内` 更不该读成 nà。名字怎么念没有歧义，异读只会造出假读音。
     if not allow_alternates:
@@ -451,10 +532,10 @@ def load_named_lists() -> dict[str, int]:
 
 
 def load_word_lists() -> dict[str, int]:
-    """词条语料（新华字典的词条/成语、5 万成语表）-> 分数。
+    """词条语料（新华字典词条、网络常用词）-> 分数。
 
-    与 [load_named_lists] 分开：这些是**普通词条**，只是补覆盖（新华字典的成语/词语里有不少
-    jieba 没有的），所以分数压得比日常词低，靠的是"能打出来"而不是"排得靠前"。
+    与 [load_named_lists] 分开：这些是**普通词条**，只是补覆盖（新华字典的词语里有不少 jieba
+    没有的），所以分数压得比日常词低，靠的是"能打出来"而不是"排得靠前"。
     """
     words: dict[str, int] = {}
     for filename, key, weight, nominal in EXTRA_WORD_LISTS:
@@ -530,6 +611,24 @@ def main() -> int:
         default=0.0,
         help="AISHELL-1 转写文本的词频权重（0 = 关闭；基准测试用 -tools/tune/score.sh 判定）",
     )
+    parser.add_argument(
+        "--phrase-readings",
+        choices=("base", "large"),
+        default="base",
+        help="词级读音表：base = 只用 pypinyin（47k），large = 再并上 phrase-pinyin-data 的 41 万条",
+    )
+    parser.add_argument(
+        "--word-coverage",
+        type=float,
+        default=0.0,
+        help="把 large 表里 jieba 不认识的词形按这个名义频次补进词表（0 = 关闭）",
+    )
+    parser.add_argument(
+        "--max-rows",
+        type=int,
+        default=MAX_WORD_ROWS,
+        help=f"词表行数上限（默认 {MAX_WORD_ROWS}，改大=资产更大）",
+    )
     args = parser.parse_args()
     for path in (JIEBA, PYINYIN_DATA):
         if not path.exists():
@@ -542,11 +641,15 @@ def main() -> int:
     jieba = load_jieba()
     thuocl = load_thuocl()
     hsk = load_hsk()
-    phrases = load_phrase_readings()
+    phrase_paths = [PYPINYIN_PHRASES]
+    if args.phrase_readings == "large":
+        phrase_paths.append(PHRASE_PINYIN_LARGE)
+    phrases = load_phrase_readings(phrase_paths)
     attested = attested_readings(phrases)
     print(
         f"jieba: {len(jieba)} words, THUOCL: {len(thuocl)} words, HSK: {len(hsk)} words, "
-        f"pypinyin: {len(phrases)} word readings",
+        f"词级读音: {len(phrases)} 词 / {sum(len(v) for v in phrases.values())} 条"
+        f"（{args.phrase_readings}）",
     )
 
     word_scores: dict[str, int] = dict(jieba)
@@ -570,7 +673,19 @@ def main() -> int:
     listed = load_word_lists()
     for word, score in listed.items():
         word_scores[word] = max(word_scores.get(word, 0), score)
-    print(f"词条语料: {len(listed)} 个（新华字典词条/成语、成语表）")
+    print(f"词条语料: {len(listed)} 个（新华字典词条、网络常用词）")
+
+    # 覆盖层（可选）：large 表里 jieba / 新华字典都没收的词。名义频次压得比词条语料还低——
+    # 它们的作用是"能打出来"，不是"排在前面"。
+    if args.word_coverage > 0:
+        coverage_score = score_of(int(args.word_coverage), 0.6)
+        covered = 0
+        for word in load_coverage_words():
+            if word in word_scores:
+                continue
+            word_scores[word] = coverage_score
+            covered += 1
+        print(f"覆盖层: 新增 {covered} 个词（名义频次 {args.word_coverage:g} -> {coverage_score} 分）")
 
     # Conversational frequency, on top of the corpus lists. `frequency` in that file is a corpus
     # rank (today 155, 怎么 128, 怎么样 1367, 简体字 57431), so it is applied in tiers: the words a
@@ -579,6 +694,13 @@ def main() -> int:
         bonus = hsk_bonus(rank)
         if bonus:
             word_scores[word] = word_scores.get(word, 0) + bonus
+
+    # 日常词汇表（HSK 3.0）：按等级给保底分。它盖住的是"会说不一定会写"的那批日常词，同时把
+    # jieba 与 THUOCL 都没有的日常词补进词表——用户要的正是这一层，而不是成语。
+    daily = load_hsk30()
+    for word, floor in daily.items():
+        word_scores[word] = max(word_scores.get(word, 0), floor)
+    print(f"日常词汇表: {len(daily)} 个词（HSK 3.0 等级保底）")
 
     # Spoken frequency is not news frequency. A word that turns up in the everyday corpus at all
     # gets a nudge on the same log scale, which is what keeps 没事 in front of 美食 - the news
@@ -653,7 +775,7 @@ def main() -> int:
     chosen: list[tuple[str, str, int]] = []
     per_reading: dict[str, int] = defaultdict(int)
     for row in rows:
-        if len(chosen) >= MAX_WORD_ROWS:
+        if len(chosen) >= args.max_rows:
             break
         reading = row[0]
         if per_reading[reading] >= MAX_WORDS_PER_READING:

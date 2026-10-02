@@ -3,6 +3,9 @@
 #
 #   Tatoeba 中文句子 (cmn)   CC BY 2.0 FR   -> raw/tatoeba_cmn_sentences.tsv.bz2
 #   pypinyin 词组拼音表       MIT            -> raw/pypinyin_phrases_dict.json
+#   phrase-pinyin-data       MIT            -> raw/phrase_pinyin.txt / raw/phrase_pinyin_large.txt
+#   HSK 3.0 日常词汇表        MIT            -> raw/hsk30.csv
+#   iamcal/emoji-data        MIT            -> raw/emoji_data.json
 #   AISHELL-1 转写文本        Apache-2.0     -> raw/aishell_ner_transcript.txt
 #   Unihan 数据库             Unicode 许可    -> raw/Unihan.zip
 #
@@ -83,12 +86,39 @@ python3 "$ROOT/tools/dictgen/prepare_pypinyin.py" "$PYPINYIN_JSON" \
 python3 "$ROOT/tools/dictgen/prepare_unihan.py" "$UNIHAN" \
   "$CLEAN/unihan_readings.txt"
 
+# 日常词汇表（HSK 3.0，ivankra/hsk30，MIT）：1.1 万条按等级分档，词表里最"日常"的那一层。
+HSK30="$RAW/hsk30.csv"
+if [ ! -f "$HSK30" ]; then
+  echo "↓ HSK 3.0 日常词汇表 (MIT, ivankra/hsk30)"
+  curl -sSL -o "$HSK30" \
+    "${GITHUB_PROXY:-}https://raw.githubusercontent.com/ivankra/hsk30/master/hsk30.csv"
+fi
 
-# 词条语料（MIT / Apache-2.0）：新华字典词条与成语、5 万成语表、唐诗宋词。只进词表与搭配模型。
-for spec in "chinese-xinhua:data/ci.json:ci.json" "chinese-xinhua:data/idiom.json:idiom.json" "Chinese-Names-Corpus:Chinese_Dict_Corpus/ChengYu_Corpus（5W）.txt:chengyu_5w.txt" "chinese-poetry:全唐诗/唐诗三百首.json:poetry_tang.json" "chinese-poetry:宋词/宋词三百首.json:poetry_song.json"; do
+# 词级读音表（phrase-pinyin-data，MIT）。large 表**只在使用 --phrase-readings large 时需要**，
+# 因此不进仓库：7 MB 换一个默认关闭的开关不划算，要用就先跑这个脚本。
+for name in pinyin large_pinyin; do
+  out="$RAW/phrase_$([ "$name" = large_pinyin ] && echo pinyin_large || echo pinyin).txt"
+  [ -f "$out" ] || curl -sSL -o "$out" \
+    "${GITHUB_PROXY:-}https://raw.githubusercontent.com/mozillazg/phrase-pinyin-data/master/$name.txt"
+done
+python3 "$ROOT/tools/dictgen/prepare_phrase_pinyin.py" "$RAW/phrase_pinyin_large.txt" \
+  "$CLEAN/phrase_pinyin_large.txt"
+
+# 表情表（iamcal/emoji-data，MIT）：Unicode 标准分组，生成 assets/emoji.txt。
+EMOJI="$RAW/emoji_data.json"
+if [ ! -f "$EMOJI" ]; then
+  echo "↓ emoji 数据 (MIT, iamcal/emoji-data)"
+  curl -sSL -o "$EMOJI" \
+    "${GITHUB_PROXY:-}https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json"
+fi
+python3 "$ROOT/tools/dictgen/build_emoji.py" "$EMOJI" "$ROOT/app/src/main/assets/emoji.txt"
+
+# 古典诗词（chinese-poetry，公共领域原文）：只在 build_bigram.py --classics 时参与搭配统计。
+for spec in "chinese-poetry:全唐诗/唐诗三百首.json:poetry_tang.json" "chinese-poetry:宋词/宋词三百首.json:poetry_song.json"; do
   repo=${spec%%:*}; rest=${spec#*:}; path=${rest%%:*}; out=${rest##*:}
   [ -f "$RAW/$out" ] || curl -sSL -o "$RAW/$out" "${GITHUB_PROXY:-}https://raw.githubusercontent.com/$repo/master/$path"
 done
 
 echo "snapshot sha256:"
-shasum -a 256 "$TATOEBA" "$PYPINYIN_JSON" "$AISHELL" "$UNIHAN" "$UNIVERSITY" "$AREA"
+shasum -a 256 "$TATOEBA" "$PYPINYIN_JSON" "$AISHELL" "$UNIHAN" "$UNIVERSITY" "$AREA" \
+  "$HSK30" "$EMOJI" "$RAW/phrase_pinyin_large.txt"

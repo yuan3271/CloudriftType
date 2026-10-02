@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.data
 
 import android.content.Context
 import com.yuan3271.cloudrift.engine.EngineRegistry
+import com.yuan3271.cloudrift.engine.emoji.EmojiCatalog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +23,12 @@ object AppGraph {
         private set
     lateinit var engines: EngineRegistry
         private set
+
+    /**
+     * 表情表（`assets/emoji.txt`）。**延迟加载**：大部分会话根本不翻符号页，没必要在启动时把
+     * 1900 行读进内存；读失败也只是少一页（[EmojiCatalog.fromReader] 不抛异常）。
+     */
+    val emoji: EmojiCatalog by lazy { EmojiCatalog.fromAssets(requireContext().assets) }
 
     @Volatile
     private var initialized: Boolean = false

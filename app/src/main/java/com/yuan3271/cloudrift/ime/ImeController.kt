@@ -15,6 +15,7 @@ import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.engine.Candidate
 import com.yuan3271.cloudrift.engine.CandidateKind
 import com.yuan3271.cloudrift.engine.InputEngine
+import com.yuan3271.cloudrift.engine.emoji.EmojiGroup
 import com.yuan3271.cloudrift.input.EditorProxy
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
@@ -66,6 +67,12 @@ class ImeController(
 
     private val _state = MutableStateFlow(ImeUiState())
     val state: StateFlow<ImeUiState> = _state.asStateFlow()
+
+    /**
+     * 表情表的分类（Unicode 标准分组）。读不到就是空表，符号页少一页而已——所以这不是
+     * [ImeUiState] 的一部分：它不随打字变化，放进 state 只会让每次按键都多拷一份 1900 个字符。
+     */
+    val emojiGroups: List<EmojiGroup> get() = AppGraph.emoji.groups
 
     private var editorInfo: EditorInfo? = null
     private var engine: InputEngine = AppGraph.engines.engineFor(LayoutId.Pinyin26.engine)
@@ -375,6 +382,23 @@ class ImeController(
     /** 全角 / 半角, remembered across sessions like any other keyboard preference. */
     fun setSymbolWidth(width: SymbolWidth) {
         settings.update { it.copy(symbolWidth = width) }
+        // 按「全角/半角」的意思就是"看标点表"：从表情页按它要回到标点页，而不是改了设置却停在
+        // 表情上什么都不变。
+        if (_state.value.symbolSheet != SymbolSheet.Punctuation) {
+            _state.value = _state.value.copy(symbolSheet = SymbolSheet.Punctuation)
+        }
+    }
+
+    /** 符号页左栏的另一半：标点 ⇄ 表情。 */
+    fun setSymbolSheet(sheet: SymbolSheet) {
+        if (_state.value.symbolSheet == sheet) return
+        _state.value = _state.value.copy(symbolSheet = sheet)
+    }
+
+    /** 表情页里换一个标准分类（表情 / 人物 / 动物 …）。 */
+    fun setEmojiGroup(key: String) {
+        if (_state.value.emojiGroup == key) return
+        _state.value = _state.value.copy(emojiGroup = key)
     }
 
     /** Landscape framing, decided by the UI (it knows the orientation) and applied by the service. */

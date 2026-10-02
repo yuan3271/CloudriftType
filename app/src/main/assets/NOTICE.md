@@ -19,17 +19,29 @@
 | 来源 | 许可 | 用途 |
 | --- | --- | --- |
 | [jieba](https://github.com/fxsjy/jieba) `dict.txt` | MIT | 词条与词频 |
-| [THUOCL](https://github.com/thunlp/THUOCL) | MIT | 领域词表（IT、医学、法律、成语等） |
+| [THUOCL](https://github.com/thunlp/THUOCL) | MIT | 领域词表（IT、医学、法律、饮食、动物、诗词、历史名人、汽车、地名） |
+| [hsk30](https://github.com/ivankra/hsk30) | MIT | **日常词汇表**：HSK 3.0 的 11,092 条按等级给保底分（1 级＝每天都会说） |
 | [pinyin-data](https://github.com/mozillazg/pinyin-data) | MIT | 汉字读音及其常用度排序 |
 | [pypinyin](https://github.com/mozillazg/python-pinyin) `phrases_dict.json` | MIT | **词条**读音：多音字词按词定音 |
+| [phrase-pinyin-data](https://github.com/mozillazg/phrase-pinyin-data) | MIT | 41 万条**词级读音**（可选，`--phrase-readings large`，默认关闭） |
 | [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary) | MIT | 口语常用词及其语料排名（用于让"怎么样""今天"这类词排在行业词前面） |
 | [Unihan](https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip)（`kHanyuPinlu` / `kMandarin`） | Unicode License v3 | 每个**读音**的使用频率，决定一个字挂在哪些音节下 |
 | [hugg95/university-data](https://github.com/hugg95/university-data) | MIT | 全国普通高等学校名单（2,631 条院校名，专名只用本音拼读） |
 | [mumuy/data_location](https://github.com/mumuy/data_location) | MIT | 省 / 市 / 区县名（GB/T 2260 行政区划，3,433 条） |
-| [chinese-xinhua](https://github.com/pwxcoo/chinese-xinhua) | MIT | 新华字典词条（2.6 万，带拼音）与成语（3 万，带拼音） -> 词表覆盖与词级读音 |
-| [Chinese-Names-Corpus](https://github.com/wainshine/Chinese-Names-Corpus) | Apache-2.0 | 5 万条成语表 -> 词表覆盖 |
 | [chinese-poetry](https://github.com/chinese-poetry/chinese-poetry) | MIT | 唐诗三百首 / 宋词三百首 -> 搭配模型（`--poetry`，默认关闭） |
 | `tools/dictgen/raw/corpus_*.txt` | **本项目原创** | 现代口语词频（只用它给"本来就常见"的词加权，不据此引入生僻词） |
+
+**符号与表情**：`app/src/main/assets/emoji.txt` 由 `tools/dictgen/build_emoji.py` 从
+[iamcal/emoji-data](https://github.com/iamcal/emoji-data)（MIT）生成，分组沿用 Unicode 自己的
+emoji 分组（表情 / 人物 / 动物 / 食物 / 出行 / 活动 / 物品 / 符号 / 旗帜）；`Component`
+（肤色、发色等修饰件）不下发——它们单独出现只会打出看不见的东西。全角 / 半角符号表是人工
+整理的常用集合（见 `KeyboardLayouts.kt`），不来自任何第三方表。
+
+> 成语表（chinese-xinhua 的 `idiom.json`、THUOCL 的成语表、5 万条成语表）**不进词表**。
+> 词表要的是"人们天天打的词"，成语是另一件事；实测也确实是负收益（撤掉它们并把日常词汇表
+> 接进来之后，手挑 31 句不变，见 `PLAN.md` 的 0.2.35 一节）。新华字典的词语表（`ci.json`，
+> 26 万条）同样评估后不用：把它的键名修正、真正读进来之后，广谱回归台从 453 掉到 421，
+> 并撞坏两条既有测试——词典收词不等于有人打。
 
 生成的资产是上述数据的衍生作品，再分发时请一并保留本声明。词库文件本身不包含任何
 上游项目的源代码。

@@ -154,11 +154,24 @@ class KeyboardLayoutTest {
         assertTrue("全角表里出现了半角字符: ${asciiInFull.map { it.output }}", asciiInFull.isEmpty())
         assertTrue("半角表里出现了全角字符: ${wideInHalf.map { it.output }}", wideInHalf.isEmpty())
 
-        // 这一对是当年真的搞混了的：￥/＄ 是全角，¥/$ 是半角。
-        assertTrue(full.any { it.output == "＄" } && full.any { it.output == "￥" })
-        assertTrue(half.any { it.output == "$" } && half.any { it.output == "¥" })
-        assertTrue("全角表不该有半角美元", full.none { it.output == "$" })
-        assertTrue("半角表不该有全角日元", half.none { it.output == "￥" })
+        // 有全角形式的字符**逐个**对账，而不是只查 ASCII：¥/¢/£/₩/¬/¯/¦ 都是非 ASCII，
+        // 它们混进全角表里用上面那两条宽度范围检查是查不出来的（当年 $/¥ 就是从这里漏的）。
+        val forms = listOf(
+            "$" to "＄",
+            "¥" to "￥",
+            "¢" to "￠",
+            "£" to "￡",
+            "₩" to "￦",
+            "¬" to "￢",
+            "¯" to "￣",
+            "¦" to "￤",
+        )
+        for ((halfForm, fullForm) in forms) {
+            assertTrue("全角表缺 $fullForm", full.any { it.output == fullForm })
+            assertTrue("半角表缺 $halfForm", half.any { it.output == halfForm })
+            assertTrue("全角表里混进了半角的 $halfForm", full.none { it.output == halfForm })
+            assertTrue("半角表里混进了全角的 $fullForm", half.none { it.output == fullForm })
+        }
     }
 
     /**

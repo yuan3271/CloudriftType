@@ -347,9 +347,14 @@ private fun KeyboardSurface(
 
                     state.page == KeyboardPage.Symbols -> SymbolPanel(
                         symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
+                        emojiGroups = controller.emojiGroups,
+                        sheet = state.symbolSheet,
+                        emojiGroup = state.emojiGroup,
                         functionRow = KeyboardLayouts.symbolFunctionRow(state.enterLabel),
                         width = state.symbolWidth,
                         onWidthChange = controller::setSymbolWidth,
+                        onSheetChange = controller::setSymbolSheet,
+                        onEmojiGroupChange = controller::setEmojiGroup,
                         keyHeight = keyHeight,
                         cornerRadius = cornerRadius,
                         keyBackground = state.keyBackground,

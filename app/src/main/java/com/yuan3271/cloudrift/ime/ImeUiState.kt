@@ -14,6 +14,17 @@ import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.voice.VoiceState
 
 /**
+ * 符号页的左栏：标点（可切全角/半角）还是表情。
+ *
+ * 不做成第三种 [SymbolWidth]：全角/半角是"这个符号打成哪种形式"，要跨会话记住；表情是"这一页
+ * 看哪张表"，是浏览状态，两件事不该挤进同一个枚举。
+ */
+enum class SymbolSheet {
+    Punctuation,
+    Emoji,
+}
+
+/**
  * Everything the keyboard window needs to draw itself. The controller owns this and the
  * composables only read it, which keeps gesture handling out of the render path.
  */
@@ -70,6 +81,13 @@ data class ImeUiState(
     val bottomGapDp: Int = 0,
     /** Full or half width punctuation in the symbol bar. */
     val symbolWidth: SymbolWidth = SymbolWidth.Full,
+    /** 符号页现在显示标点还是表情。 */
+    val symbolSheet: SymbolSheet = SymbolSheet.Punctuation,
+    /**
+     * 表情页选中的分类（[com.yuan3271.cloudrift.engine.emoji.EmojiGroup.key]）。空串表示"还没
+     * 选过"，界面落到第一个分类。
+     */
+    val emojiGroup: String = "",
     /** Landscape: the floating card or the full width keyboard. */
     val landscapeFrame: KeyboardFrame = KeyboardFrame.Floating,
     /** Width of the floating keyboard as a percentage of the screen. */
