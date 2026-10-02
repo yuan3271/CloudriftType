@@ -44,6 +44,40 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
     }
 
     /**
+     * 编辑器**此刻**是否有一段被选中的文本。
+     *
+     * 不能用服务回调里缓存的那个标志：`onUpdateSelection` 不是每次都送到，用户在输入框里拖选、
+     * 或者上一次选中被编辑器自己改掉之后，缓存值就会和真实状态对不上——这正是"按退格时而能删
+     * 时而不能"的来源。`getSelectedText` 是当场问编辑器，最可靠。
+     */
+    fun hasLiveSelection(): Boolean = runCatching {
+        connection?.getSelectedText(0)?.isNotEmpty() == true
+    }.getOrDefault(false)
+
+    /**
+     * 删掉当前选中的一段。`commitText("")` 会把选区替换成空串，这是各编辑器都认的做法
+     * （`deleteSurroundingText` 在有选区时基本会被忽略）。
+     */
+    fun deleteSelection(): Boolean = runCatching {
+        if (connection?.commitText("", 1) == true) true else false
+    }.getOrDefault(false)
+
+    /**
+     * 成对输入：插入 [open][close]，然后把光标退回两个符号**中间**。
+     *
+     * 位置不是猜的：插完再问编辑器当前光标在哪，比"假设它在 close 之后"稳——有些编辑器会把
+     * 光标放在插入点之前，或者顺手把整段选中。
+     */
+    fun insertPair(open: String, close: String) {
+        val connection = connection ?: return
+        if (!connection.commitText(open + close, 1)) return
+        val end = runCatching {
+            connection.getExtractedText(ExtractedTextRequest(), 0)?.selectionEnd
+        }.getOrNull() ?: return
+        runCatching { connection.setSelection(end - close.length, end - close.length) }
+    }
+
+    /**
      * A real backspace key press. [deleteSurroundingBefore] only ever removes text next to the
      * caret, and most editors ignore it while the user has a selection - pressing the key is what
      * makes them delete the selection, which is how every keyboard handles a selected range.

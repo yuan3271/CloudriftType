@@ -99,4 +99,20 @@ class KeyboardLayoutTest {
         assertTrue("全角表不该有半角美元", full.none { it.output == "$" })
         assertTrue("半角表不该有全角日元", half.none { it.output == "￥" })
     }
+
+    /**
+     * 符号表里不许有重复的键。
+     *
+     * 符号页是 LazyVerticalGrid，key 就是 output：重复 key 让它在那一项被合成时抛
+     * IllegalArgumentException —— 表现是"全角模式滑到底就闪退"（￥ 曾经同时出现在货币行和
+     * 符号行，半角表没有重复所以没事）。这条测试就是那次崩溃留下的钉子。
+     */
+    @Test
+    fun `the symbol bar never repeats a key`() {
+        for (width in listOf(SymbolWidth.Full, SymbolWidth.Half)) {
+            val outputs = KeyboardLayouts.symbolBar(width).map { it.output }
+            val duplicated = outputs.groupingBy { it }.eachCount().filter { it.value > 1 }.keys
+            assertTrue("$width 的符号表里有重复的键: $duplicated", duplicated.isEmpty())
+        }
+    }
 }

@@ -1,6 +1,8 @@
 package com.yuan3271.cloudrift.ui
 
 import android.view.View
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -101,7 +104,18 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
     ) {
         var layoutPickerVisible by remember { mutableStateOf(false) }
 
-        Box(modifier = modifier.fillMaxWidth()) {
+        // 过渡动画：键盘整块出现时淡入并轻轻上移。窗口本身是系统弹出来的（改不了它的动画），
+        // 但内容可以是"落下来"的；只在第一次合成时跑一次，打字过程里不会反复播。
+        val appear = remember { Animatable(0f) }
+        LaunchedEffect(Unit) { appear.animateTo(1f, tween(150)) }
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    alpha = appear.value
+                    translationY = (1f - appear.value) * 28.dp.toPx()
+                },
+        ) {
             KeyboardSurface(
                 state = state,
                 controller = controller,

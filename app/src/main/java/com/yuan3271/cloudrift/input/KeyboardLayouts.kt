@@ -179,10 +179,17 @@ object KeyboardLayouts {
      * them: full width punctuation first, then quotes and brackets, then the ASCII forms, the
      * maths and currency sets and finally the arrows.
      */
-    fun symbolBar(width: SymbolWidth): List<KeyDef> = when (width) {
-        SymbolWidth.Full -> FULL_WIDTH_GROUPS
-        SymbolWidth.Half -> HALF_WIDTH_GROUPS
-    }.flatMap { group -> group.map { KeyDef.immediate(it.toString()) } }
+    fun symbolBar(width: SymbolWidth): List<KeyDef> {
+        val groups = when (width) {
+            SymbolWidth.Full -> FULL_WIDTH_GROUPS
+            SymbolWidth.Half -> HALF_WIDTH_GROUPS
+        }
+        // 去重是**必须**的，不是洁癖：符号页用的是 LazyVerticalGrid，items() 的 key 就是
+        // 这个 output，重复 key 会在滚到那一项时抛 IllegalArgumentException——全角表里 ＄
+        // 同时出现在货币行和符号行，于是"全角滑到底就闪退"，半角表没有重复所以没事。
+        // 必须是**跨组**去重：按组去重挡不住这种一行一个的重复。
+        return groups.joinToString("").toList().distinct().map { KeyDef.immediate(it.toString()) }
+    }
 
     /** 全角：中文标点在前，随后是全角形式的 ASCII 与数学符号。 */
     private val FULL_WIDTH_GROUPS = listOf(
@@ -256,7 +263,7 @@ object KeyboardLayouts {
         listOf(
             math("÷"),
             KeyDef.immediate("*"),
-            dial("0", "+"),
+            dial("0", ""),
             KeyDef.immediate("#"),
             math("=", weight = WIDE),
         ),

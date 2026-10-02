@@ -94,7 +94,9 @@ fun ClipboardPanel(
                 text = when {
                     entries.isEmpty() -> "暂无记录"
                     copied -> "已复制到剪贴板"
-                    else -> "${entries.size} 条 · 左滑删除 · 右滑复制 · 长按展开"
+                    // 手势提示按用户要求去掉：会用的人一眼就看出来，不会用的人看一行小字也
+                    // 学不会，反而占了标题那一行。
+                    else -> "${entries.size} 条"
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
