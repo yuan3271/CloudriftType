@@ -94,7 +94,7 @@ fun KeyboardToolbar(
             onClick = onThemeClick,
         )
         if (state.update != null && state.showUpdateDot) {
-            UpdateMark(onClick = onUpdateClick)
+            UpdateMark(replayKey = state.keyboardShows, onClick = onUpdateClick)
         }
 
         Spacer(Modifier.weight(1f))
@@ -147,11 +147,15 @@ fun KeyboardToolbar(
  * button live.
  */
 @Composable
-private fun UpdateMark(onClick: () -> Unit) {
+private fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
     // 打开键盘时先说人话，再收成一枚点：黄色长条写着黑字「有更新」，约一秒后收成黄点，
     // 点里是向上的箭头。长条期间点它同样有效；收成点之后它不再挪动任何键。
+    //
+    // [replayKey] 每次开键盘都会变（ImeUiState.keyboardShows）：IME 的 view 是复用的，光靠
+    // remember 只会播开头那一次，拿开键盘上（onStartInputView）的信号当钥匙才会每次都播。
     var expanded by remember { mutableStateOf(true) }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(replayKey) {
+        expanded = true
         delay(UpdateMarkPillMs)
         expanded = false
     }

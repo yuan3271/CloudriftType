@@ -43,6 +43,11 @@ data class ImeUiState(
     val update: UpdateInfo? = null,
     /** Whether the toolbar shows the little yellow update mark. */
     val showUpdateDot: Boolean = true,
+    /**
+     * 键盘被打开过几次。工具栏那枚「有更新」标记拿它当动画的钥匙——每次开键盘都重播一遍
+     * 长条收成圆点的动画，而不是一辈子只播开头那一次。
+     */
+    val keyboardShows: Int = 0,
     val voice: VoiceState = VoiceState.Idle,
     /**
      * True while the user is holding the space bar to dictate. The keys stay on screen in
@@ -74,8 +79,6 @@ data class ImeUiState(
     /** Whether the Japanese layout takes part in the language key rotation. */
     val japaneseEnabled: Boolean = false,
     val showNumberRow: Boolean = false,
-    /** 数字页第一列当前从第几个算术符号开始显示（上下滑动改它，见 KeyboardLayouts.mathWindow）。 */
-    val numberMathOffset: Int = 0,
     val swipeUpSymbols: Boolean = true,
     val spaceCursorControl: Boolean = true,
     val hapticFeedback: Boolean = true,

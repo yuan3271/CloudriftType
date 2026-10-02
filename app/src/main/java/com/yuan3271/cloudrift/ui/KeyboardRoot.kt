@@ -176,13 +176,9 @@ private fun KeyboardSurface(
     val bottomGap = if (floating) 0.dp else state.bottomGapDp.dp
     val density = LocalDensity.current
     val labelScale = state.keyLabelScalePercent / 100f
-    // The number page is a phone dial pad, so its keys stay round whatever the corner slider
-    // says; every other page follows the user's choice.
-    val cornerRadius = if (state.page == KeyboardPage.Numbers) {
-        keyHeight / 2
-    } else {
-        state.keyCornerRadiusDp.dp
-    }
+    // 每一页都用同一个圆角：数字页以前是拨号盘（圆角固定成半高），看上去和 26 键不是一套键，
+    // 现在跟着设置走，数字键和字母键长得一样。
+    val cornerRadius = state.keyCornerRadiusDp.dp
     val callbacks = KeyCallbacks(
         onKey = controller::onKey,
         onAlternate = { _, alternate -> controller.onAlternateChosen(alternate) },
@@ -190,7 +186,6 @@ private fun KeyboardSurface(
             if (key.code == KeyCode.Backspace) controller.onBackspaceLongPress()
         },
         onSwipeUp = controller::onSwipeUp,
-        onSwipeDown = controller::onSwipeDown,
         onSpaceCursorDrag = controller::onSpaceCursorDrag,
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,
@@ -370,6 +365,18 @@ private fun KeyboardSurface(
                         labelScale = labelScale,
                     )
 
+                    // 数字页有自己的排法：左边一条能滑的竖条，右边四列。
+                    state.page == KeyboardPage.Numbers -> NumberPanel(
+                        strip = KeyboardLayouts.mathStrip(),
+                        symbolKey = KeyboardLayouts.numberSymbolKey(),
+                        rows = KeyboardLayouts.numberRows(state.enterLabel),
+                        keyHeight = keyHeight,
+                        cornerRadius = cornerRadius,
+                        keyBackground = state.keyBackground,
+                        callbacks = callbacks,
+                        labelScale = labelScale,
+                    )
+
                     else -> KeyCanvas(
                         rows = KeyboardLayouts.rows(
                             layout = state.layout,
@@ -377,7 +384,6 @@ private fun KeyboardSurface(
                             shifted = state.shifted || state.capsLock,
                             enterLabel = state.enterLabel,
                             numberRow = state.showNumberRow,
-                            mathOffset = state.numberMathOffset,
                         ),
                         keyHeight = keyHeight,
                         cornerRadius = cornerRadius,

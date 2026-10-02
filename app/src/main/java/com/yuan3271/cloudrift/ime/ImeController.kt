@@ -16,7 +16,6 @@ import com.yuan3271.cloudrift.engine.Candidate
 import com.yuan3271.cloudrift.engine.CandidateKind
 import com.yuan3271.cloudrift.engine.InputEngine
 import com.yuan3271.cloudrift.input.EditorProxy
-import com.yuan3271.cloudrift.input.ExpressionEval
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.input.KeyboardLayouts
@@ -175,6 +174,8 @@ class ImeController(
             quickSettingsVisible = false,
             clipboardVisible = false,
             page = KeyboardPage.Letters,
+            // 每次开键盘都换一个数：更新提示的动画跟着它重播一次（见 KeyboardToolbar.UpdateMark）。
+            keyboardShows = _state.value.keyboardShows + 1,
         )
         clearAssociations()
         if (!AppGraph.engines.dictionaryReady.value) AppGraph.engines.warmUp()
@@ -293,7 +294,6 @@ class ImeController(
             KeyCode.Settings -> toggleQuickSettings()
             KeyCode.HideKeyboard -> service.requestHideSelf(0)
             KeyCode.CandidateNext -> selectCandidate(0)
-            KeyCode.Calculate -> calculate()
             KeyCode.None -> Unit
         }
     }
@@ -304,37 +304,10 @@ class ImeController(
         appendReading(alternate)
     }
 
-    /**
-     * 上划一个键：字母键输入画在它上面的那个符号；数字页第一列的键则往前换一组算术符号。
-     */
+    /** Swipe up on a key types the symbol painted above it, bypassing composition. */
     fun onSwipeUp(key: KeyDef) {
-        if (key.action.isNotEmpty()) {
-            stepKeyAction(key.action, +1)
-            return
-        }
         if (!settings.current.swipeUpSymbols || key.swipeUp.isEmpty()) return
         commitLiteral(key.swipeUp)
-    }
-
-    /** 下划一个键。数字页第一列用它往回翻。（字母键没有"下划出符号"这一说。） */
-    fun onSwipeDown(key: KeyDef) {
-        if (key.action.isNotEmpty()) {
-            stepKeyAction(key.action, -1)
-            return
-        }
-        if (!settings.current.swipeUpSymbols || key.swipeDown.isEmpty()) return
-        commitLiteral(key.swipeDown)
-    }
-
-    /** 纵向滑动触发的键盘动作。目前只有数字页第一列换符号这一件事。 */
-    private fun stepKeyAction(action: String, steps: Int) {
-        when (action) {
-            KeyboardLayouts.MATH_SWIPE_ACTION -> {
-                val size = KeyboardLayouts.mathSymbols.size
-                val next = ((_state.value.numberMathOffset + steps) % size + size) % size
-                _state.value = _state.value.copy(numberMathOffset = next)
-            }
-        }
     }
 
     /** Horizontal drag on the space bar moves the caret. */
@@ -864,40 +837,6 @@ class ImeController(
         )
     }
 
-    /**
-     * 数字页的 `计算` 键：把光标左边那段算式算出来，就地换成结果。
-     *
-     * 只吃光标左边**连续的一段**算式（有选中文字时吃选中的那一段）。不做整行扫描是有意的：
-     * 算不出来只是少算一次，把用户写在算式前面的正文一起删掉才是灾难。
-     */
-    private fun calculate() {
-        if (_state.value.isComposing) commitBuffer()
-        val selected = if (hasSelection || editor.hasLiveSelection()) editor.selectedText() else null
-        val expression = if (selected != null) {
-            ExpressionEval.expression(selected)
-        } else {
-            editor.textBeforeCaret(CALCULATION_SCAN_CHARS)
-                ?.let { ExpressionEval.trailingExpression(it) }
-        }
-        if (expression == null) {
-            showNotice("光标左边没有能算的式子")
-            return
-        }
-        val value = ExpressionEval.evaluate(expression)
-        if (value == null) {
-            showNotice("「$expression」算不出来")
-            return
-        }
-        val result = ExpressionEval.format(value)
-        selfEditCounter++
-        if (selected != null) editor.replaceSelection(result) else editor.replaceBeforeCaret(expression.length, result)
-    }
-
-    /** 键盘内的一句话提示，和语音错误用的是同一条通道。 */
-    private fun showNotice(message: String) {
-        _state.value = _state.value.copy(notice = message, noticeNeedsMicrophonePermission = false)
-    }
-
     private fun toggleShift() {
         val current = _state.value
         when {
@@ -1022,8 +961,6 @@ class ImeController(
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
         /** How long two single character commits may be apart and still form a learned word. */
         private const val AUTO_WORD_WINDOW_MS = 3000L
-        /** 计算键往回看多少个字符找算式：够长到能装下一整行算术，又短到不会把正文吃进来。 */
-        private const val CALCULATION_SCAN_CHARS = 64
         /** Bounds the corner drag may move the floating keyboard within. */
         const val MIN_FLOATING_WIDTH_PERCENT = 45
         const val MAX_FLOATING_WIDTH_PERCENT = 100

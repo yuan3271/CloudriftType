@@ -21,9 +21,6 @@ enum class KeyCode {
     HideKeyboard,
     CandidateNext,
 
-    /** 数字页的 `计算`：把光标左边那段算式算出来，就地替换成结果。 */
-    Calculate,
-
     /** A layout spacer. Occupies weight, draws nothing and types nothing. */
     None,
 }
@@ -51,8 +48,6 @@ enum class KeyStyle {
  * @param badge small secondary glyph in the key's corner, e.g. the digit on a nine key pad.
  * @param caption small glyph centred under the label, e.g. the letters on a phone dial pad.
  * @param swipeUp text inserted when the key is swiped upward.
- * @param swipeDown text inserted when the key is swiped downward.
- * @param action 纵向滑动触发的键盘动作（如数字页第一列的换一组符号），空串表示滑动只输入文字。
  */
 data class KeyDef(
     val code: KeyCode,
@@ -62,7 +57,6 @@ data class KeyDef(
     val badge: String = "",
     val caption: String = "",
     val swipeUp: String = "",
-    val swipeDown: String = "",
     val weight: Float = 1f,
     val style: KeyStyle = KeyStyle.Primary,
     val repeatable: Boolean = false,
@@ -80,7 +74,6 @@ data class KeyDef(
             badge: String = "",
             caption: String = "",
             swipeUp: String = "",
-            swipeDown: String = "",
             weight: Float = 1f,
         ) = KeyDef(
             code = KeyCode.Char,
@@ -90,7 +83,6 @@ data class KeyDef(
             badge = badge,
             caption = caption,
             swipeUp = swipeUp,
-            swipeDown = swipeDown,
             weight = weight,
         )
 
@@ -101,7 +93,6 @@ data class KeyDef(
             weight: Float = 1f,
             caption: String = "",
             largeLabel: Boolean = false,
-            action: String = "",
         ) = KeyDef(
             code = KeyCode.Text,
             label = label,
@@ -110,19 +101,10 @@ data class KeyDef(
             style = style,
             caption = caption,
             largeLabel = largeLabel,
-            action = action,
         )
 
         fun modifier(code: KeyCode, label: String = "", weight: Float = 1.5f) =
             KeyDef(code = code, label = label, weight = weight, style = KeyStyle.Modifier)
-
-        /** A key that runs a keyboard action rather than inserting text. */
-        fun action(
-            code: KeyCode,
-            label: String,
-            weight: Float = 1f,
-            style: KeyStyle = KeyStyle.Modifier,
-        ) = KeyDef(code = code, label = label, weight = weight, style = style)
 
         val backspace = KeyDef(
             code = KeyCode.Backspace,

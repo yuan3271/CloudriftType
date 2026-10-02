@@ -56,75 +56,68 @@ class KeyboardLayoutTest {
     }
 
     @Test
-    fun `the number page is a four by five grid`() {
-        val grid = numberRows().take(4)
+    fun `the number page is four rows of four keys plus the sliding strip`() {
+        val grid = numberRows()
 
         assertEquals(4, grid.size)
-        assertTrue("每一行都该是五列: ${grid.map { it.size }}", grid.all { it.size == 5 })
-        // 五列就是五列：数字键和两侧的功能键一样宽。
+        assertTrue("每一行都该是四列: ${grid.map { it.size }}", grid.all { it.size == 4 })
+        // 每列一个单位宽：数字键和右边那列功能键一样宽。
         assertTrue(grid.all { row -> row.all { it.weight == 1f } })
-        // 中间三列是数字键盘，前三行 1–9，末行 0 / . / 00。
-        assertEquals(listOf("1", "2", "3"), grid[0].drop(1).take(3).map { it.output })
-        assertEquals(listOf("4", "5", "6"), grid[1].drop(1).take(3).map { it.output })
-        assertEquals(listOf("7", "8", "9"), grid[2].drop(1).take(3).map { it.output })
-        assertEquals(listOf("0", ".", "00"), grid[3].drop(1).take(3).map { it.output })
+        // 三列数字：前三行 1–9，末行 0 / . / 00。
+        assertEquals(listOf("1", "2", "3"), grid[0].take(3).map { it.output })
+        assertEquals(listOf("4", "5", "6"), grid[1].take(3).map { it.output })
+        assertEquals(listOf("7", "8", "9"), grid[2].take(3).map { it.output })
+        assertEquals(listOf("0", "00", "."), grid[3].take(3).map { it.output })
     }
 
     @Test
-    fun `the right column is equals minus enter and calculate`() {
-        val right = numberRows().take(4).map { it[4] }
+    fun `the right column puts delete on top and letters at the bottom`() {
+        val right = numberRows().map { it[3] }
 
-        assertEquals("=", right[0].output)
-        assertEquals("-", right[1].output)
+        assertEquals(KeyCode.Backspace, right[0].code)
+        assertEquals("=", right[1].output)
         assertEquals(KeyCode.Enter, right[2].code)
-        assertEquals(KeyCode.Calculate, right[3].code)
-        // 等号按要求只输入一个等号，不做计算。
-        assertEquals(KeyCode.Text, right[0].code)
+        assertEquals(KeyCode.Letters, right[3].code)
+        // 等号只输入一个等号：数字页不做计算。
+        assertEquals(KeyCode.Text, right[1].code)
     }
 
     /**
-     * 第一列是一个可以上下滑动的窗口：四个一组，环绕，滑不到头。
+     * 左边那条竖条：`+ − × ÷` 在最上面，往下滑是根号、百分号这些地方；左下角固定一颗 `符`。
+     * 竖条 + `符` = 四行，和 26 键一样高——键盘高度不能长，这条测试就是钉住这件事。
+     */
+    @Test
+    fun `the sliding strip starts with the four operations`() {
+        val strip = KeyboardLayouts.mathStrip()
+
+        assertEquals(listOf("+", "-", "×", "÷"), strip.take(4).map { it.output })
+        assertEquals(listOf("√", "%", "^", "(", ")"), strip.drop(4).map { it.output })
+        assertEquals(KeyCode.Symbols, KeyboardLayouts.numberSymbolKey().code)
+    }
+
+    /**
+     * 数字页画出来就该长这样。左边那条竖条只画出最上面三个（其余要滑），左下角是 `符`；
+     * 右边四行四列。
      *
-     * 这条锁住的是用户要的手感——`+ − × ÷` 是开场那一组，`√ % ^ ( )` 滑一下就能用，
-     * 而且往回滑一定回得到开头。
+     * 这条同时钉住用户点名的两件事：**四行**（和 26 键一样高，换页不长高）与**五列**
+     * （竖条一列 + 右边四列）。
      */
     @Test
-    fun `the maths column slides through its symbols and wraps around`() {
-        val symbols = KeyboardLayouts.mathSymbols
-        val first = KeyboardLayouts.mathWindow(0)
-
-        assertEquals(listOf("+", "-", "×", "÷"), first)
-        assertEquals(listOf("-", "×", "÷", "√"), KeyboardLayouts.mathWindow(1))
-        // 环绕：滑到最后再往前一步就回到开头。
-        assertEquals(first, KeyboardLayouts.mathWindow(symbols.size))
-        assertEquals(listOf(")", "+", "-", "×"), KeyboardLayouts.mathWindow(symbols.size - 1))
-        // 往下滑一步等于往回滑一步的逆运算。
-        assertEquals(KeyboardLayouts.mathWindow(0), KeyboardLayouts.mathWindow(symbols.size - 1 + 1))
-
-        // 数字页每次画出来的第一列，就是那个窗口。
-        assertEquals(first, numberRows().take(4).map { it[0].output })
-        assertEquals(listOf("√", "%", "^", "("), numberRows(offset = 4).take(4).map { it[0].output })
-        // 第一列的键纵划换组，所以都带着动作名。
-        assertTrue(numberRows().take(4).all { it[0].action == KeyboardLayouts.MATH_SWIPE_ACTION })
-    }
-
-    /**
-     * 数字页画出来就该长这样。这条是给"四行五列"这句需求留的钉子：列错了、键跑到别的行上，
-     * 这段 ASCII 会先变，而不是等到真机上才发现。
-     */
-    @Test
-    fun `the number page reads as a four by five keypad`() {
-        val picture = numberRows().joinToString("\n") { row ->
-            row.joinToString(" ") { key -> keyLabel(key).padStart(5) }
+    fun `the number page reads as four rows of five columns`() {
+        val strip = KeyboardLayouts.mathStrip().take(3).map { keyLabel(it) } +
+            keyLabel(KeyboardLayouts.numberSymbolKey())
+        val picture = numberRows().mapIndexed { index, row ->
+            (listOf(strip[index]) + row.map { keyLabel(it) })
+                .joinToString(" ") { it.padStart(5) }
         }
+            .joinToString("\n")
 
         assertEquals(
             """
-            |    +     1     2     3     =
-            |    -     4     5     6     -
+            |    +     1     2     3     ⌫
+            |    -     4     5     6     =
             |    ×     7     8     9    换行
-            |    ÷     0     .    00    计算
-            |    符   ABC     ⌫    空格
+            |    符     0    00     .   ABC
             """.trimMargin().trimEnd(),
             picture,
         )
@@ -136,12 +129,11 @@ class KeyboardLayoutTest {
         else -> key.display.ifEmpty { "?" }
     }
 
-    private fun numberRows(offset: Int = 0) = KeyboardLayouts.rows(
+    private fun numberRows() = KeyboardLayouts.rows(
         layout = LayoutId.Pinyin26,
         page = KeyboardPage.Numbers,
         shifted = false,
         enterLabel = "换行",
-        mathOffset = offset,
     )
 
     /**

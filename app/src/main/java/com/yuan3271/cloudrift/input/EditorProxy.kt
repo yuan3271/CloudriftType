@@ -82,40 +82,6 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
         if (connection?.commitText("", 1) == true) true else false
     }.getOrDefault(false)
 
-    /** 选中的那段文字；没有选区时返回 null。 */
-    fun selectedText(): String? = runCatching {
-        connection?.getSelectedText(0)?.toString()?.takeIf { it.isNotEmpty() }
-    }.getOrNull()
-
-    /**
-     * 把光标左边 [length] 个字符换成 [text]。
-     *
-     * 走"先选中、再输入"这条路：`commitText` 在多数编辑器里就是"替换当前选区"，这也正是
-     * 选中文字时按键盘输入该有的行为。
-     */
-    fun replaceBeforeCaret(length: Int, text: String): Boolean {
-        if (length <= 0) return false
-        val connection = connection ?: return false
-        val request = ExtractedTextRequest().apply {
-            flags = 0
-            hintMaxChars = 10_000
-            hintMaxLines = 10
-        }
-        val extracted = runCatching { connection.getExtractedText(request, 0) }.getOrNull()
-            ?: return false
-        val end = extracted.selectionEnd
-        val start = end - length
-        if (start < 0) return false
-        val selected = runCatching { connection.setSelection(start, end) }.getOrDefault(false)
-        if (!selected) return false
-        return runCatching { connection.commitText(text, 1) }.getOrDefault(false)
-    }
-
-    /** 把当前选中的一段换成 [text]。 */
-    fun replaceSelection(text: String): Boolean = runCatching {
-        connection?.commitText(text, 1) == true
-    }.getOrDefault(false)
-
     /**
      * 成对输入：插入 [open][close]，然后把光标退回两个符号**中间**。
      *

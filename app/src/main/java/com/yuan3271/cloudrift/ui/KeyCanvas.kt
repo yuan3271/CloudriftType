@@ -70,8 +70,6 @@ data class KeyCallbacks(
     val onAlternate: (KeyDef, String) -> Unit,
     val onLongPress: (KeyDef) -> Unit,
     val onSwipeUp: (KeyDef) -> Unit,
-    /** 下划：数字页第一列的键用它往回换一组符号。 */
-    val onSwipeDown: (KeyDef) -> Unit,
     val onSpaceCursorDrag: (Int) -> Unit,
     val onSpaceLongPress: () -> Unit,
     /**
@@ -255,15 +253,7 @@ private fun RowScope.KeyButton(
         pressed = pressed,
         modifier = modifier
             .onGloballyPositioned { bounds = it.boundsInWindow() }
-            .pointerInput(
-                key.code,
-                key.output,
-                key.alternates,
-                key.swipeUp,
-                key.swipeDown,
-                key.action,
-                keyBackground,
-            ) {
+            .pointerInput(key.code, key.output, key.alternates, key.swipeUp, keyBackground) {
                 keyGesture(
                     key = key,
                     swipeThreshold = swipeThreshold,
@@ -280,7 +270,6 @@ private fun RowScope.KeyButton(
                         }
                     },
                     swipeUp = { callbacks.onSwipeUp(key) },
-                    swipeDown = { callbacks.onSwipeDown(key) },
                     cancelDistance = cancelDistance,
                     spaceRelease = { cancelled -> callbacks.onSpaceRelease(cancelled) },
                     spaceCancelChanged = { armed -> callbacks.onSpaceCancelChanged(armed) },
@@ -458,7 +447,6 @@ private suspend fun PointerInputScope.keyGesture(
     tap: () -> Unit,
     longPress: () -> Unit,
     swipeUp: () -> Unit,
-    swipeDown: () -> Unit,
     /** How far the finger has to travel up before the hold-to-talk recording is thrown away. */
     cancelDistance: Float,
     /** How far up backspace has to be dragged before "clear everything" lights up. */
@@ -483,10 +471,6 @@ private suspend fun PointerInputScope.keyGesture(
         // Backspace: sliding up cancels the repeat and lights the clear-everything option.
         var clearArmed = false
         var cursorAccumulator = 0f
-        // 字母键上滑出符号，数字页第一列上下滑换一组符号（action）——两种都算"这个键可以纵划"。
-        val swipeableVertical = key.swipeUp.isNotEmpty() ||
-            key.swipeDown.isNotEmpty() ||
-            key.action.isNotEmpty()
 
         val repeater: Job? = if (key.repeatable) {
             claimed = true
@@ -536,13 +520,9 @@ private suspend fun PointerInputScope.keyGesture(
             val dy = change.position.y - down.position.y
             val dx = change.position.x - down.position.x
 
-            if (!claimed && swipeableVertical && dy < -swipeThreshold) {
+            if (!claimed && key.swipeUp.isNotEmpty() && dy < -swipeThreshold) {
                 claimed = true
                 swipeUp()
-            }
-            if (!claimed && swipeableVertical && dy > swipeThreshold) {
-                claimed = true
-                swipeDown()
             }
             if (!claimed && key.code == KeyCode.Space && abs(dx) > cursorStep) {
                 val steps = ((dx - cursorAccumulator) / cursorStep).toInt()
@@ -609,6 +589,17 @@ private fun KeyContent(key: KeyDef, contentColor: Color) {
         }
 
         else -> BadgedLabel(key, contentColor)
+    }
+}
+
+/**
+ * 只画键上的字，不画键面。数字页左边那条滑动条用：那里的符号要连成一整条，
+ * 一个个按键画框会碎成小方块。
+ */
+@Composable
+fun KeyLabelOnly(key: KeyDef, labelScale: Float = 1f) {
+    CompositionLocalProvider(LocalKeyLabelScale provides labelScale) {
+        KeyContent(key = key, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
