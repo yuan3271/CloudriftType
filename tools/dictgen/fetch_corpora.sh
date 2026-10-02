@@ -52,6 +52,21 @@ if [ ! -f "$UNIHAN" ]; then
   curl -sSL -o "$UNIHAN" https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip
 fi
 
+# 专名（院校 / 行政区划），两张 MIT 表；只有生成词表时需要，不随仓库分发。
+UNIVERSITY="$RAW/university_data.json"
+if [ ! -f "$UNIVERSITY" ]; then
+  echo "↓ 全国普通高等学校名单 (MIT, hugg95/university-data)"
+  curl -sSL -o "$UNIVERSITY" \
+    "${GITHUB_PROXY:-}https://raw.githubusercontent.com/hugg95/university-data/master/data.json"
+fi
+
+AREA="$RAW/area_list.json"
+if [ ! -f "$AREA" ]; then
+  echo "↓ 省市区县 (MIT, mumuy/data_location)"
+  curl -sSL -o "$AREA" \
+    "${GITHUB_PROXY:-}https://raw.githubusercontent.com/mumuy/data_location/master/list.json"
+fi
+
 PYPINYIN_JSON="$RAW/pypinyin_phrases_dict.json"
 if [ ! -f "$PYPINYIN_JSON" ]; then
   echo "↓ pypinyin $PYPINYIN_VERSION phrases (MIT)"
@@ -69,4 +84,4 @@ python3 "$ROOT/tools/dictgen/prepare_unihan.py" "$UNIHAN" \
   "$CLEAN/unihan_readings.txt"
 
 echo "snapshot sha256:"
-shasum -a 256 "$TATOEBA" "$PYPINYIN_JSON" "$AISHELL" "$UNIHAN"
+shasum -a 256 "$TATOEBA" "$PYPINYIN_JSON" "$AISHELL" "$UNIHAN" "$UNIVERSITY" "$AREA"

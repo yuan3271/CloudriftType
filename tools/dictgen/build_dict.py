@@ -8,6 +8,8 @@
 | pinyin-data (mozillazg) | MIT | per character readings, ordered by commonness |
 | pypinyin (mozillazg) | MIT | per *word* readings, which is the one thing per-character data cannot say |
 | Unihan (Unicode) | Unicode License v3 | how often each *reading* of a character is used (`kHanyuPinlu`, `kMandarin`) |
+| hugg95/university-data | MIT | 全国普通高等学校名单（院校名） |
+| mumuy/data_location | MIT | 省 / 市 / 区县名（GB/T 2260 行政区划） |
 
 The last table is what `tools/dictgen/fetch_corpora.sh` + `prepare_pypinyin.py` produce in
 `clean/pypinyin_phrases.txt`. Without it a word's reading is the cartesian product of its
@@ -114,6 +116,13 @@ THUOCL_ONLY_DISCOUNT = 0.75
 # 音乐, that 谁 is shéi in speech, or that 得 is děi in 得走了 - so those characters were simply
 # absent from the syllable the typist presses.
 UNIHAN_READINGS = TOOLS / "clean/unihan_readings.txt"
+# 专名（院校 / 行政区划）：名字该被认识，但不该靠语料频率排序——`岳阳楼区`、`清华大学` 这类词
+# 在新闻语料里的出现次数跟"有没有人打它"没关系。所以单列成固定权重的来源：
+#   (文件名, JSON 里的键（None = 值是 {代码: 名字} 的字典）, 权重, 名义频次)
+EXTRA_NAMED_LISTS = [
+    ("university_data.json", "university", 0.9, 3000),
+    ("area_list.json", None, 1.0, 5000),
+]
 # A second reading earns its own entry in the character table when the frequency dictionary shows
 # it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
 # jiào in 15%). Below that the reading exists but is rare enough that the primary placement is
@@ -323,6 +332,7 @@ def readings_for(
     char_readings: dict[str, list[str]],
     phrase_readings: dict[str, list[str]],
     attested: dict[str, set[str]],
+    allow_alternates: bool = True,
 ) -> list[tuple[str, int]]:
     """Cartesian product of per character readings, capped, primary first.
 
@@ -343,6 +353,13 @@ def readings_for(
     stated = phrase_readings.get(word)
     if stated:
         return [("".join(stated), 0)]
+    # 专名（院校 / 行政区划）只用本音：`中国人民大学` 的 `大` 不该被异读拼成 dàixué，
+    # `内蒙古自治区` 的 `内` 更不该读成 nà。名字怎么念没有歧义，异读只会造出假读音。
+    if not allow_alternates:
+        primary = [char_readings.get(char, [])[:1] for char in word]
+        if any(not options for options in primary):
+            return []
+        return [("".join(options[0] for options in primary), 0)]
     combinations: list[tuple[list[str], int]] = [([], 0)]
     for char in word:
         options = char_readings.get(char)
@@ -402,6 +419,29 @@ def load_aishell_words(vocabulary: set[str]) -> dict[str, int]:
 
 
 def load_second_readings() -> dict[str, list[str]]:
+    """(kept below load_named_lists on purpose: the named lists are read first in main)"""
+    return _load_second_readings()
+
+
+def load_named_lists() -> dict[str, int]:
+    """院校名与行政区划名 -> 分数。见 [EXTRA_NAMED_LISTS]。"""
+    names: dict[str, int] = {}
+    for filename, key, weight, nominal in EXTRA_NAMED_LISTS:
+        path = TOOLS / "raw" / filename
+        if not path.exists():
+            print(f"! missing {filename}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        items = data.get(key, []) if key else [{"name": name} for name in data.values()]
+        for item in items:
+            word = item.get("name") if isinstance(item, dict) else item
+            if not word or not (2 <= len(word) <= MAX_WORD_LENGTH) or not HAN.match(word):
+                continue
+            names[word] = max(names.get(word, 0), score_of(nominal, weight))
+    return names
+
+
+def _load_second_readings() -> dict[str, list[str]]:
     """character -> the readings beyond its first one that deserve a candidate slot.
 
     Two things make a reading worth one: the frequency dictionary says people read the character
@@ -483,6 +523,12 @@ def main() -> int:
         else:
             word_scores[word] = max(word_scores[word], int(score * 0.9))
 
+    # 专名（院校 / 行政区划）走自己的固定档：jieba 不认识的院校名、区县名照样要能打出来。
+    named = load_named_lists()
+    for word, score in named.items():
+        word_scores[word] = max(word_scores.get(word, 0), score)
+    print(f"专名表: {len(named)} 个（院校 / 省市区县）")
+
     # Conversational frequency, on top of the corpus lists. `frequency` in that file is a corpus
     # rank (today 155, 怎么 128, 怎么样 1367, 简体字 57431), so it is applied in tiers: the words a
     # person says out loud beat the words a news corpus happens to repeat.
@@ -529,7 +575,9 @@ def main() -> int:
         syllable_weight[primary] = syllable_weight.get(primary, 0) + weight
 
     for word, score in word_scores.items():
-        readings = readings_for(word, char_readings, phrases, attested)
+        readings = readings_for(
+            word, char_readings, phrases, attested, allow_alternates=word not in named,
+        )
         if not readings:
             continue
         # Longer words contribute less per character so common single characters do not get

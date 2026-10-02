@@ -311,8 +311,8 @@ class PinyinEngine(
         // characters that came from the fragment are left dimmed.
         val fragment = split.fragment
         if (fragment.isEmpty()) {
-            return decodeTop(buffer, bounds, SENTENCE_LIMIT)
-                .map { it.first }
+            return attested(decodeTop(buffer, bounds, SENTENCE_LIMIT))
+                .map { it.text }
                 .filter { it != buffer }
                 .map { sentence(it, buffer, unmatchedFrom = -1) }
         }
@@ -320,7 +320,7 @@ class PinyinEngine(
         // Candidates are compared on the *extended* reading, so the fragment itself is paid for by
         // every one of them; comparing against the covered reading instead would let the fragment
         // ride along for free and always win.
-        val alternatives = ArrayList<Pair<String, Float>>()
+        val alternatives = ArrayList<Reading>()
         for (syllable in dictionary.syllablesStartingWith(fragment, PARTIAL_SYLLABLE_LIMIT)) {
             if (syllable == fragment) continue
             val extended = buffer + syllable.substring(fragment.length)
@@ -328,14 +328,26 @@ class PinyinEngine(
             alternatives.addAll(decodeTop(extended, extendedBounds, SENTENCE_LIMIT))
         }
         if (alternatives.isEmpty()) return emptyList()
-        return alternatives
-            .sortedByDescending { it.second }
-            .map { it.first }
+        return attested(alternatives.sortedByDescending { it.score })
+            .map { it.text }
             .filter { it != buffer }
             .distinct()
             .take(SENTENCE_LIMIT)
             .map { sentence(it, buffer, unmatchedFrom = prefix.length) }
     }
+
+    /**
+     * 只留下"语料里真的这样连过"的读法。
+     *
+     * 组合解码能拼出无穷多读法，而大多数读法不是中文：`毫无|青年`、`辛苦|里`、`不及|慢慢|来`
+     * 里的每一段都是词典里的词或常用字，但**相邻两段**在语料里从来没有一起出现过（证据 0）。
+     * 这类读法整条去掉，而不是排在后面——排在后面用户还得翻。
+     *
+     * 一条有证据的都没有时（新词、专名、语料没覆盖的说法）原样返回：宁可给没有证据的猜测，
+     * 也不能让候选栏空掉。
+     */
+    private fun attested(readings: List<Reading>): List<Reading> =
+        readings.filter { it.evidence > 0 }.ifEmpty { readings }
 
     private fun sentence(text: String, reading: String, unmatchedFrom: Int) = Candidate(
         text = text,
@@ -351,7 +363,7 @@ class PinyinEngine(
      * lets 实施这个 *and* 试试这个 both be offered for "shishizhege": they are different paths
      * through the same lattice with almost the same cost.
      */
-    private fun decodeTop(buffer: String, bounds: IntArray, count: Int): List<Pair<String, Float>> {
+    private fun decodeTop(buffer: String, bounds: IntArray, count: Int): List<Reading> {
         val syllables = bounds.size - 1
         val paths = Array(syllables + 1) { ArrayList<Path>(count) }
         // The first unit is scored against the sentence boundary, not against nothing: without it
@@ -428,6 +440,7 @@ class PinyinEngine(
                             path.text + character,
                             count,
                             lastToken = character.toString(),
+                            evidence = path.evidence + pair,
                         )
                         continue
                     }
@@ -442,6 +455,7 @@ class PinyinEngine(
                         path.text + character,
                         count,
                         lastToken = character.toString(),
+                        evidence = path.evidence + pair,
                     )
                 }
                 for ((end, entries) in words) {
@@ -455,6 +469,7 @@ class PinyinEngine(
                             path.text + entry.word,
                             count,
                             lastToken = entry.word,
+                            evidence = path.evidence + pair,
                         )
                     }
                 }
@@ -462,9 +477,12 @@ class PinyinEngine(
         }
         return paths[syllables]
             .sortedByDescending { it.score }
-            .map { it.text to it.score }
-            .filter { it.first.isNotEmpty() }
+            .filter { it.text.isNotEmpty() }
+            .map { Reading(it.text, it.score, it.evidence) }
     }
+
+    /** 一条读法：文本、路径分数，以及它拿到的搭配证据（0 = 语料里没有这个连法）。 */
+    private data class Reading(val text: String, val score: Float, val evidence: Int)
 
     private fun push(
         paths: ArrayList<Path>,
@@ -472,19 +490,29 @@ class PinyinEngine(
         text: String,
         count: Int,
         lastToken: String = "",
+        evidence: Int = 0,
     ) {
         if (paths.any { it.text == text }) return
         if (paths.size >= count && paths.last().score >= score) return
-        paths.add(Path(score, text, lastToken))
+        paths.add(Path(score, text, lastToken, evidence))
         paths.sortByDescending { it.score }
         while (paths.size > count) paths.removeAt(paths.size - 1)
     }
 
-    private data class Path(val score: Float, val text: String, val lastToken: String = "")
+    private data class Path(
+        val score: Float,
+        val text: String,
+        val lastToken: String = "",
+        /**
+         * 这条读法到目前为止拿到的搭配证据之和。0 表示它是由几个互不相干的单元拼出来的——
+         * `毫无|青年`、`辛苦|里`、`不及|慢慢|来` 都是这种，语料里从来没人这样连过。
+         */
+        val evidence: Int = 0,
+    )
 
     /** The single best reading of the run of syllables, or null when none exists. */
     private fun decode(buffer: String, bounds: IntArray): String? =
-        decodeTop(buffer, bounds, 1).firstOrNull()?.first
+        decodeTop(buffer, bounds, 1).firstOrNull()?.text
 
     private data class SyllableSplit(val bounds: IntArray, val covered: Int, val fragment: String)
 
@@ -764,6 +792,7 @@ class PinyinEngine(
                                 usedInitials = true,
                                 usedSyllable = path.usedSyllable || mixed,
                                 units = path.units + 1,
+                                evidence = path.evidence + pair,
                             ),
                         )
                         next.sortByDescending { it.score }
@@ -775,7 +804,9 @@ class PinyinEngine(
             addSpelledWordSteps(paths, letters, start)
         }
 
-        val ranked = ArrayList<Candidate>(INITIALS_LIMIT)
+        // 每条读法连同它拿到的搭配证据一起收集，最后按"有证据的在前、没有的只在一条都没有时
+        // 兜底"过滤——和整句解码同一条规矩（见 [attested]）。
+        val ranked = ArrayList<Pair<Candidate, Int>>(INITIALS_LIMIT)
         for (consumed in letters.length downTo MIN_INITIALS) {
             // Fewer steps first: a reading that eats the same letters as a single word ("wsm" ->
             // 为什么) beats one that needed two ("w(sm)" -> 无什么), even though the two-step one
@@ -813,12 +844,13 @@ class PinyinEngine(
                         },
                         // Every character was given at least its initial, so nothing is dimmed.
                         unmatchedFrom = -1,
-                    ),
+                    ) to path.evidence,
                 )
             }
             if (ranked.size >= INITIALS_LIMIT) break
         }
-        out.addAll(ranked.take(INITIALS_LIMIT))
+        val backed = ranked.filter { it.second > 0 }
+        out.addAll((backed.ifEmpty { ranked }).map { it.first }.take(INITIALS_LIMIT))
     }
 
     /**
@@ -861,6 +893,7 @@ class PinyinEngine(
                             usedInitials = path.usedInitials,
                             usedSyllable = true,
                             units = path.units + 1,
+                            evidence = path.evidence + pair,
                         ),
                     )
                 }
@@ -903,6 +936,7 @@ class PinyinEngine(
                             // The word was typed out in full, so this half of the run is 全拼.
                             usedSyllable = true,
                             units = path.units + 1,
+                            evidence = path.evidence + pair,
                         ),
                     )
                 }
@@ -953,6 +987,7 @@ class PinyinEngine(
                         usedWord = path.usedWord,
                         usedInitials = true,
                         units = path.units + 1,
+                        evidence = path.evidence + pair,
                     ),
                 )
             }
@@ -979,6 +1014,8 @@ class PinyinEngine(
         val usedSyllable: Boolean = false,
         /** How many steps the reading is built from; one means a single dictionary word. */
         val units: Int = 0,
+        /** 搭配证据之和，0 表示这条读法是几个互不相干的单元拼出来的（见 [attested]）。 */
+        val evidence: Int = 0,
     )
 
     /** Ranking key for one completion, see [addCompletionCandidates] for the order. */

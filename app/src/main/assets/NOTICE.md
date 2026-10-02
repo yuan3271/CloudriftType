@@ -24,6 +24,8 @@
 | [pypinyin](https://github.com/mozillazg/python-pinyin) `phrases_dict.json` | MIT | **词条**读音：多音字词按词定音 |
 | [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary) | MIT | 口语常用词及其语料排名（用于让"怎么样""今天"这类词排在行业词前面） |
 | [Unihan](https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip)（`kHanyuPinlu` / `kMandarin`） | Unicode License v3 | 每个**读音**的使用频率，决定一个字挂在哪些音节下 |
+| [hugg95/university-data](https://github.com/hugg95/university-data) | MIT | 全国普通高等学校名单（2,631 条院校名，专名只用本音拼读） |
+| [mumuy/data_location](https://github.com/mumuy/data_location) | MIT | 省 / 市 / 区县名（GB/T 2260 行政区划，3,433 条） |
 | `tools/dictgen/raw/corpus_*.txt` | **本项目原创** | 现代口语词频（只用它给"本来就常见"的词加权，不据此引入生僻词） |
 
 生成的资产是上述数据的衍生作品，再分发时请一并保留本声明。词库文件本身不包含任何
@@ -49,6 +51,11 @@
 > 一个读音占到该字出现次数的 5% 以上、或是 kMandarin 认定的读音时，这个字会**多挂**一个音节
 > （降权放置，原音节里的排位不动）。当前共 53 条次读音归位，`shei→谁`、`dei→得`、`hang→行`、
 > `yue→乐`、`xie→血`、`de→地` 都在其中。`prepare_unihan.py` 负责抽取，Unihan 压缩包不随仓库分发。
+
+> 专名（院校、行政区划）来自上面两张 MIT 表。它们**不走语料频率**：`岳阳楼区`、`清华大学`
+> 该被认识，但它在新闻语料里出现多少次跟"有没有人打它"没关系，所以单列成固定权重的来源
+> （4,837 条进入词表；超过 8 字的院校名与词表同规则截断）。专名**只用本音**拼读：
+> `中国人民大学` 的 `大` 不会因为 `大夫` 被拼成 dàixué，`内蒙古` 的 `内` 也不会读成 nà。
 
 ### 联想（语言模型）资产
 

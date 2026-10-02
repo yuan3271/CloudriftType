@@ -1,5 +1,6 @@
 package com.yuan3271.cloudrift.input
 
+import com.yuan3271.cloudrift.data.SymbolWidth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import kotlin.math.roundToInt
@@ -72,5 +73,30 @@ class KeyboardLayoutTest {
         assertEquals("", digit.caption)
         assertTrue("the delete key should be wider than a digit", delete.weight > digit.weight)
         assertTrue("the left column should offer arithmetic", keys.any { it.output == "÷" })
+    }
+
+    /**
+     * 全角表里不许出现半角字符，半角表里不许出现全角字符。
+     *
+     * 这条是被用户投诉"符号的半角和全角搞混"之后加上的：全角那一行货币里同时有 ￥(U+FFE5) 和
+     * 半角的 ¥(U+00A5)、$(U+0024)，于是"切到全角"打出来的仍是半角符号。两张表都还允许
+     * **没有全/半之别的符号**（×÷≤≈ 箭头 °µ§¶ 这些），它们没有另一个宽度版本，不算混淆。
+     */
+    @Test
+    fun `full width and half width symbol tables do not mix`() {
+        val full = KeyboardLayouts.symbolBar(SymbolWidth.Full)
+        val half = KeyboardLayouts.symbolBar(SymbolWidth.Half)
+
+        val asciiInFull = full.filter { it.output.length == 1 && it.output[0].code in 0x21..0x7e }
+        val wideInHalf = half.filter { it.output.length == 1 && it.output[0].code in 0xff00..0xffef }
+
+        assertTrue("全角表里出现了半角字符: ${asciiInFull.map { it.output }}", asciiInFull.isEmpty())
+        assertTrue("半角表里出现了全角字符: ${wideInHalf.map { it.output }}", wideInHalf.isEmpty())
+
+        // 这一对是当年真的搞混了的：￥/＄ 是全角，¥/$ 是半角。
+        assertTrue(full.any { it.output == "＄" } && full.any { it.output == "￥" })
+        assertTrue(half.any { it.output == "$" } && half.any { it.output == "¥" })
+        assertTrue("全角表不该有半角美元", full.none { it.output == "$" })
+        assertTrue("半角表不该有全角日元", half.none { it.output == "￥" })
     }
 }
