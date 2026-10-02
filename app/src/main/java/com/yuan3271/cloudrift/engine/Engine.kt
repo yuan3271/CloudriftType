@@ -22,6 +22,16 @@ enum class CandidateKind {
     /** A single character standing in for a syllable. */
     Character,
 
+    /**
+     * A reading reached by 首字母: every syllable was given only its initial letter ("nh" -> 你好).
+     */
+    Initials,
+
+    /**
+     * 首字母 and 全拼 mixed in one run: "nhao" is n + hao -> 你好, "wojt" is wo + jt -> 我今天.
+     */
+    Mixed,
+
     /** Something the engine suggests before any conversion (kana, latin words). */
     Prediction,
 

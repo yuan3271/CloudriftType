@@ -111,30 +111,71 @@ class PinyinEngine(
         syllables: Int,
         candidates: List<Candidate>,
     ): List<Candidate> {
-        if (syllables < 2) return candidates
+        if (syllables < 2) return rawLast(candidates)
         if (orderProvider() == CandidateOrder.CharacterFirst) {
             // Characters in front, everything else behind: a stable sort, so the engine's own
             // ranking inside each group survives.
-            return candidates.sortedBy { if (it.text.length == 1) 0 else 1 }
+            return rawLast(candidates.sortedBy { if (it.text.length == 1) 0 else 1 })
         }
-        return candidates.sortedWith(
-            compareBy(
-                { candidate ->
-                    when {
-                        candidate.consumed >= buffer.length && candidate.unmatchedFrom == -1 -> 0
-                        candidate.consumed >= buffer.length -> 1
-                        else -> 2
-                    }
-                },
-                // Inside the "whole buffer, something still to type" group the closest match wins:
-                // 试试看 (one character away) beats 实时控制 (four away).
-                { candidate -> untypedCharacters(candidate) },
-                // Inside the "only part of the buffer" group the longest reach wins, which is what
-                // puts the words that make up the sentence before its single characters.
-                { candidate -> -candidate.consumed },
-                { candidate -> -candidate.text.length },
+        return rawLast(
+            candidates.sortedWith(
+                compareBy(
+                    { candidate ->
+                        when {
+                            // 首字母 (and 首字母 + 全拼 mixed) readings are a way of reading the
+                            // buffer, not the buffer's own reading, so they never outrank a
+                            // spelled out one. They do stay ahead of the candidates that only eat
+                            // part of the buffer, which is where a mixed run would otherwise lose
+                            // to its own first word ("wojintianqlbj" -> 我今天 used to sit in
+                            // front of 我今天去了北京).
+                            (candidate.kind == CandidateKind.Initials ||
+                                candidate.kind == CandidateKind.Mixed) &&
+                                candidate.consumed >= buffer.length -> 2
+                            candidate.consumed >= buffer.length && candidate.unmatchedFrom == -1 -> 0
+                            candidate.consumed >= buffer.length -> 1
+                            else -> 3
+                        }
+                    },
+                    // Inside the "whole buffer, something still to type" group the closest match
+                    // wins: 试试看 (one character away) beats 实时控制 (four away).
+                    { candidate -> untypedCharacters(candidate) },
+                    // Inside the "only part of the buffer" group the longest reach wins, which is
+                    // what puts the words that make up the sentence before its single characters.
+                    { candidate -> -candidate.consumed },
+                    // Spelled out readings follow the sentence-first rule (a longer reading is more
+                    // of what the user typed). 首字母 readings keep the order the lattice gave them
+                    // (fewest steps first, then score), because how many guesses a reading needed is
+                    // not visible from its text.
+                    { candidate ->
+                        if (candidate.kind == CandidateKind.Initials || candidate.kind == CandidateKind.Mixed) {
+                            0
+                        } else {
+                            -candidate.text.length
+                        }
+                    },
+                ),
             ),
         )
+    }
+
+    /**
+     * The raw letters are what the keyboard shows when nothing else fits. A run that was partly
+     * spelled out is evidence that the user is typing pinyin, so the raw letters drop behind those
+     * readings ("nhao" leads with 你好, "nhao" itself stays underneath). A run that only fits 简拼
+     * guesses keeps them in front, which is the "zzz -> 之正在 is noise, the letters are the answer"
+     * rule - and the letters never disappear either way.
+     */
+    private fun rawLast(candidates: List<Candidate>): List<Candidate> {
+        if (candidates.none { it.kind == CandidateKind.Raw }) return candidates
+        // Conversion only shows up here from the mixed decoder (an exact word hit or a run with a
+        // spelled part); 简拼 alone is Initials, and that is the case the raw letters stay ahead of.
+        if (candidates.none { it.kind == CandidateKind.Mixed || it.kind == CandidateKind.Conversion }) {
+            return candidates
+        }
+        val ordered = ArrayList<Candidate>(candidates.size)
+        ordered.addAll(candidates.filter { it.kind != CandidateKind.Raw })
+        ordered.addAll(candidates.filter { it.kind == CandidateKind.Raw })
+        return ordered
     }
 
     private fun untypedCharacters(candidate: Candidate): Int =
@@ -480,15 +521,22 @@ class PinyinEngine(
         for (entry in completions.take(COMPLETION_LIMIT)) out.add(entry.candidate)
     }
 
-    /** Ranking key for one completion, see [addCompletionCandidates] for the order. */
     /**
-     * 首字母 candidates: every character is represented by its initial, so the whole buffer is
-     * consumed and nothing is left to type. "nh" gives 你好 without typing a single full syllable.
+     * 首字母 candidates, and the 混合输入 (initials mixed with full pinyin) that shares their
+     * decoding: every character is covered by at least its initial, so the whole buffer is
+     * consumed and nothing is left to type. "nh" gives 你好 without typing a single full syllable,
+     * and "nhao" gives it with the 好 spelled out.
      *
-     * A run of initials is decoded as a sequence, not looked up as one string: "jtzmy" is
+     * A run is decoded as a sequence of steps, not looked up as one string: "jtzmy" is
      * 今天 + 怎么样 (jt | zmy), and the same letters also reach 今天怎么 / 今天这么 through
-     * 今天 + 怎么 (jt | zm). Partial paths are kept on purpose with their own `consumed`, so
-     * picking one leaves the rest of the initials in the buffer to carry on typing.
+     * 今天 + 怎么 (jt | zm). A step may be
+     *  - one letter standing for one character (简拼),
+     *  - two to four letters standing for a whole word (简拼),
+     *  - a syllable typed out in full, or
+     *  - a word typed out in full (全拼).
+     * The last two are what make a mixed run work: "wojt" is 我 + 今天, "wojintianqlbj" is
+     * 我 + 今天 + 去 + 了 + 北京. Partial paths are kept on purpose with their own `consumed`, so
+     * picking one leaves the rest of the buffer to carry on typing.
      */
     private fun addInitialCandidates(buffer: String, out: MutableList<Candidate>) {
         if (nineKey || buffer.length < INITIALS_MIN_LENGTH) return
@@ -512,7 +560,11 @@ class PinyinEngine(
                     .map { it.toString() },
                 scoreOf = { CHARACTER_SCORE.toInt() },
             )
-            val longest = minOf(MAX_INITIALS, letters.length - start)
+            // The 全拼 half of a mixed run: a syllable spelled out in full.
+            addSpelledSyllableSteps(paths, letters, start)
+            // Keys go up to MIXED_WORD_LENGTH letters: an all-initials key is as long as its word
+            // (two to four), a mixed one is longer by however much of the word was spelled out.
+            val longest = minOf(MIXED_WORD_LENGTH, letters.length - start)
             for (length in MIN_INITIALS..longest) {
                 val key = letters.substring(start, start + length)
                 // The whole bucket, not the top few: the ranking below moves words up by how
@@ -521,6 +573,10 @@ class PinyinEngine(
                 val words = dictionary.wordsForInitials(key, INITIALS_LOOKUP)
                 if (words.isEmpty()) continue
                 for (word in words) {
+                    // A key longer than the word means the first syllable was given as its initial
+                    // and the rest was spelled out ("nhao" -> 你好): that half is 全拼, and saying so
+                    // is what lets the decoder prefer it over 你好 + 奥.
+                    val mixed = dictionary.abbreviatesFirstSyllable(key, word.word)
                     for (path in paths[start]) {
                         val next = paths[start + length]
                         val text = path.text + word.word
@@ -538,6 +594,9 @@ class PinyinEngine(
                                     INITIALS_UNIT_PENALTY,
                                 lastWord = word.word,
                                 usedWord = true,
+                                usedInitials = true,
+                                usedSyllable = path.usedSyllable || mixed,
+                                units = path.units + 1,
                             ),
                         )
                         next.sortByDescending { it.score }
@@ -545,25 +604,46 @@ class PinyinEngine(
                     }
                 }
             }
+            // The other 全拼 half: a whole word spelled out in full (今天 for "jintian").
+            addSpelledWordSteps(paths, letters, start)
         }
 
         val ranked = ArrayList<Candidate>(INITIALS_LIMIT)
         for (consumed in letters.length downTo MIN_INITIALS) {
-            for (path in paths[consumed]) {
+            // Fewer steps first: a reading that eats the same letters as a single word ("wsm" ->
+            // 为什么) beats one that needed two ("w(sm)" -> 无什么), even though the two-step one
+            // scores higher on word frequency alone. Ties keep the score order the lattice built.
+            for (path in paths[consumed].sortedWith(compareBy({ it.units }, { -it.score }))) {
                 if (path.text.length < 2) continue
                 // A reading made only of lone characters is not 简拼, it is noise: every run of
                 // letters fits one ("women" -> 无藕木耳南, "zzz" -> 在在), and offering it is how
                 // the feature used to bury the word the user actually typed. Real 简拼 always
-                // touches a word - 你好 for "nh", 今天|怎么样 for "jtzmy" - so a path that never
-                // used the word index is dropped rather than ranked.
-                if (!path.usedWord) continue
+                // touches a word - 你好 for "nh", 今天|怎么样 for "jtzmy" - so a path that used
+                // neither the word index nor a syllable spelled out in full is dropped.
+                if (!path.usedWord && !path.usedSyllable) continue
+                val mixed = path.usedInitials && path.usedSyllable
+                // The whole buffer is exactly one word ("nh" -> 你好, "nhao" -> 你好): that is a
+                // dictionary hit, not a 首字母 guess, and it ranks like the spelled-out words do.
+                val exactWord = path.units == 1 && path.usedWord && consumed == letters.length
                 ranked.add(
                     Candidate(
                         text = path.text,
                         consumed = consumed,
-                        kind = CandidateKind.Conversion,
+                        kind = when {
+                            exactWord -> CandidateKind.Conversion
+                            mixed -> CandidateKind.Mixed
+                            path.usedInitials -> CandidateKind.Initials
+                            // A run that was spelled out and still does not reach the end of the
+                            // buffer is an ordinary partial reading ("wojintianqlbj" -> 我今天),
+                            // not a 首字母 one.
+                            else -> CandidateKind.Conversion
+                        },
                         score = path.score,
-                        annotation = "首字母",
+                        annotation = when {
+                            mixed -> MIXED_ANNOTATION
+                            path.usedInitials -> INITIALS_ANNOTATION
+                            else -> letters.substring(0, consumed)
+                        },
                         // Every character was given at least its initial, so nothing is dimmed.
                         unmatchedFrom = -1,
                     ),
@@ -572,6 +652,97 @@ class PinyinEngine(
             if (ranked.size >= INITIALS_LIMIT) break
         }
         out.addAll(ranked.take(INITIALS_LIMIT))
+    }
+
+    /**
+     * The 全拼 half of a mixed run: the letters at [start] are one syllable typed out in full, so
+     * they produce that syllable's characters - "nhao" is n + hao, and the hao is what makes 好
+     * an answer.
+     *
+     * Ranked like the sentence decoder ranks its characters: the syllable's best character is
+     * always a path, and a lower ranked homophone only joins in when the pair model expects it
+     * here, so the lattice does not fill with 我门/我闷-style variants.
+     */
+    private fun addSpelledSyllableSteps(
+        paths: Array<ArrayList<InitialPath>>,
+        letters: String,
+        start: Int,
+    ) {
+        val upper = minOf(letters.length, start + PinyinSyllables.maxLength)
+        for (end in start + 2..upper) {
+            val syllable = letters.substring(start, end)
+            if (!PinyinSyllables.isSyllable(syllable)) continue
+            val chars = dictionary.charsFor(syllable, SPELLED_CHAR_LIMIT)
+            val next = paths[end]
+            for (rank in chars.indices) {
+                val character = chars[rank].toString()
+                for (path in paths[start]) {
+                    val combined = path.text + character
+                    if (next.any { it.text == combined }) continue
+                    val pair = dictionary.bigramScore(path.lastWord, character)
+                    if (rank > 0 && pair <= 0) continue
+                    next.add(
+                        InitialPath(
+                            consumed = end,
+                            text = combined,
+                            score = path.score + (
+                                CHARACTER_SCORE - rank * SENTENCE_CHAR_DECAY - UNIT_PENALTY +
+                                    pair * BIGRAM_WEIGHT
+                                ).toInt(),
+                            lastWord = character,
+                            usedWord = path.usedWord,
+                            usedInitials = path.usedInitials,
+                            usedSyllable = true,
+                            units = path.units + 1,
+                        ),
+                    )
+                }
+            }
+            next.sortByDescending { it.score }
+            while (next.size > INITIALS_PATHS) next.removeAt(next.size - 1)
+        }
+    }
+
+    /**
+     * The 全拼 half as a whole word: the letters at [start] spell a reading the dictionary has
+     * ("jintian" -> 今天). Without this step a mixed run would have to fall back to the syllables'
+     * single characters, and 我今天|去了|北京 would lose to 我|进|天|去了|北京.
+     */
+    private fun addSpelledWordSteps(
+        paths: Array<ArrayList<InitialPath>>,
+        letters: String,
+        start: Int,
+    ) {
+        val upper = minOf(letters.length, start + SPELLED_WORD_LETTERS)
+        for (end in start + 2..upper) {
+            val reading = letters.substring(start, end)
+            val words = dictionary.wordsFor(reading, SPELLED_WORDS_PER_STEP)
+            if (words.isEmpty()) continue
+            val next = paths[end]
+            for (word in words) {
+                for (path in paths[start]) {
+                    val combined = path.text + word.word
+                    if (next.any { it.text == combined }) continue
+                    val pair = dictionary.bigramScore(path.lastWord, word.word)
+                    next.add(
+                        InitialPath(
+                            consumed = end,
+                            text = combined,
+                            score = path.score +
+                                (word.score - UNIT_PENALTY + pair * BIGRAM_WEIGHT).toInt(),
+                            lastWord = word.word,
+                            usedWord = true,
+                            usedInitials = path.usedInitials,
+                            // The word was typed out in full, so this half of the run is 全拼.
+                            usedSyllable = true,
+                            units = path.units + 1,
+                        ),
+                    )
+                }
+            }
+            next.sortByDescending { it.score }
+            while (next.size > INITIALS_PATHS) next.removeAt(next.size - 1)
+        }
     }
 
     /**
@@ -605,6 +776,8 @@ class PinyinEngine(
                         score = path.score + scoreOf(text) - INITIALS_UNIT_PENALTY,
                         lastWord = text,
                         usedWord = path.usedWord,
+                        usedInitials = true,
+                        units = path.units + 1,
                     ),
                 )
             }
@@ -613,7 +786,7 @@ class PinyinEngine(
         while (next.size > INITIALS_PATHS) next.removeAt(next.size - 1)
     }
 
-    /** One way of reading a run of initials: how much it ate, what it produced, how good it is. */
+    /** One way of reading a run of initials (or a mix of initials and full syllables). */
     private data class InitialPath(
         val consumed: Int,
         val text: String,
@@ -621,8 +794,19 @@ class PinyinEngine(
         val lastWord: String = "",
         /** True once the path has touched the word index, i.e. it is 简拼 and not lone characters. */
         val usedWord: Boolean = false,
+        /** True once a single letter has stood for a character, i.e. the path is 首字母 at all. */
+        val usedInitials: Boolean = false,
+        /**
+         * True once a syllable has been typed out in full. That alone makes a path a real reading:
+         * "zhongguo" cut into two spelled syllables is not the lone character noise [usedWord]
+         * guards against, and a mixed run needs it to be offered at all.
+         */
+        val usedSyllable: Boolean = false,
+        /** How many steps the reading is built from; one means a single dictionary word. */
+        val units: Int = 0,
     )
 
+    /** Ranking key for one completion, see [addCompletionCandidates] for the order. */
     private data class Ranked(
         val continuesTypedSyllable: Boolean,
         val untyped: Int,
@@ -825,7 +1009,12 @@ class PinyinEngine(
         for (end in index + 1..upper) {
             val token = buffer.substring(index, end)
             val match = if (nineKey) matchesNineKey(token) else PinyinSyllables.isSyllable(token)
-            if (match) best = end - index
+            // One letter syllables (a/e/o/m/n) are interjections: nobody types "nhao" meaning
+            // 嗯好. Counting them as a syllable makes a 首字母+全拼 run look like full pinyin
+            // (n | hao) and hides the reading the user meant (n + hao -> 你好), so a single
+            // letter only stands on its own at the end of the buffer, where it cannot be the
+            // initial of the syllable that follows it.
+            if (match && (nineKey || end - index > 1 || end == buffer.length)) best = end - index
         }
         return best
     }
@@ -899,7 +1088,6 @@ class PinyinEngine(
         private const val INITIALS_MIN_LENGTH = 2
         /** Shortest word initials step; single letters have no word to stand for. */
         private const val MIN_INITIALS = 2
-        private const val MAX_INITIALS = 4
         /** Words kept per initials step, and how many readings of a run are offered. */
         /**
          * How many 首字母 readings to offer. Generous on purpose: the corpus ranks 你好 below a
@@ -924,8 +1112,25 @@ class PinyinEngine(
          * to outweigh a mild frequency difference to pick 我今天|去了 over 伪静态|权利.
          */
         private const val INITIALS_BIGRAM_WEIGHT = 3
-        /** How many characters one letter of 首字母 may stand for. */
-        private const val INITIALS_CHAR_LIMIT = 6
+        /**
+         * How many characters one letter of 首字母 may stand for. Wider than it looks like it needs
+         * to be: the syllables that start with a letter are ordered by how much text they carry, not
+         * by how likely a single character is, so 我 (wo) sits seventh under "w" (无/为/网/问/完/外
+         * first). Offering the whole run lets the pair model choose - 我|知道 scores on the
+         * 我 -> 知道 pair, while 无|知道 has nothing behind it.
+         */
+        private const val INITIALS_CHAR_LIMIT = 8
+        /** Characters per syllable the mixed (首字母 + 全拼) decoder tries; see its sibling above. */
+        private const val SPELLED_CHAR_LIMIT = 3
+        /** Words per spelled out reading the mixed decoder tries. */
+        private const val SPELLED_WORDS_PER_STEP = 6
+        /** Longest reading the mixed decoder looks up as a whole word, in letters. */
+        private const val SPELLED_WORD_LETTERS = 12
+        /** Longest 首字母 key: an all-initials word is 2-4 letters, a mixed one is spelled out longer. */
+        private const val MIXED_WORD_LENGTH = 12
+        /** Labels the candidate bar shows under a 首字母 / mixed reading. */
+        private const val INITIALS_ANNOTATION = "首字母"
+        private const val MIXED_ANNOTATION = "混合"
         /**
          * Per-unit cost of the 首字母 path, the same role [UNIT_PENALTY] plays in the sentence
          * decoder: without it every letter could be covered by its own character and the longest

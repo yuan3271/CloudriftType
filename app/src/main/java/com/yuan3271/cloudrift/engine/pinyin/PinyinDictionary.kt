@@ -54,8 +54,15 @@ class PinyinDictionary(
      * Chinese IMEs let you type just the first letter of every syllable, and it is the one thing a
      * reader of pinyin expects to work. Only words of two to four characters are indexed, which is
      * what jianpin is actually used for, and each bucket is capped so the index stays a few MB.
+     *
+     * The same table also answers 混合输入 (mixed 首字母 + 全拼): a word whose first syllable was
+     * given as its initial and whose other syllables were spelled out - "nhao" -> 你好, "jtian" ->
+     * 今天. The all-initials key cannot answer that (for "nhao" it only knows words written nh + ao),
+     * and without the entry the decoder can only piece the word together out of single characters,
+     * which is how 你好 loses to 你好 + 奥. A key of this shape is longer than the word it stands for,
+     * which is exactly how the two are told apart on lookup.
      */
-    private val initialsIndex = HashMap<String, MutableList<WordEntry>>(1 shl 15)
+    private val initialsIndex = HashMap<String, MutableList<WordEntry>>(1 shl 18)
 
     /**
      * Word-to-word scores, loaded from `pinyin_bigrams.txt`: how often the right word follows the
@@ -163,12 +170,11 @@ class PinyinDictionary(
                 if (entry.score > known) bestScore[entry.word] = entry.score
             }
         }
-        for ((reading, entries) in ordered) {
-            val initials = initialsOf(reading) ?: continue
-            if (initials.length !in MIN_INITIALS..MAX_INITIALS) continue
-            val bucket = initialsIndex.getOrPut(initials) { ArrayList(4) }
-            if (bucket.size >= INITIALS_PER_BUCKET) continue
-            val penalty = expansionPenalty(reading)
+
+        // One bucket is filled exactly the same way whether it was reached by the initials of the
+        // whole reading or by the first syllable's initial plus the rest spelled out.
+        fun fill(bucket: MutableList<WordEntry>, reading: String, penalty: Int, entries: List<WordEntry>) {
+            if (bucket.size >= INITIALS_PER_BUCKET) return
             for (entry in entries) {
                 if (entry.word.length < 2 || entry.word.length > MAX_INITIALS) continue
                 if (bucket.size >= INITIALS_PER_BUCKET) break
@@ -184,6 +190,21 @@ class PinyinDictionary(
                         entry.score - penalty + commonWordBonus(entry.word),
                     ),
                 )
+            }
+        }
+
+        for ((reading, entries) in ordered) {
+            val syllables = syllablesOf(reading) ?: continue
+            if (syllables.size !in MIN_INITIALS..MAX_INITIALS) continue
+            val penalty = expansionPenalty(reading)
+            val initials = syllables.joinToString("") { it.substring(0, 1) }
+            fill(initialsIndex.getOrPut(initials) { ArrayList(4) }, reading, penalty, entries)
+            // 混合: the first syllable as its initial, the rest spelled out. Only when that first
+            // syllable is longer than one letter - for a/e/o/m/n the two keys would be the same.
+            val first = syllables.first()
+            if (first.length > 1) {
+                val typed = first.substring(0, 1) + reading.substring(first.length)
+                fill(initialsIndex.getOrPut(typed) { ArrayList(4) }, reading, penalty, entries)
             }
         }
     }
@@ -202,28 +223,15 @@ class PinyinDictionary(
      * 女孩 (nv, hai), which is the difference between a greeting and a coincidence of letters.
      */
     private fun expansionPenalty(reading: String): Int {
+        val syllables = syllablesOf(reading) ?: return 0
         var penalty = 0
-        var index = 0
-        while (index < reading.length) {
-            var step = 0
-            val upper = minOf(reading.length, index + PinyinSyllables.maxLength)
-            for (end in upper downTo index + 1) {
-                if (PinyinSyllables.isSyllable(reading.substring(index, end))) {
-                    step = end - index
-                    break
-                }
-            }
-            if (step == 0) return penalty
-            penalty += (syllableRanks[reading.substring(index, index + step)] ?: 0) *
-                INITIALS_RANK_PENALTY
-            index += step
-        }
+        for (syllable in syllables) penalty += (syllableRanks[syllable] ?: 0) * INITIALS_RANK_PENALTY
         return penalty
     }
 
-    /** First letters of the syllables in [reading], or null when it does not split cleanly. */
-    private fun initialsOf(reading: String): String? {
-        val initials = StringBuilder(reading.length)
+    /** Longest match split of [reading] into syllables, or null when it does not split cleanly. */
+    private fun syllablesOf(reading: String): List<String>? {
+        val syllables = ArrayList<String>(4)
         var index = 0
         while (index < reading.length) {
             var step = 0
@@ -235,10 +243,10 @@ class PinyinDictionary(
                 }
             }
             if (step == 0) return null
-            initials.append(reading[index])
+            syllables.add(reading.substring(index, index + step))
             index += step
         }
-        return initials.toString()
+        return syllables
     }
 
     /**
@@ -251,6 +259,14 @@ class PinyinDictionary(
         bucket.sortWith(compareByDescending<WordEntry> { it.score }.thenBy { it.word })
         return bucket.take(limit)
     }
+
+    /**
+     * True when [typed] abbreviates the first syllable of [word] and spells out the rest ("nhao" ->
+     * 你好): the key is then longer than the word it stands for, where an all-initials key is exactly
+     * as long as its word.
+     */
+    fun abbreviatesFirstSyllable(typed: String, word: String): Boolean =
+        typed.length > word.codePointCount(0, word.length)
 
     /**
      * The characters a single 首字母 can stand for, most likely first: the best character of each
