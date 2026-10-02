@@ -127,16 +127,20 @@
 
 ### 六、0.2.35 发布
 
-commit `<待填>`、tag `v0.2.35`、[Release 云隙输入 0.2.35](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.35)
-已上传资产 `cloudrift-type-0.2.35-release.apk`（<待填> 字节）。
+commit `e928567`、tag `v0.2.35`、[Release 云隙输入 0.2.35](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.35)
+已上传资产 `cloudrift-type-0.2.35-release.apk`（12,404,917 字节）。
 
 | 项目 | 结果 |
 | --- | --- |
-| 本地 sha256 | `<待填>` |
-| GitHub 资产 `digest` | `<待填>` |
-| `./gradlew testDebugUnitTest` | <待填> 个用例全绿 |
+| 本地 sha256 | `92a85db0e20f8592c3d97f05d08eefa23ecdcf1606e30e74364cbd6027d25872` |
+| GitHub 资产 `digest` | `sha256:92a85db0e20f8592c3d97f05d08eefa23ecdcf1606e30e74364cbd6027d25872`（与本地逐字节一致） |
+| `./gradlew testDebugUnitTest` | 131 个用例全绿（新增：全角/半角逐个对账、表情分组与去重、表情资产完整性） |
 | `./gradlew assembleRelease` | 通过，versionCode 39 / versionName 0.2.35 |
 | 真机 | 待用户复核（全角/半角补齐、表情页九分类） |
+
+> 本机 `github.com` 依旧不通（`git push` 秒失败），所以还是走 Git Data API 推送，并按上次记下的
+> 两条把提交对象在本地重建：日期用 **+0800**、消息结尾的换行保留——重建出来的 SHA 与远端
+> 一模一样（`e928567`），`refs/heads/main` 两边从此是同一个提交。
 
 ### 五、0.2.34 发布
 
