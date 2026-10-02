@@ -190,6 +190,7 @@ private fun KeyboardSurface(
             if (key.code == KeyCode.Backspace) controller.onBackspaceLongPress()
         },
         onSwipeUp = controller::onSwipeUp,
+        onSwipeDown = controller::onSwipeDown,
         onSpaceCursorDrag = controller::onSpaceCursorDrag,
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,
@@ -376,6 +377,7 @@ private fun KeyboardSurface(
                             shifted = state.shifted || state.capsLock,
                             enterLabel = state.enterLabel,
                             numberRow = state.showNumberRow,
+                            mathOffset = state.numberMathOffset,
                         ),
                         keyHeight = keyHeight,
                         cornerRadius = cornerRadius,

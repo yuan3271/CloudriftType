@@ -103,7 +103,8 @@ private fun IdleStrip(state: ImeUiState) {
             text = when (state.page) {
                 KeyboardPage.Letters -> layoutName(state.layout)
                 KeyboardPage.Symbols -> "符号 · 上下滑动查看更多"
-                KeyboardPage.Numbers -> "数字 · 拨号键盘"
+                // 第一列能上下滑这件事没有别的地方会告诉用户，闲置时就在这儿说一句。
+                KeyboardPage.Numbers -> "数字 · 第一列可上下滑动"
             },
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

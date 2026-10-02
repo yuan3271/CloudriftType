@@ -16,8 +16,10 @@ import com.yuan3271.cloudrift.engine.Candidate
 import com.yuan3271.cloudrift.engine.CandidateKind
 import com.yuan3271.cloudrift.engine.InputEngine
 import com.yuan3271.cloudrift.input.EditorProxy
+import com.yuan3271.cloudrift.input.ExpressionEval
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
+import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.KeyboardHaptics
 import com.yuan3271.cloudrift.input.InputWindowHost
@@ -75,6 +77,12 @@ class ImeController(
     private var autoApplyJob: Job? = null
     /** True while the editor reports a selection rather than a plain caret. */
     private var hasSelection: Boolean = false
+
+    /**
+     * 屏幕上那条联想候选是替哪个词做的预测（见 [showAssociations]）。null 表示当前没有联想条。
+     * 光标本该是唯一依据——它是"这个词仍然贴在光标左边"的当场证据。
+     */
+    private var associationSeed: String? = null
 
     /** Last single character that went in, used to spot a word the user is spelling out. */
     private var lastCharacter: CharacterCommit? = null
@@ -150,6 +158,8 @@ class ImeController(
     fun onStartInput(info: EditorInfo?, restarting: Boolean) {
         editorInfo = info
         commitBuffer()
+        // 新的一次输入会话：上一条联想说的是**上一个**输入框里的事。
+        clearAssociations()
         updateEnterLabel()
     }
 
@@ -166,6 +176,7 @@ class ImeController(
             clipboardVisible = false,
             page = KeyboardPage.Letters,
         )
+        clearAssociations()
         if (!AppGraph.engines.dictionaryReady.value) AppGraph.engines.warmUp()
     }
 
@@ -205,6 +216,22 @@ class ImeController(
         // that could become a learned word is broken.
         lastCharacter = null
         if (_state.value.isComposing) commitBuffer()
+        dropStaleAssociations()
+    }
+
+    /**
+     * 光标被挪走之后，联想条必须跟着走。
+     *
+     * 联想候选回答的是"刚上屏那个词之后接什么"。光标一旦落到别的词后面，那条预测就与眼前
+     * 的位置无关了，挂着它等于凭空冒出一串跟当前位置不相干的词。判断不用猜"这个选择回调是我
+     * 自己那次提交的重复回调吗"——直接问编辑器：光标左边还是不是那个词。重复回调看到的文本
+     * 不变，因此联想条留得住；用户点到别处时文本变了，联想条自己退场。
+     */
+    private fun dropStaleAssociations() {
+        val seed = associationSeed ?: return
+        if (_state.value.raw.isNotEmpty()) return
+        if (editor.textBeforeCaret(seed.length) == seed) return
+        clearAssociations()
     }
 
     fun dispose() {
@@ -266,6 +293,7 @@ class ImeController(
             KeyCode.Settings -> toggleQuickSettings()
             KeyCode.HideKeyboard -> service.requestHideSelf(0)
             KeyCode.CandidateNext -> selectCandidate(0)
+            KeyCode.Calculate -> calculate()
             KeyCode.None -> Unit
         }
     }
@@ -276,10 +304,37 @@ class ImeController(
         appendReading(alternate)
     }
 
-    /** Swipe up on a key types the symbol painted above it, bypassing composition. */
+    /**
+     * 上划一个键：字母键输入画在它上面的那个符号；数字页第一列的键则往前换一组算术符号。
+     */
     fun onSwipeUp(key: KeyDef) {
+        if (key.action.isNotEmpty()) {
+            stepKeyAction(key.action, +1)
+            return
+        }
         if (!settings.current.swipeUpSymbols || key.swipeUp.isEmpty()) return
         commitLiteral(key.swipeUp)
+    }
+
+    /** 下划一个键。数字页第一列用它往回翻。（字母键没有"下划出符号"这一说。） */
+    fun onSwipeDown(key: KeyDef) {
+        if (key.action.isNotEmpty()) {
+            stepKeyAction(key.action, -1)
+            return
+        }
+        if (!settings.current.swipeUpSymbols || key.swipeDown.isEmpty()) return
+        commitLiteral(key.swipeDown)
+    }
+
+    /** 纵向滑动触发的键盘动作。目前只有数字页第一列换符号这一件事。 */
+    private fun stepKeyAction(action: String, steps: Int) {
+        when (action) {
+            KeyboardLayouts.MATH_SWIPE_ACTION -> {
+                val size = KeyboardLayouts.mathSymbols.size
+                val next = ((_state.value.numberMathOffset + steps) % size + size) % size
+                _state.value = _state.value.copy(numberMathOffset = next)
+            }
+        }
     }
 
     /** Horizontal drag on the space bar moves the caret. */
@@ -499,6 +554,7 @@ class ImeController(
      */
     private fun showAssociations(seed: String) {
         val predictions = engine.associations(seed)
+        associationSeed = seed.takeIf { predictions.isNotEmpty() }
         _state.value = _state.value.copy(
             raw = "",
             preview = "",
@@ -512,6 +568,7 @@ class ImeController(
      * be a composition - otherwise the words being composed would go with it.
      */
     private fun clearAssociations() {
+        associationSeed = null
         if (_state.value.raw.isNotEmpty() || _state.value.candidates.isEmpty()) return
         _state.value = _state.value.copy(candidates = emptyList(), candidatesExpanded = false)
     }
@@ -681,6 +738,9 @@ class ImeController(
      * edit - the callback would otherwise break the character chain that can become a learned word.
      */
     private fun clearComposingQuietly() {
+        // 没有正在显示的上屏区就什么都不做：那一下 selfEditCounter++ 永远等不到选择回调来配平，
+        // 会攒下来把用户**真正**的那次点击吃掉（联想条于是留在屏幕上不走了）。
+        if (!editor.isComposing) return
         selfEditCounter++
         editor.clearComposing()
     }
@@ -802,6 +862,40 @@ class ImeController(
             candidates = emptyList(),
             candidatesExpanded = false,
         )
+    }
+
+    /**
+     * 数字页的 `计算` 键：把光标左边那段算式算出来，就地换成结果。
+     *
+     * 只吃光标左边**连续的一段**算式（有选中文字时吃选中的那一段）。不做整行扫描是有意的：
+     * 算不出来只是少算一次，把用户写在算式前面的正文一起删掉才是灾难。
+     */
+    private fun calculate() {
+        if (_state.value.isComposing) commitBuffer()
+        val selected = if (hasSelection || editor.hasLiveSelection()) editor.selectedText() else null
+        val expression = if (selected != null) {
+            ExpressionEval.expression(selected)
+        } else {
+            editor.textBeforeCaret(CALCULATION_SCAN_CHARS)
+                ?.let { ExpressionEval.trailingExpression(it) }
+        }
+        if (expression == null) {
+            showNotice("光标左边没有能算的式子")
+            return
+        }
+        val value = ExpressionEval.evaluate(expression)
+        if (value == null) {
+            showNotice("「$expression」算不出来")
+            return
+        }
+        val result = ExpressionEval.format(value)
+        selfEditCounter++
+        if (selected != null) editor.replaceSelection(result) else editor.replaceBeforeCaret(expression.length, result)
+    }
+
+    /** 键盘内的一句话提示，和语音错误用的是同一条通道。 */
+    private fun showNotice(message: String) {
+        _state.value = _state.value.copy(notice = message, noticeNeedsMicrophonePermission = false)
     }
 
     private fun toggleShift() {
@@ -928,6 +1022,8 @@ class ImeController(
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
         /** How long two single character commits may be apart and still form a learned word. */
         private const val AUTO_WORD_WINDOW_MS = 3000L
+        /** 计算键往回看多少个字符找算式：够长到能装下一整行算术，又短到不会把正文吃进来。 */
+        private const val CALCULATION_SCAN_CHARS = 64
         /** Bounds the corner drag may move the floating keyboard within. */
         const val MIN_FLOATING_WIDTH_PERCENT = 45
         const val MAX_FLOATING_WIDTH_PERCENT = 100

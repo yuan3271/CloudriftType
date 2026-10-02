@@ -21,11 +21,12 @@ object KeyboardLayouts {
         shifted: Boolean,
         enterLabel: String,
         numberRow: Boolean = false,
+        mathOffset: Int = 0,
     ): List<List<KeyDef>> = when (page) {
         // The symbol page is drawn as a scrollable bar (see SymbolPanel), so only its
         // function row is expressed as rows here.
         KeyboardPage.Symbols -> listOf(symbolFunctionRow(enterLabel))
-        KeyboardPage.Numbers -> numberRows(enterLabel)
+        KeyboardPage.Numbers -> numberRows(enterLabel, mathOffset)
         KeyboardPage.Letters -> {
             val base = when (layout) {
                 LayoutId.English -> qwertyRows(layout, shifted, enterLabel)
@@ -245,64 +246,102 @@ object KeyboardLayouts {
     )
 
     /**
-     * The number page is a phone dial pad with two side columns: the digits keep their letters
-     * underneath (that is what makes it read as a dial pad), the left column carries the four
-     * operations and the right column the keys a number field actually needs - delete, thousands
-     * separator, decimal point and equals. Everything else lives in the scrollable symbol bar.
+     * 数字页：四行五列。
+     *
+     * ```
+     * +  1 2 3   =       第一列是算术符号，整列是一个可以上下滑动的窗口（[mathWindow]）：
+     * -  4 5 6   -       一行装不下 +−×÷ 之外的 √ % ^ ( )，上下滑一下就换一组。
+     * ×  7 8 9   ⏎       中间三列是数字键盘，末行补上小数点和 00。
+     * ÷  0 . 00  计算    最右一列是等号、减号、回车和「计算」。
+     * ```
+     *
+     * 等号只输入一个等号（按用户要求：不做计算）。真的算数交给 `计算` 键——它把光标左边那段
+     * 算式求出来就地替换（见 ImeController.calculate 与 ExpressionEval）。
+     *
+     * 每列一个单位宽：这就是"五列"该有的样子，数字与两侧的功能键一样宽，不再有宽窄之分。
      */
-    private fun numberRows(enterLabel: String): List<List<KeyDef>> = listOf(
-        listOf(
-            math("+"),
-            dial("1", ""),
-            dial("2", ""),
-            dial("3", ""),
-            // The right column is half a unit wider than the digits: it holds the editing keys,
-            // and a delete that is the same size as a digit is a needlessly small target.
-            KeyDef.backspace.copy(weight = WIDE),
-        ),
-        listOf(
-            math("-"),
-            dial("4", ""),
-            dial("5", ""),
-            dial("6", ""),
-            math(",", weight = WIDE),
-        ),
-        listOf(
-            math("×"),
-            dial("7", ""),
-            dial("8", ""),
-            dial("9", ""),
-            math(".", weight = WIDE),
-        ),
-        listOf(
-            math("÷"),
-            KeyDef.immediate("*"),
-            dial("0", ""),
-            KeyDef.immediate("#"),
-            math("=", weight = WIDE),
-        ),
-        listOf(
-            KeyDef.modifier(KeyCode.Symbols, "符", weight = 1.2f),
-            KeyDef.modifier(KeyCode.Letters, "ABC", weight = 1.2f),
-            KeyDef.space.copy(label = "空格", weight = 2.6f),
-            KeyDef.enter.copy(label = enterLabel),
-        ),
-    )
+    private fun numberRows(enterLabel: String, mathOffset: Int): List<List<KeyDef>> {
+        val maths = mathWindow(mathOffset)
+        return listOf(
+            listOf(
+                mathKey(maths[0]),
+                dial("1"),
+                dial("2"),
+                dial("3"),
+                math("="),
+            ),
+            listOf(
+                mathKey(maths[1]),
+                dial("4"),
+                dial("5"),
+                dial("6"),
+                math("-"),
+            ),
+            listOf(
+                mathKey(maths[2]),
+                dial("7"),
+                dial("8"),
+                dial("9"),
+                KeyDef.enter.copy(label = enterLabel, weight = COLUMN),
+            ),
+            listOf(
+                mathKey(maths[3]),
+                dial("0"),
+                dial("."),
+                dial("00"),
+                KeyDef.action(KeyCode.Calculate, "计算", weight = COLUMN),
+            ),
+            // 功能行留住退格：四行五列里没有它的位置，可数字页没有退格是没法用的。
+            // 回车已经由最右一列承担，所以这一行只剩三个键。
+            listOf(
+                KeyDef.modifier(KeyCode.Symbols, "符", weight = COLUMN),
+                KeyDef.modifier(KeyCode.Letters, "ABC", weight = COLUMN),
+                KeyDef.backspace.copy(weight = COLUMN),
+                KeyDef.space.copy(label = "空格", weight = 2f),
+            ),
+        )
+    }
+
+    /**
+     * 第一列可选的全部算术符号，四个一组显示：`+ − × ÷` 是开场那一组，其余滑一下就出来。
+     */
+    val mathSymbols: List<String> = listOf("+", "-", "×", "÷", "√", "%", "^", "(", ")")
+
+    /** 纵向滑动要执行的动作名，由 ImeController 解释；第一列的每个键都带着它。 */
+    const val MATH_SWIPE_ACTION = "math"
+
+    /** 第一列当前显示的四个符号；[offset] 环绕，所以滑不到头。 */
+    fun mathWindow(offset: Int): List<String> {
+        val size = mathSymbols.size
+        val start = ((offset % size) + size) % size
+        return List(NUMBER_ROWS) { mathSymbols[(start + it) % size] }
+    }
 
     /**
      * A dial pad key is a big plain digit: no letters under it, no badge on it. The digit gets the
      * large label treatment so it keeps the size it had when the letters were there.
      */
-    private fun dial(value: String, caption: String) = KeyDef.immediate(
+    private fun dial(value: String) = KeyDef.immediate(
         output = value,
-        caption = caption,
+        weight = COLUMN,
         largeLabel = true,
     )
 
-    /** Side column of the dial pad: nothing to convert, just a key that types a symbol. */
-    private fun math(symbol: String, weight: Float = 1f) =
-        KeyDef.immediate(symbol, style = KeyStyle.Modifier, weight = weight)
+    /** 算术符号键：只输入那个符号，深浅交给 Modifier 样式。 */
+    private fun math(symbol: String) =
+        KeyDef.immediate(symbol, style = KeyStyle.Modifier, weight = COLUMN)
 
-    /** Weight of the dial pad's right hand column. */
-    private const val WIDE = 1.5f
+    /** 第一列的键：按下输入它显示的符号，上下滑动换整个窗口。 */
+    private fun mathKey(symbol: String) = KeyDef.immediate(
+        output = symbol,
+        style = KeyStyle.Modifier,
+        weight = COLUMN,
+        action = MATH_SWIPE_ACTION,
+    )
+
+    /** 数字页四行五列，每列一个单位宽。 */
+    private const val COLUMN = 1f
+
+    /** 数字页的行数，也是第一列窗口的大小。 */
+    private const val NUMBER_ROWS = 4
 }

@@ -74,6 +74,8 @@ data class ImeUiState(
     /** Whether the Japanese layout takes part in the language key rotation. */
     val japaneseEnabled: Boolean = false,
     val showNumberRow: Boolean = false,
+    /** 数字页第一列当前从第几个算术符号开始显示（上下滑动改它，见 KeyboardLayouts.mathWindow）。 */
+    val numberMathOffset: Int = 0,
     val swipeUpSymbols: Boolean = true,
     val spaceCursorControl: Boolean = true,
     val hapticFeedback: Boolean = true,
