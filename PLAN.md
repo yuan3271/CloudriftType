@@ -122,13 +122,13 @@
 
 ### 五、0.2.34 发布
 
-commit `待填`、tag `v0.2.34`、[Release 云隙输入 0.2.34](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.34)
+commit `dbaba43`、tag `v0.2.34`、[Release 云隙输入 0.2.34](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.34)
 已上传资产 `cloudrift-type-0.2.34-release.apk`（12,481,367 字节）。
 
 | 项目 | 结果 |
 | --- | --- |
 | 本地 sha256 | `e345248185220c02b19f5d1ab306340e317a96fbf7ff3bb07e20fc732887a1a3` |
-| GitHub 资产 `digest` | 待填 |
+| GitHub 资产 `digest` | `sha256:e345248185220c02b19f5d1ab306340e317a96fbf7ff3bb07e20fc732887a1a3` |
 | `./gradlew testDebugUnitTest` | 128 个用例全绿 |
 | 真机 | 待用户复核（悬浮缩放跟手、顶部把手、两档检测频率） |
 
