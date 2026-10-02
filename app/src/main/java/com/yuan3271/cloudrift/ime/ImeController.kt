@@ -563,6 +563,11 @@ class ImeController(
         voice.dismiss()
     }
 
+    /** 面板上的「跳过修正」：不等文本修正 API，直接用识别原文上屏。 */
+    fun skipVoiceCorrection() {
+        voice.skipCorrection()
+    }
+
     fun retryVoice() {
         voice.dismiss()
         voice.start(settings.current)
@@ -872,6 +877,7 @@ class ImeController(
             swipeUpSymbols = snapshot.swipeUpSymbols,
             spaceCursorControl = snapshot.spaceCursorControl,
             hapticFeedback = snapshot.hapticFeedback,
+            voiceCorrection = snapshot.voiceCorrection,
             voiceAutoApplyDelayMs = snapshot.voiceAutoApplyDelayMs,
         )
 

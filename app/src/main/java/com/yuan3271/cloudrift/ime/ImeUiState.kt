@@ -77,6 +77,8 @@ data class ImeUiState(
     val swipeUpSymbols: Boolean = true,
     val spaceCursorControl: Boolean = true,
     val hapticFeedback: Boolean = true,
+    /** 语音结果是否再过一遍文本修正 API；关掉就完全不发这个请求。快速设置里有开关。 */
+    val voiceCorrection: Boolean = true,
 
     /** True while the in-keyboard quick settings sheet is open. */
     val quickSettingsVisible: Boolean = false,

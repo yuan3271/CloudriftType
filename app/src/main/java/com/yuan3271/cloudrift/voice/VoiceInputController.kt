@@ -38,6 +38,26 @@ class VoiceInputController(
 ) {
 
     private val _state = MutableStateFlow<VoiceState>(VoiceState.Idle)
+
+    /**
+     * 「跳过修正」按下的标记。纠错请求本身不打断（它已经有 15 秒上限），但它一回来就把结果丢掉，
+     * 直接上屏识别原文——按钮的语义是"不用等了"，不是"取消这条语音"。
+     */
+    private var skipCorrection = false
+
+    /** 面板上的「跳过修正」：立刻回到"可以上屏"，并让在途的纠错结果作废。 */
+    fun skipCorrection() {
+        val current = _state.value
+        if (current !is VoiceState.Correcting) return
+        skipCorrection = true
+        publish(
+            VoiceState.Ready(
+                transcript = current.transcript,
+                text = current.transcript,
+                corrected = false,
+            ),
+        )
+    }
     val state: StateFlow<VoiceState> = _state.asStateFlow()
 
     private var recorder: AudioRecorder? = null
@@ -67,6 +87,7 @@ class VoiceInputController(
     fun start(settings: AppSettings) {
         if (!isIdle) return
         activeSettings = settings
+        skipCorrection = false
         if (!hasMicrophonePermission()) {
             publish(
                 VoiceState.Failed(
@@ -194,6 +215,9 @@ class VoiceInputController(
             var corrected = false
             if (settings.voiceCorrection && canCorrect(settings.chat)) {
                 publish(VoiceState.Correcting(transcript))
+                // 修正可以被跳过：面板上的「跳过修正」把 skipCorrection 置位，这里在最靠近用户
+                // 决定的地方检查一次——正在跑的请求不打断（它本来就有 15 秒上限），但结果丢掉，
+                // 直接上屏识别原文。这样按钮的语义是"不用等了"，而不是"取消整条语音"。
                 val fixed = withContext(Dispatchers.IO) {
                     runCatching {
                         chatClient.correct(
@@ -204,6 +228,11 @@ class VoiceInputController(
                         )
                     }
                         .getOrDefault(transcript)
+                }
+                if (skipCorrection) {
+                    skipCorrection = false
+                    publish(VoiceState.Ready(transcript, transcript, corrected = false))
+                    return
                 }
                 val candidate = applyPunctuationPolicy(transcript, fixed, settings.autoPunctuation)
                 corrected = candidate != transcript

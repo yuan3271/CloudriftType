@@ -322,6 +322,7 @@ private fun KeyboardSurface(
                         autoApplyPending = state.autoApplyPending,
                         onStop = { controller.toggleVoice() },
                         onCancel = controller::dismissVoice,
+                        onSkipCorrection = controller::skipVoiceCorrection,
                         onRetry = controller::retryVoice,
                         onCommit = controller::commitVoiceResult,
                         onOpenPermission = controller::openMicrophonePermissionSettings,

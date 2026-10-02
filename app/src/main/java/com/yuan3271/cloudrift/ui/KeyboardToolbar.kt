@@ -1,6 +1,8 @@
 package com.yuan3271.cloudrift.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -20,7 +23,11 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardLayouts
@@ -140,20 +148,43 @@ fun KeyboardToolbar(
  */
 @Composable
 private fun UpdateMark(onClick: () -> Unit) {
-    Box(
+    // 打开键盘时先说人话，再收成一枚点：黄色长条写着黑字「有更新」，约一秒后收成黄点，
+    // 点里是向上的箭头。长条期间点它同样有效；收成点之后它不再挪动任何键。
+    var expanded by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(UpdateMarkPillMs)
+        expanded = false
+    }
+    val width by animateDpAsState(if (expanded) 54.dp else 22.dp, label = "updateMarkWidth")
+    val fill by animateColorAsState(
+        if (expanded) UpdateAmber else Color.Transparent,
+        label = "updateMarkFill",
+    )
+    Row(
         modifier = Modifier
-            .size(22.dp)
+            .height(22.dp)
+            .width(width)
             .clip(RoundedCornerShape(50))
+            .background(fill)
             .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        if (expanded) {
+            Text(
+                text = "有更新",
+                color = Color.Black,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+            )
+        } else {
+            Box(
+        modifier = Modifier
+            .size(16.dp)
+            .clip(RoundedCornerShape(50))
+            .background(UpdateAmber),
         contentAlignment = Alignment.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(16.dp)
-                .clip(RoundedCornerShape(50))
-                .background(UpdateAmber),
-            contentAlignment = Alignment.Center,
-        ) {
             // A filled amber circle with an up arrow in it, so it reads as "there is something to
             // take" rather than as a plain notification dot.
             Icon(
@@ -165,8 +196,12 @@ private fun UpdateMark(onClick: () -> Unit) {
                     .rotate(180f),
             )
         }
+        }
     }
 }
+
+/** 「有更新」长条在键盘上停留的时间。 */
+private const val UpdateMarkPillMs = 1200L
 
 @Composable
 private fun LanguageChip(

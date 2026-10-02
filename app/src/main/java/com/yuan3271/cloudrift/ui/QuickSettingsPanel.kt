@@ -221,10 +221,13 @@ fun QuickSettingsPanel(
                 )
 
                 // ---- behaviour ------------------------------------------------------
+                // 「顶部数字行」搬回完整设置页：键盘里的开关要留给打字当口会想改的东西，
+                // 数字行是"装好就不动"的外观偏好。空出来的位置给语音的文本修正 API ——
+                // 纠错不可用或不想让文字出网时，这里一按就不用再进设置页。
                 SwitchRow(
-                    title = "顶部数字行",
-                    checked = state.showNumberRow,
-                    onCheckedChange = { value -> onUpdate { it.copy(showNumberRow = value) } },
+                    title = "文本修正 API",
+                    checked = state.voiceCorrection,
+                    onCheckedChange = { value -> onUpdate { it.copy(voiceCorrection = value) } },
                 )
                 SwitchRow(
                     title = "上滑输入符号",

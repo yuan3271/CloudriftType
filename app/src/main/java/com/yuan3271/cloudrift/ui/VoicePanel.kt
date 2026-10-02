@@ -58,6 +58,8 @@ fun VoicePanel(
     autoApplyPending: Boolean = false,
     onStop: () -> Unit,
     onCancel: () -> Unit,
+    /** 「跳过修正」：不等纠错，直接拿识别原文上屏。 */
+    onSkipCorrection: () -> Unit = {},
     onRetry: () -> Unit,
     onCommit: () -> Unit,
     onOpenPermission: () -> Unit,
@@ -78,7 +80,14 @@ fun VoicePanel(
                 is VoiceState.Idle -> Unit
                 is VoiceState.Recording -> RecordingContent(state, onStop, onCancel)
                 is VoiceState.Transcribing -> BusyContent("识别中…", null, onCancel)
-                is VoiceState.Correcting -> BusyContent("修正中…", state.transcript, onCancel)
+                is VoiceState.Correcting -> BusyContent(
+                    title = "修正中…",
+                    transcript = state.transcript,
+                    onCancel = onCancel,
+                    // 纠错是最慢的一段（翻译式润色）。不想等的人可以跳过：直接上屏识别原文，
+                    // 在途的纠错结果回来后被丢掉（见 VoiceInputController.skipCorrection）。
+                    onSkip = onSkipCorrection,
+                )
                 is VoiceState.Ready -> Box(
                     // A tap anywhere on the result takes the keyboard out of automatic mode for
                     // this round: the text stays until the user says 上屏.
@@ -243,7 +252,12 @@ private fun LevelMeter(level: Float) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun BusyContent(title: String, transcript: String?, onCancel: () -> Unit) {
+private fun BusyContent(
+    title: String,
+    transcript: String?,
+    onCancel: () -> Unit,
+    onSkip: (() -> Unit)? = null,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -264,6 +278,9 @@ private fun BusyContent(title: String, transcript: String?, onCancel: () -> Unit
                     maxLines = 2,
                 )
             }
+        }
+        if (onSkip != null) {
+            TextButton(onClick = onSkip) { Text("跳过修正") }
         }
         // 识别和纠错都可能卡在网络上，而这块面板会把按键整块顶掉：没有这个按钮，等待期间
         // 用户既不能打字也不能退出，只能等超时。
