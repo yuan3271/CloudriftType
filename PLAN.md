@@ -144,6 +144,26 @@ NOTICE.md 到不了装键盘的人手里。该资源与仓库根目录的 NOTICE
 随 0.2.23（versionCode 27）发布，产物 `dist/cloudrift-type-0.2.23-release.apk`，已用 apksigner
 校验签名（CN=yuan3271）。
 
+### 真机验证（0.2.23，小米 M531DA / Android 16 / 1268×2756 / 520dpi）
+
+| 项目 | 结果 |
+| --- | --- |
+| 覆盖安装 0.2.23（versionCode 27） | ✅ 与线上 Release 的 APK 逐字节一致（sha256 `822d7484…`），安装后版本号 0.2.23 |
+| 应用内更新卡片 | ✅ 显示「已是最新版本 0.2.23」——说明 GitHub Release 已经被客户端读到 |
+| 设置页「关于」 | ✅ 列出 jieba / THUOCL / pinyin-data / pypinyin（均 MIT）与「自撰口语语料 + Tatoeba 中文句子（CC BY 2.0 FR）」 |
+| 「第三方资源声明」弹窗 | ✅ 可打开、可滚动，pypinyin 与 Tatoeba 两处署名都能滚到 |
+| `yinyue` | ✅ 首选 `音乐`（0.2.22 的读音表里 `yinle` 排在有词音的 `yinyue` 前面） |
+| `chongqing` | ✅ 首选 `重庆` |
+| `jintian` → 点选「今天」上屏 | ✅ 联想条随即给出 `天气 / 的 / 心情 / 有点 / 事情 / 外面`，`天气` 在首位 |
+| `jintianwsm` | ✅ 首选 `今天为什么（混合）`，第二位 `今天问什么（首字母）` |
+| 40 字母长句 `jintiandewanfanshihongshaorouhejidangeng` | ✅ 候选含 `今天的晚饭是红烧肉和鸡蛋羹`，点选后整句完整上屏 |
+| 崩溃 / ANR | ✅ 无（`logcat -b crash` 为空，日志里没有云隙相关的 fatal/ANR） |
+
+> 验证方法：`adb` 覆盖安装 + 逐键点击真机键盘，每步截图核对候选栏。一个容易误判的现象：在
+> MIUI 搜索框这类会横向滚动的输入框里，长串拼音的**合成文本会滚动显示尾部**（截图里只看到
+> `nshihongshaorouhejidangeng`），看起来像前半段被吞掉了——点选整句候选能完整上屏就说明
+> 缓冲区一直是对的。
+
 ## 0.2.22：超长输入与麦克风占用
 
 ### 一、长句打不出来：切分走进了"死音节"
