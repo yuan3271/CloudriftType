@@ -24,27 +24,13 @@ data class UpdateInfo(
     val apkUrl: String?,
 )
 
-/** How often to look for a new release. */
-enum class UpdateInterval(val millis: Long) {
-    Never(0L),
-    Daily(TimeUnit.DAYS.toMillis(1)),
-    Weekly(TimeUnit.DAYS.toMillis(7)),
-    Monthly(TimeUnit.DAYS.toMillis(30)),
-    ;
-
-    companion object {
-        fun fromKey(key: String?): UpdateInterval =
-            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: Daily
-    }
-}
-
 /**
  * Looks for a newer release on GitHub.
  *
  * Deliberately cheap and quiet: one request to the releases API, at most once per the interval the
  * user picked, skipped entirely when they picked "不检测". Nothing is downloaded until the user taps
  * the button, and a failed check just leaves the previous answer in place - an update prompt is not
- * worth an error message.
+ * worth an error message. The interval itself is [UpdateInterval].
  */
 class UpdateChecker(
     context: Context,
@@ -62,6 +48,10 @@ class UpdateChecker(
     private val _available = MutableStateFlow<UpdateInfo?>(null)
     val available: StateFlow<UpdateInfo?> = _available.asStateFlow()
 
+    /** True while a fetch is on the wire, so 每次打开键盘 cannot stack up requests. */
+    @Volatile
+    private var checking = false
+
     init {
         _available.value = readCached()
     }
@@ -75,17 +65,23 @@ class UpdateChecker(
         }
         val last = prefs.getLong(KEY_LAST_CHECK, 0L)
         val now = System.currentTimeMillis()
-        if (!force && now - last < interval.millis) return
+        if (!force && !interval.isDue(lastCheckMillis = last, nowMillis = now)) return
+        if (checking) return
+        checking = true
         scope.launch {
-            val found = withContext(Dispatchers.IO) { fetchLatest() }
-            prefs.edit().putLong(KEY_LAST_CHECK, now).apply()
-            when (found) {
-                // A null answer keeps whatever we already knew: a flaky network is not news.
-                null -> Unit
-                else -> {
-                    _available.value = found
-                    cache(found)
+            try {
+                val found = withContext(Dispatchers.IO) { fetchLatest() }
+                prefs.edit().putLong(KEY_LAST_CHECK, now).apply()
+                when (found) {
+                    // A null answer keeps whatever we already knew: a flaky network is not news.
+                    null -> Unit
+                    else -> {
+                        _available.value = found
+                        cache(found)
+                    }
                 }
+            } finally {
+                checking = false
             }
         }
     }

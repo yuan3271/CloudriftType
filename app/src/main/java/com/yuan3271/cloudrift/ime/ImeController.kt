@@ -179,6 +179,10 @@ class ImeController(
         )
         clearAssociations()
         if (!AppGraph.engines.dictionaryReady.value) AppGraph.engines.warmUp()
+        // 键盘每次弹出都问一次「该不该检测更新」，判断完全交给 UpdateInterval.isDue：每天 /
+        // 每周 / 每月这些档位在这里是空转（间隔没到就返回），选了「每次打开键盘」才是真的一次
+        // 一次地问，而且同一时刻只保留一个在途请求。
+        AppGraph.updates.checkIfDue()
     }
 
     fun onFinishInputView() {

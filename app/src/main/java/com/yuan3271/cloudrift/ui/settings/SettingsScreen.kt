@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +28,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -560,6 +563,7 @@ private fun KeyboardPreviewCard() {
  * The loud half of the update notice: the version that was found, directly under the enable card
  * where the eye already is, with the two buttons and the check frequency.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun UpdateCard(
     update: UpdateInfo?,
@@ -643,23 +647,38 @@ private fun UpdateCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(6.dp))
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            // 六档了，分段按钮挤成一条读不出字，换成会自己换行的 chip。
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),
+            ) {
                 val options = listOf(
                     UpdateInterval.Never to "不检测",
+                    UpdateInterval.Every6Hours to "每 6 小时",
                     UpdateInterval.Daily to "每天",
                     UpdateInterval.Weekly to "每周",
                     UpdateInterval.Monthly to "每月",
+                    UpdateInterval.EveryKeyboardOpen to "每次开键盘",
                 )
-                options.forEachIndexed { index, (value, label) ->
-                    SegmentedButton(
+                options.forEach { (value, label) ->
+                    FilterChip(
                         selected = interval == value,
                         onClick = { onInterval(value) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
-                    ) {
-                        Text(label, style = MaterialTheme.typography.labelSmall)
-                    }
+                        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                    )
                 }
             }
+            Text(
+                text = when (interval) {
+                    UpdateInterval.Never -> "不自动检测，仍可点下面的「立即检测」。"
+                    UpdateInterval.Every6Hours -> "每 6 小时最多问一次 GitHub。"
+                    UpdateInterval.EveryKeyboardOpen -> "每次弹出键盘都问一次；同一个请求没回来之前不会再发。"
+                    else -> "到时间才会问一次 GitHub，没到就什么也不做。"
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.height(4.dp))
             SwitchRow(
                 title = "在键盘上显示黄色提示",

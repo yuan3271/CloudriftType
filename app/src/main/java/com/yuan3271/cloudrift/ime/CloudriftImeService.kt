@@ -23,6 +23,7 @@ import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.input.InputWindowHost
 import com.yuan3271.cloudrift.theme.CloudriftTheme
 import com.yuan3271.cloudrift.ui.KeyboardRoot
+import kotlin.math.roundToInt
 
 /**
  * The input method itself. It owns nothing but the controller and the Compose surface; all
@@ -37,9 +38,14 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
      */
     private var controller: ImeController? = null
 
-    /** Where the floating keyboard sits, in window offsets; reset whenever the frame changes. */
-    private var floatingOffsetX = 0
-    private var floatingOffsetY = 0
+    /**
+     * Where the floating keyboard sits, in window offsets; reset whenever the frame changes.
+     * Kept as floats and rounded only when the window is updated: a slow drag moves a fraction of
+     * a pixel per event, and truncating each event to an Int would drop those fractions - the card
+     * would sit still and then jump, which reads as "the keyboard does not follow the finger".
+     */
+    private var floatingOffsetX = 0f
+    private var floatingOffsetY = 0f
     private var floating = false
     private var floatingWidthPercent = DEFAULT_FLOATING_WIDTH
 
@@ -75,15 +81,17 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         if (this.floating != floating) {
             // Entering or leaving the floating frame starts centred; a resize must not, or the card
             // would jump back to the middle on every drag frame.
-            floatingOffsetX = 0
-            floatingOffsetY = 0
+            floatingOffsetX = 0f
+            floatingOffsetY = 0f
         }
         val previousWidth = floatingWindowWidth(this.floatingWidthPercent)
         val nextWidth = floatingWindowWidth(percent)
         if (floating && this.floating && previousWidth != nextWidth) {
-            // The card is centred, so half of the growth happens on each side. Shifting by half the
-            // difference keeps the left edge where it is, which is what a corner drag should do.
-            floatingOffsetX -= (nextWidth - previousWidth) / 2
+            // The card is centred, so half of the growth would land on each side. The corner the
+            // user is dragging is the *right* one, so the opposite (left) edge has to stay put:
+            // that takes a shift of +half the difference. (It was minus, which pinned the right
+            // edge instead - so the handle did not move at all when dragged sideways.)
+            floatingOffsetX += (nextWidth - previousWidth) / 2f
         }
         this.floating = floating
         this.floatingWidthPercent = percent
@@ -95,8 +103,8 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
 
     override fun moveInputWindowBy(dx: Float, dy: Float) {
         if (!floating) return
-        floatingOffsetX += dx.toInt()
-        floatingOffsetY -= dy.toInt()
+        floatingOffsetX += dx
+        floatingOffsetY -= dy
         applyWindowLayout()
     }
 
@@ -115,8 +123,8 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         } else {
             Gravity.BOTTOM
         }
-        attributes.x = if (floating) floatingOffsetX else 0
-        attributes.y = if (floating) floatingOffsetY else 0
+        attributes.x = if (floating) floatingOffsetX.roundToInt() else 0
+        attributes.y = if (floating) floatingOffsetY.roundToInt() else 0
         val decorView = dialog.window?.decorView ?: return
         runCatching {
             (getSystemService(WINDOW_SERVICE) as? android.view.WindowManager)

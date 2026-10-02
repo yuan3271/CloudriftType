@@ -4,6 +4,7 @@ import android.view.View
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import android.content.res.Configuration
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -42,11 +44,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -66,6 +71,7 @@ import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.theme.CloudriftTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
+import kotlin.math.abs
 
 /**
  * Root of the keyboard window. Everything the input view shows is composed from here.
@@ -176,6 +182,9 @@ private fun KeyboardSurface(
     val bottomGap = if (floating) 0.dp else state.bottomGapDp.dp
     val density = LocalDensity.current
     val labelScale = state.keyLabelScalePercent / 100f
+    // 按键区的实际高度，用来把「手指位移」换算成「按键高度变化量」（见 FloatingResize.kt）。
+    // 只在真的变了才写回去，免得每次布局都触发一次重组。
+    var keyAreaHeightPx by remember { mutableStateOf(0f) }
     // 每一页都用同一个圆角：数字页以前是拨号盘（圆角固定成半高），看上去和 26 键不是一套键，
     // 现在跟着设置走，数字键和字母键长得一样。
     val cornerRadius = state.keyCornerRadiusDp.dp
@@ -194,6 +203,26 @@ private fun KeyboardSurface(
         onClearAll = controller::clearAllText,
     )
     val recording = state.voice as? VoiceState.Recording
+
+    // 抓角落拖动 = 窗口管理器那样的调整：**被拖的那条边跟着手指走**（换算与理由见
+    // FloatingResize.kt：卡片高度里工具栏、候选栏这些不随按键高度变，所以位移要先折成行数）。
+    val keyHeightPx = with(density) { keyHeight.toPx() }
+    val gapPx = with(density) { KEY_GAP.toPx() }
+    val resizeRows = floatingResizeRows(
+        keyAreaHeightPx = keyAreaHeightPx,
+        keyHeightPx = keyHeightPx,
+        gapPx = gapPx,
+    )
+    val onFloatingResize: (Float, Float) -> Unit = { dx, dy ->
+        val (widthPercent, keyHeightDeltaDp) = floatingResizeDeltas(
+            dragXPx = dx,
+            dragYPx = dy,
+            density = density.density,
+            screenWidthDp = screenWidth,
+            resizeRows = resizeRows,
+        )
+        controller.resizeFloatingKeyboard(widthPercent, keyHeightDeltaDp)
+    }
 
     Surface(
         modifier = if (floating) {
@@ -223,54 +252,11 @@ private fun KeyboardSurface(
                 .padding(bottom = bottomGap),
         ) {
             if (floating) {
-                // 拖动区：把整张卡片拖着走（服务端改窗口偏移）。以前这里是一条 18dp 高的
-                // 粗边 + 一根 44×4 的把手，按用户要求删掉了那条边——手势还在，只是不再画东西，
-                // 留 8dp 的透明窄条，免得拖不动卡片。
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .pointerInput(Unit) {
-                            detectDragGestures { _, dragAmount ->
-                                controller.moveFloatingKeyboard(dragAmount.x, dragAmount.y)
-                            }
-                        },
+                FloatingGripStrip(
+                    onMove = controller::moveFloatingKeyboard,
+                    onResize = onFloatingResize,
+                    onResizeCommitted = controller::commitFloatingKeyboardSize,
                 )
-                // Corner handle: dragging it resizes the card (width in % of the screen, key height
-                // in dp). The values are only persisted when the finger lifts.
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                    Box(
-                        modifier = Modifier
-                            .size(26.dp)
-                            .clip(RoundedCornerShape(topStart = 10.dp, bottomEnd = 20.dp))
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.18f))
-                            .pointerInput(screenWidth) {
-                                detectDragGestures(
-                                    onDragEnd = { controller.commitFloatingKeyboardSize() },
-                                    // 手势被系统抢走（来电、切应用）时也要落盘，否则这次拖出来的
-                                    // 大小下次打开就没了——悬浮大小不持久化就是这么来的。
-                                    onDragCancel = { controller.commitFloatingKeyboardSize() },
-                                ) { _, dragAmount ->
-                                    val widthDelta = with(density) { dragAmount.x.toDp().value } /
-                                        screenWidth.coerceAtLeast(1f) * 100f
-                                    // The card sits on the bottom edge, so it grows by dragging the
-                                    // corner *up*; dragging right widens it.
-                                    val heightDelta = -with(density) { dragAmount.y.toDp().value }
-                                    controller.resizeFloatingKeyboard(widthDelta, heightDelta)
-                                }
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = CloudriftIcons.More,
-                            contentDescription = "拖动调整大小",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .size(14.dp)
-                                .rotate(90f),
-                        )
-                    }
-                }
             }
             KeyboardToolbar(
                 state = state,
@@ -313,7 +299,13 @@ private fun KeyboardSurface(
                 )
             }
 
-            Box {
+            // 量一下按键区的高度：悬浮卡片的缩放换算要用它（见 FloatingResize.kt）。
+            Box(
+                modifier = Modifier.onGloballyPositioned {
+                    val measured = it.size.height.toFloat()
+                    if (abs(measured - keyAreaHeightPx) > 0.5f) keyAreaHeightPx = measured
+                },
+            ) {
                 when {
                     state.quickSettingsVisible -> QuickSettingsPanel(
                         state = state,
@@ -399,6 +391,88 @@ private fun KeyboardSurface(
         }
     }
 }
+
+/**
+ * 悬浮卡片顶部的那一条。左边整块空白按住就是把卡片拖着走，右端那颗小图标是缩放手柄。
+ *
+ * 这一条的前身是 18dp 的拖拽粗边 **加上**一行为缩放手柄单独留的 26dp 空行——工具栏上方于是
+ * 白留了一条差不多与工具栏等高的空白，里面一个工具都没有。现在两行并成一条
+ * [GRIP_STRIP_HEIGHT]：中间那根小白条就是唯一的"这里能拖"提示，缩放手柄缩到右端一颗小图标。
+ */
+@Composable
+private fun FloatingGripStrip(
+    onMove: (Float, Float) -> Unit,
+    onResize: (Float, Float) -> Unit,
+    onResizeCommitted: () -> Unit,
+) {
+    // pointerInput 里的手势协程只启动一次：直接用它捕获的 lambda，会一直用**第一次组合时**的
+    // 那份（缩放要用的行数一开始还没量到，是 1，于是又变成 4 倍不跟手）。rememberUpdatedState
+    // 让协程每次事件读到的都是最新的 lambda。
+    val currentMove by rememberUpdatedState(onMove)
+    val currentResize by rememberUpdatedState(onResize)
+    val currentCommit by rememberUpdatedState(onResizeCommitted)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(GRIP_STRIP_HEIGHT),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        currentMove(dragAmount.x, dragAmount.y)
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 40.dp, height = 4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.92f))
+                    .border(
+                        width = 0.5.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(50),
+                    ),
+            )
+        }
+        // 缩放手柄：抓住它等于抓住卡片的右下角，被拖的边跟着手指走（换算在 KeyboardSurface）。
+        // 松手（或被系统抢走）才落盘，拖动过程中只改内存里的值。
+        Box(
+            modifier = Modifier
+                .width(34.dp)
+                .fillMaxHeight()
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragEnd = { currentCommit() },
+                        onDragCancel = { currentCommit() },
+                    ) { change, dragAmount ->
+                        change.consume()
+                        currentResize(dragAmount.x, dragAmount.y)
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = CloudriftIcons.More,
+                contentDescription = "拖动调整大小",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier
+                    .size(14.dp)
+                    .rotate(90f),
+            )
+        }
+    }
+}
+
+/** 悬浮卡片顶部把手的窄条高度。 */
+private val GRIP_STRIP_HEIGHT = 20.dp
 
 /**
  * Shown in place of the candidate strip while backspace is held and slid up: the option is lit, and
