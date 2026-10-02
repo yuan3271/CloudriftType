@@ -421,8 +421,13 @@ Unicode License v3，宽松、可商用、无传染）。之前字表只把字�
   `nizaiganma→你在干吗`。
 
 **产物**：`dist/cloudrift-type-0.2.26-release.apk`（versionCode 30 / 0.2.26），
-`apksigner` 校验签名 CN=yuan3271，sha256 `a10ddee1bad6acc2…`。**没有发布**（未打 tag、未上传
-Release）——这一版的判断都要靠真机手感，等验证完再发。
+`apksigner` 校验签名 CN=yuan3271，sha256 `a10ddee1bad6acc2…`。
+
+**已发布**：commit `1724940`、tag `v0.2.26`、GitHub Release
+[云隙输入 0.2.26](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.26)，
+资产 `cloudrift-type-0.2.26-release.apk`（12,375,941 字节）。发布前做过三项核对：
+APK 内的 `pinyin_chars/words/bigrams.txt` 与 `NOTICE.md` 与仓库逐字节一致；线上资产下载回来
+与本地 `cmp` 一致、sha256 相同；`/releases/latest` 已指向 v0.2.26，应用内更新卡片读得到。
 
 **未验证（诚实记录）**：没有真机跑过这一版；上面全部是单元测试与基准台的数字。
 
