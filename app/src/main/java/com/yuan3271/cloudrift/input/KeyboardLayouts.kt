@@ -184,12 +184,26 @@ object KeyboardLayouts {
             SymbolWidth.Full -> FULL_WIDTH_GROUPS
             SymbolWidth.Half -> HALF_WIDTH_GROUPS
         }
+        // 成对键摆在最前面：一个键就出「开+闭」并把光标放中间。左括号键、右括号键仍然各自
+        // 只出自己那一个——按 `（` 想要的是 `（`，不是 `（）`。
+        val pairs = when (width) {
+            SymbolWidth.Full -> FULL_WIDTH_PAIRS
+            SymbolWidth.Half -> HALF_WIDTH_PAIRS
+        }
         // 去重是**必须**的，不是洁癖：符号页用的是 LazyVerticalGrid，items() 的 key 就是
         // 这个 output，重复 key 会在滚到那一项时抛 IllegalArgumentException——全角表里 ＄
         // 同时出现在货币行和符号行，于是"全角滑到底就闪退"，半角表没有重复所以没事。
         // 必须是**跨组**去重：按组去重挡不住这种一行一个的重复。
-        return groups.joinToString("").toList().distinct().map { KeyDef.immediate(it.toString()) }
+        return pairs.map { KeyDef.immediate(it) } +
+            groups.joinToString("").toList().distinct().map { KeyDef.immediate(it.toString()) }
     }
+
+    /**
+     * 成对键：一个键给出「开+闭」两个符号，光标落在中间（见 ImeController.PAIR_KEYS）。
+     * 全角与半角各一份；单个的左右括号仍旧各按各的。
+     */
+    private val FULL_WIDTH_PAIRS = listOf("（）", "【】", "《》", "〈〉", "「」", "『』", "“”", "‘’", "〔〕", "〖〗")
+    private val HALF_WIDTH_PAIRS = listOf("()", "[]", "{}", "<>", "\"\"", "''")
 
     /** 全角：中文标点在前，随后是全角形式的 ASCII 与数学符号。 */
     private val FULL_WIDTH_GROUPS = listOf(

@@ -496,6 +496,19 @@ private suspend fun PointerInputScope.keyGesture(
             null
         }
 
+        // 长按必须由**计时器**触发，不能靠"下一个指针事件来了再看时间"：手指停住不动时系统
+        // 根本不给 move 事件，阈值要等到下一次事件才被检查到（常常已经是抬手那一下）——这就是
+        // "长按空格触发语音的时间不稳定"。计时器到点触发；抬手或别的动作先取消。可重复键
+        // （退格）在按下那一刻就 claimed 了，计时器空转一次，什么都不做。
+        val longPressTimer: Job = repeatScope.launch {
+            delay(LONG_PRESS_MS)
+            if (!claimed) {
+                claimed = true
+                longPress()
+                if (key.code == KeyCode.Space) holdToTalk = true
+            }
+        }
+
         while (true) {
             val event = awaitPointerEvent()
             val change = event.changes.firstOrNull { it.id == down.id } ?: break
@@ -551,6 +564,8 @@ private suspend fun PointerInputScope.keyGesture(
         }
 
         repeater?.cancel()
+        // 手势结束了，计时器不能再自己触发一次长按（抬手那一刻的竞态就是"时而触发、时而不触发"）。
+        longPressTimer.cancel()
         onPressedChange(false)
         if (clearArmed) clearAllArmedChanged(false)
         if (released && clearArmed) clearAll()

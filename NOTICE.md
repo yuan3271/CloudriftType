@@ -26,6 +26,9 @@
 | [Unihan](https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip)（`kHanyuPinlu` / `kMandarin`） | Unicode License v3 | 每个**读音**的使用频率，决定一个字挂在哪些音节下 |
 | [hugg95/university-data](https://github.com/hugg95/university-data) | MIT | 全国普通高等学校名单（2,631 条院校名，专名只用本音拼读） |
 | [mumuy/data_location](https://github.com/mumuy/data_location) | MIT | 省 / 市 / 区县名（GB/T 2260 行政区划，3,433 条） |
+| [chinese-xinhua](https://github.com/pwxcoo/chinese-xinhua) | MIT | 新华字典词条（2.6 万，带拼音）与成语（3 万，带拼音） -> 词表覆盖与词级读音 |
+| [Chinese-Names-Corpus](https://github.com/wainshine/Chinese-Names-Corpus) | Apache-2.0 | 5 万条成语表 -> 词表覆盖 |
+| [chinese-poetry](https://github.com/chinese-poetry/chinese-poetry) | MIT | 唐诗三百首 / 宋词三百首 -> 搭配模型（`--poetry`，默认关闭） |
 | `tools/dictgen/raw/corpus_*.txt` | **本项目原创** | 现代口语词频（只用它给"本来就常见"的词加权，不据此引入生僻词） |
 
 生成的资产是上述数据的衍生作品，再分发时请一并保留本声明。词库文件本身不包含任何

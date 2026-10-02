@@ -691,11 +691,10 @@ class ImeController(
         lastCharacter = null
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
-        // 成对输入的符号（引号、括号）按一下出两个，光标落在中间——手动打引号最烦的就是
-        // "打完还要按一次左键"。半角与全角各有一份，见 PAIRS。
-        val closing = text.singleOrNull()?.let { PAIRS[it] }
-        if (closing != null) {
-            editor.insertPair(text, closing.toString())
+        // 只有**成对键**（符号页最前面那些「（）」「“”」）才一次出两个并把光标放中间；
+        // 单个的左括号、右括号各按各的——按 `（` 想要的是 `（`，不是 `（）`。
+        if (text.length == 2 && text in PAIR_KEYS) {
+            editor.insertPair(text[0].toString(), text[1].toString())
         } else {
             editor.commit(text)
         }
@@ -907,26 +906,11 @@ class ImeController(
     }
 
     companion object {
-        /**
-         * 成对输入的符号表：按开符号出「开+闭」并把光标放中间。
-         *
-         * 两个方向都收：「按 `“` 出 `“”`」和「按 `”` 出 `“”`」是同一个人想要的结果，键盘上
-         * 两个键都摆着（符号页有开闭两种），只认其中一个会让人按错了才发现。
-         */
-        private val PAIRS: Map<Char, Char> = buildMap {
-            val groups = listOf(
-                "“”‘’", "「」『』", "（）【】《》〈〉〔〕〖〗",
-                "\"\"''", "()[]{}<>",
-            )
-            for (group in groups) {
-                var index = 0
-                while (index + 1 < group.length) {
-                    put(group[index], group[index + 1])
-                    put(group[index + 1], group[index + 1])
-                    index += 2
-                }
-            }
-        }
+        /** 成对键的输出（与 KeyboardLayouts 的 *_PAIRS 一一对应）。 */
+        private val PAIR_KEYS: Set<String> = setOf(
+            "（）", "【】", "《》", "〈〉", "「」", "『』", "“”", "‘’", "〔〕", "〖〗",
+            "()", "[]", "{}", "<>", "\"\"", "''",
+        )
 
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
         /** How long two single character commits may be apart and still form a learned word. */

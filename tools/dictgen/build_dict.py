@@ -123,6 +123,13 @@ EXTRA_NAMED_LISTS = [
     ("university_data.json", "university", 0.9, 3000),
     ("area_list.json", None, 1.0, 5000),
 ]
+# 词条语料（不是专名，也不是频率表）：新华字典的词条/成语（**带拼音**，等于多一份词级读音），
+# 以及一份 5 万条的成语表。三份都来自 MIT / Apache-2.0 的数据集，见 NOTICE.md。
+EXTRA_WORD_LISTS = [
+    ("ci.json", "word", 0.7, 1200),
+    ("idiom.json", "word", 0.8, 900),
+    ("chengyu_5w.txt", None, 0.6, 700),
+]
 # A second reading earns its own entry in the character table when the frequency dictionary shows
 # it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
 # jiào in 15%). Below that the reading exists but is rare enough that the primary placement is
@@ -441,6 +448,32 @@ def load_named_lists() -> dict[str, int]:
     return names
 
 
+def load_word_lists() -> dict[str, int]:
+    """词条语料（新华字典的词条/成语、5 万成语表）-> 分数。
+
+    与 [load_named_lists] 分开：这些是**普通词条**，只是补覆盖（新华字典的成语/词语里有不少
+    jieba 没有的），所以分数压得比日常词低，靠的是"能打出来"而不是"排得靠前"。
+    """
+    words: dict[str, int] = {}
+    for filename, key, weight, nominal in EXTRA_WORD_LISTS:
+        path = TOOLS / "raw" / filename
+        if not path.exists():
+            print(f"! missing {filename}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
+            continue
+        score = score_of(nominal, weight)
+        if key is None:
+            for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+                word = line.strip().split("\t")[0].split(" ")[0]
+                if 2 <= len(word) <= MAX_WORD_LENGTH and HAN.match(word):
+                    words[word] = max(words.get(word, 0), score)
+            continue
+        for entry in json.loads(path.read_text(encoding="utf-8")):
+            word = (entry.get(key) or "").strip()
+            if 2 <= len(word) <= MAX_WORD_LENGTH and HAN.match(word):
+                words[word] = max(words.get(word, 0), score)
+    return words
+
+
 def _load_second_readings() -> dict[str, list[str]]:
     """character -> the readings beyond its first one that deserve a candidate slot.
 
@@ -528,6 +561,12 @@ def main() -> int:
     for word, score in named.items():
         word_scores[word] = max(word_scores.get(word, 0), score)
     print(f"专名表: {len(named)} 个（院校 / 省市区县）")
+
+    # 词条语料（新华字典词条/成语 + 5 万成语表）：只补覆盖与读音，不参与"谁更常用"的排序。
+    listed = load_word_lists()
+    for word, score in listed.items():
+        word_scores[word] = max(word_scores.get(word, 0), score)
+    print(f"词条语料: {len(listed)} 个（新华字典词条/成语、成语表）")
 
     # Conversational frequency, on top of the corpus lists. `frequency` in that file is a corpus
     # rank (today 155, 怎么 128, 怎么样 1367, 简体字 57431), so it is applied in tiers: the words a

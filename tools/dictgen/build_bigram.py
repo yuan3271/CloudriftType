@@ -72,6 +72,10 @@ TATOEBA = RAW / "tatoeba_cmn_sentences.tsv.bz2"
 # carry. The entity brackets the file carries ("(北京)", "[舒淇]") are annotation, not text, so the
 # brackets are dropped and what they mark is kept.
 AISHELL = RAW / "aishell_ner_transcript.txt"
+# 古诗词（chinese-poetry，MIT；唐诗三百首 / 宋词三百首）。默认**不启用**：它是给孩子背的
+# 那种文本，和"打字时说下一个词"关系很远——但它作为一类语料值得能一条命令打开、并用评测台
+# 量一次，所以和 --classics 一样留成开关。
+POETRY_FILES = [RAW / "poetry_tang.json", RAW / "poetry_song.json"]
 # One Tatoeba occurrence counts once; the hand-written corpus is scaled up instead (see
 # DAILY_WEIGHT), because the thing being expressed is "how many occurrences is a hand-written
 # one worth", and a fractional Tatoeba count would break the absolute discounting below 1.
@@ -326,6 +330,7 @@ class Sources:
     # (全拼 top1 28 → 27) and the 联想 strip one (top1 9 → 8) without buying anything back, which
     # is the opposite of what a keyboard wants: the corpora it needs are *typed* conversation.
     aishell: bool = False
+    poetry: bool = False
     tatoeba_weight: float = TATOEBA_WEIGHT
     aishell_weight: float = AISHELL_WEIGHT
     aishell_min_count: int = AISHELL_MIN_COUNT
@@ -389,6 +394,24 @@ def build_pairs(
         )
         for pair, count in extra.items():
             pairs[pair] += count * weight
+    if sources.poetry:
+        # 诗词一轮：每段（标题、作者、正文每一句）当作一句话来数词对，繁简先归一。
+        lines = 0
+        for path in POETRY_FILES:
+            if not path.exists():
+                print(f"! missing {path.name}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
+                continue
+            data = json.loads(path.read_text(encoding="utf-8"))
+            for entry in data:
+                for block in (entry.get("paragraphs") or []):
+                    for run in HAN.findall(to_simplified(block, tables)):
+                        units = segment(run, words, floor)
+                        lines += 1
+                        for left, right in zip(units, units[1:]):
+                            if not sources.char_pairs and len(left) == 1 and len(right) == 1:
+                                continue
+                            pairs[(left, right)] += 1
+        print(f"  诗词: {lines:,} 句")
     # 开头单元自己的门槛（自撰语料的开头带 600 倍权重，永远过线）。
     for pair in [pair for pair in pairs if pair[0] == BOUNDARY and pairs[pair] < BOUNDARY_MIN_COUNT]:
         del pairs[pair]
@@ -560,6 +583,8 @@ def main() -> int:
         ("aishell-only", Sources(tatoeba=False, aishell=True)),
         ("aishell-dw600", Sources(aishell=True)),
         ("aishell-min8", Sources(aishell=True, aishell_min_count=8)),
+        ("poetry-w1", Sources(poetry=True)),
+        ("poetry-only", Sources(tatoeba=False, poetry=True)),
     ]
     for name, sources in variants:
         if sources is None:

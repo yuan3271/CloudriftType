@@ -83,5 +83,12 @@ python3 "$ROOT/tools/dictgen/prepare_pypinyin.py" "$PYPINYIN_JSON" \
 python3 "$ROOT/tools/dictgen/prepare_unihan.py" "$UNIHAN" \
   "$CLEAN/unihan_readings.txt"
 
+
+# 词条语料（MIT / Apache-2.0）：新华字典词条与成语、5 万成语表、唐诗宋词。只进词表与搭配模型。
+for spec in "chinese-xinhua:data/ci.json:ci.json" "chinese-xinhua:data/idiom.json:idiom.json" "Chinese-Names-Corpus:Chinese_Dict_Corpus/ChengYu_Corpus（5W）.txt:chengyu_5w.txt" "chinese-poetry:全唐诗/唐诗三百首.json:poetry_tang.json" "chinese-poetry:宋词/宋词三百首.json:poetry_song.json"; do
+  repo=${spec%%:*}; rest=${spec#*:}; path=${rest%%:*}; out=${rest##*:}
+  [ -f "$RAW/$out" ] || curl -sSL -o "$RAW/$out" "${GITHUB_PROXY:-}https://raw.githubusercontent.com/$repo/master/$path"
+done
+
 echo "snapshot sha256:"
 shasum -a 256 "$TATOEBA" "$PYPINYIN_JSON" "$AISHELL" "$UNIHAN" "$UNIVERSITY" "$AREA"
