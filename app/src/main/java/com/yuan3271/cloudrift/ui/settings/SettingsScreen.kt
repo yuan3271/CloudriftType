@@ -137,6 +137,10 @@ fun SettingsScreen(
                 },
             )
 
+            // 键盘预览：一个真的输入框，点一下系统就会把当前输入法叫出来——不必先切到某个应用
+            // 里试打字。试出来的候选、联想、符号页都和在别处打字时是同一套。
+            KeyboardPreviewCard()
+
             UpdateCard(
                 update = update,
                 interval = settings.updateCheckInterval,
@@ -522,6 +526,32 @@ fun SettingsScreen(
             dismissButton = {
                 TextButton(onClick = { confirmClearLearning = false }) { Text("取消") }
             },
+        )
+    }
+}
+
+/**
+ * 试用键盘的输入框。就是普通 TextField：点它 → 系统弹出当前输入法 → 直接试。
+ * 文本只留在内存里，不保存、不上报。
+ */
+@Composable
+private fun KeyboardPreviewCard() {
+    var text by remember { mutableStateOf("") }
+    SectionTitle("键盘预览", CloudriftIcons.Keyboard)
+    SettingsCard {
+        Text(
+            text = "点下面的框试试键盘：候选、联想、符号页都和在别处打字一样。",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("在这里打几个字试试") },
+            singleLine = false,
+            minLines = 2,
         )
     }
 }

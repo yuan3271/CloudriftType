@@ -53,6 +53,10 @@ class ImeController(
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    /** 缩放时没花掉的零头（见 [resizeFloatingKeyboard]），只活在这一次拖动里。 */
+    private var floatingWidthResidual = 0f
+    private var floatingHeightResidual = 0f
     /** The service, when it can frame the window; null in tests and headless use. */
     private val windowHost: InputWindowHost? = service as? InputWindowHost
     private val editor = EditorProxy { service.currentInputConnection }
@@ -353,12 +357,19 @@ class ImeController(
      */
     fun resizeFloatingKeyboard(widthDeltaPercent: Float, keyHeightDeltaDp: Float) {
         val current = _state.value
-        val width = (current.floatingWidthPercent + widthDeltaPercent)
+        // 缩放"很怪异"的根源在这里：每次指针事件都把 (当前值 + 这一小段增量) 直接 toInt()，
+        // 慢拖时每一段都不到 1（百分比或 dp），于是整段被截掉——手在动、卡片不动，攒到某一下
+        // 又突然跳一大格。把没花掉的小数留到下一段，缩放才是连续的。
+        floatingWidthResidual += widthDeltaPercent
+        floatingHeightResidual += keyHeightDeltaDp
+        val width = (current.floatingWidthPercent + floatingWidthResidual)
             .toInt()
             .coerceIn(MIN_FLOATING_WIDTH_PERCENT, MAX_FLOATING_WIDTH_PERCENT)
-        val height = (current.floatingKeyHeightDp + keyHeightDeltaDp)
+        val height = (current.floatingKeyHeightDp + floatingHeightResidual)
             .toInt()
             .coerceIn(MIN_FLOATING_KEY_HEIGHT, MAX_FLOATING_KEY_HEIGHT)
+        floatingWidthResidual -= (width - current.floatingWidthPercent)
+        floatingHeightResidual -= (height - current.floatingKeyHeightDp)
         if (width == current.floatingWidthPercent && height == current.floatingKeyHeightDp) return
         _state.value = current.copy(
             floatingWidthPercent = width,
@@ -367,6 +378,8 @@ class ImeController(
     }
 
     fun commitFloatingKeyboardSize() {
+        floatingWidthResidual = 0f
+        floatingHeightResidual = 0f
         val current = _state.value
         settings.update {
             it.copy(

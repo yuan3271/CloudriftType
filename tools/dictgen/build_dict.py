@@ -120,15 +120,17 @@ UNIHAN_READINGS = TOOLS / "clean/unihan_readings.txt"
 # 在新闻语料里的出现次数跟"有没有人打它"没关系。所以单列成固定权重的来源：
 #   (文件名, JSON 里的键（None = 值是 {代码: 名字} 的字典）, 权重, 名义频次)
 EXTRA_NAMED_LISTS = [
-    ("university_data.json", "university", 0.9, 3000),
-    ("area_list.json", None, 1.0, 5000),
+    ("raw/university_data.json", "university", 0.9, 3000),
+    ("raw/area_list.json", None, 1.0, 5000),
 ]
 # 词条语料（不是专名，也不是频率表）：新华字典的词条/成语（**带拼音**，等于多一份词级读音），
 # 以及一份 5 万条的成语表。三份都来自 MIT / Apache-2.0 的数据集，见 NOTICE.md。
 EXTRA_WORD_LISTS = [
-    ("ci.json", "word", 0.7, 1200),
-    ("idiom.json", "word", 0.8, 900),
+    ("raw/ci.json", "word", 0.7, 1200),
+    ("raw/idiom.json", "word", 0.8, 900),
     ("chengyu_5w.txt", None, 0.6, 700),
+    # 网络常用词（本项目自撰，MIT）：哔哩哔哩、微信、淘宝这类词进不了新闻语料，但天天有人打。
+    ("clean/net_words.txt", None, 1.0, 2000),
 ]
 # A second reading earns its own entry in the character table when the frequency dictionary shows
 # it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
@@ -434,7 +436,7 @@ def load_named_lists() -> dict[str, int]:
     """院校名与行政区划名 -> 分数。见 [EXTRA_NAMED_LISTS]。"""
     names: dict[str, int] = {}
     for filename, key, weight, nominal in EXTRA_NAMED_LISTS:
-        path = TOOLS / "raw" / filename
+        path = TOOLS / filename
         if not path.exists():
             print(f"! missing {filename}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
             continue
@@ -456,13 +458,15 @@ def load_word_lists() -> dict[str, int]:
     """
     words: dict[str, int] = {}
     for filename, key, weight, nominal in EXTRA_WORD_LISTS:
-        path = TOOLS / "raw" / filename
+        path = TOOLS / filename
         if not path.exists():
             print(f"! missing {filename}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
             continue
         score = score_of(nominal, weight)
         if key is None:
             for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+                if line.startswith("#"):
+                    continue
                 word = line.strip().split("\t")[0].split(" ")[0]
                 if 2 <= len(word) <= MAX_WORD_LENGTH and HAN.match(word):
                     words[word] = max(words.get(word, 0), score)

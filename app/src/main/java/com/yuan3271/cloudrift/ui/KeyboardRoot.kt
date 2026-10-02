@@ -130,7 +130,9 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
                 },
                 onToggleQuickSettings = {
                     layoutPickerVisible = false
-                    controller.toggleQuickSettings()
+                    // 悬浮卡片是按按键尺寸开的窗，快捷设置那张整宽面板在它里面既放不下也点不准，
+                    // 所以悬浮模式下齿轮改成直接进完整设置页（内容只多不少）。
+                    if (floating) controller.openFullSettings() else controller.toggleQuickSettings()
                 },
             )
 
@@ -161,7 +163,8 @@ private fun KeyboardSurface(
     onToggleQuickSettings: () -> Unit,
 ) {
     val screenHeight = LocalConfiguration.current.screenHeightDp
-    val screenWidth = LocalConfiguration.current.screenWidthDp
+    // 屏幕宽度一律用 dp 参与缩放换算：拖动量也是 dp，两边单位一致，横拖与纵拖的手感才对得上。
+    val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
     val autoHeight = KeyboardLayouts.autoKeyHeight(screenHeight)
     // The floating card is sized by its own values: 键盘高度 and 距屏幕底部 are the upright
     // keyboard's business, and shrinking the upright one must not shrink the floating one.
@@ -224,27 +227,19 @@ private fun KeyboardSurface(
                 .padding(bottom = bottomGap),
         ) {
             if (floating) {
-                // Grab handle: dragging it moves the whole card, which the service does by
-                // changing the window offsets.
+                // 拖动区：把整张卡片拖着走（服务端改窗口偏移）。以前这里是一条 18dp 高的
+                // 粗边 + 一根 44×4 的把手，按用户要求删掉了那条边——手势还在，只是不再画东西，
+                // 留 8dp 的透明窄条，免得拖不动卡片。
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(18.dp)
+                        .height(8.dp)
                         .pointerInput(Unit) {
                             detectDragGestures { _, dragAmount ->
                                 controller.moveFloatingKeyboard(dragAmount.x, dragAmount.y)
                             }
                         },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(44.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
-                    )
-                }
+                )
                 // Corner handle: dragging it resizes the card (width in % of the screen, key height
                 // in dp). The values are only persisted when the finger lifts.
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
@@ -256,9 +251,12 @@ private fun KeyboardSurface(
                             .pointerInput(screenWidth) {
                                 detectDragGestures(
                                     onDragEnd = { controller.commitFloatingKeyboardSize() },
+                                    // 手势被系统抢走（来电、切应用）时也要落盘，否则这次拖出来的
+                                    // 大小下次打开就没了——悬浮大小不持久化就是这么来的。
+                                    onDragCancel = { controller.commitFloatingKeyboardSize() },
                                 ) { _, dragAmount ->
                                     val widthDelta = with(density) { dragAmount.x.toDp().value } /
-                                        screenWidth.coerceAtLeast(1) * 100f
+                                        screenWidth.coerceAtLeast(1f) * 100f
                                     // The card sits on the bottom edge, so it grows by dragging the
                                     // corner *up*; dragging right widens it.
                                     val heightDelta = -with(density) { dragAmount.y.toDp().value }
