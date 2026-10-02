@@ -4,6 +4,14 @@
   <img src="tools/design/launcher-cutout-preview.png" width="132" alt="云隙输入应用图标">
 </p>
 
+<p align="center">
+  <img src="tools/design/screenshots/keyboard-light.jpg" width="200" alt="设置页里的键盘预览（浅色）">
+  <img src="tools/design/screenshots/keyboard-dark.jpg" width="200" alt="设置页里的键盘预览（深色）">
+  <img src="tools/design/screenshots/voice-light.jpg" width="200" alt="按住空格说话：波形、计时与取消/完成">
+</p>
+
+<p align="center"><sub>左起：设置页的键盘预览（浅色 / 深色）、按住空格说话的录音面板</sub></p>
+
 一个 Android 输入法（IME），界面按 **Material 3 Expressive** 设计，支持中文（26 键 /
 9 键拼音）、日文（罗马音 / 假名）与英文，并内置基于 API Key 的语音输入。
 
