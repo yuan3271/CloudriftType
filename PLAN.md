@@ -485,6 +485,13 @@ APK 内的 `pinyin_chars/words/bigrams.txt` 与 `NOTICE.md` 与仓库逐字节�
 top1 11/31；联想 14/14；九键二字词 411/552（样本数随词表切分变化）。广谱台：全拼 463/573、
 首字母 82/573。版本号 0.2.27（versionCode 31）。
 
+**产物与发布**：`dist/cloudrift-type-0.2.27-release.apk`（12,386,997 字节，签名 CN=yuan3271），
+tag `v0.2.27`，Release「云隙输入 0.2.27」已上传该资产；回验用 GitHub 资产 API 的 `digest`
+字段（sha256 `9ddc1aafb8e1de45…`）与本地文件一致。这一轮 `github.com:443` 一度不可达（git push
+报 HTTP/2 framing 与连接超时），提交与标签因此是通过 Git Data API 推上去的——判据是**远端 tree
+与本地 tree 完全相同**（`a01e297c`）；第一次推时 `fetch_corpora.sh` 的执行位漏了（写成
+100644），发现后重建提交并移动了标签。
+
 ## 语料与读音：联想 / 拼音匹配
 
 本轮的诉求是"用可以随意用于训练的高质量中文语料把联想和拼音匹配做上去，同时保持 MIT"。
