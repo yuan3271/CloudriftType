@@ -16,13 +16,18 @@ writes their score as an integer so the Kotlin decoder can add it to a path's co
 The table has two readers: the sentence decoder adds a pair's score to a path's cost, and the 联想
 strip lists a word's successors after it is committed.
 
+It also carries one *position* that has no left neighbour: the first unit of a sentence is stored
+under [BOUNDARY], which is what lets the decoder score 马上 higher than 吗 as a sentence opener.
+
 Licensing
 ---------
-Two corpora build the table. The backbone is this project's own everyday text in
+Three corpora build the table. The backbone is this project's own everyday text in
 tools/dictgen/raw/corpus_*.txt (MIT, written for this project) - small, but the only text that
 reflects how the keyboard is actually used. On top of it comes **Tatoeba's cmn export** (89k
 human-written sentences, CC BY 2.0 FR: attribution only, no share-alike and no non-commercial
-clause), which is what finally gives the pair counts enough support to be worth discounting.
+clause), which is what finally gives the pair counts enough support to be worth discounting, and
+**AISHELL-1's transcripts** (Apache-2.0, read aloud by 400 speakers: everyday and news sentences
+of the same kind a person types), which add a second, larger pool of modern sentences.
 `--classics` additionally reads the public-domain Gutenberg novels (18th/19th century).
 
 No text is ever shipped, only the counts derived from it; `tools/dictgen/fetch_corpora.sh`
@@ -61,6 +66,12 @@ SENTENCE_PUNCT = frozenset("，。！？、；：“”‘’（）《》〈〉�
 # Tatoeba's cmn export: human-written everyday sentences, CC BY 2.0 FR. Optional at build time so
 # the script still runs on a checkout that has not fetched it.
 TATOEBA = RAW / "tatoeba_cmn_sentences.tsv.bz2"
+# AISHELL-1's transcripts (Apache-2.0): 141k sentences of modern Chinese read aloud by 400
+# speakers, spread over everyday talk, news and a few domain sets. They are the second large pool
+# of *modern* sentences after Tatoeba, and the only other one whose licence a MIT project can
+# carry. The entity brackets the file carries ("(北京)", "[舒淇]") are annotation, not text, so the
+# brackets are dropped and what they mark is kept.
+AISHELL = RAW / "aishell_ner_transcript.txt"
 # One Tatoeba occurrence counts once; the hand-written corpus is scaled up instead (see
 # DAILY_WEIGHT), because the thing being expressed is "how many occurrences is a hand-written
 # one worth", and a fractional Tatoeba count would break the absolute discounting below 1.
@@ -75,6 +86,21 @@ DAILY_WEIGHT = 600.0
 # A pair seen once in 89k sentences is a coincidence, not a collocation. The hand-written corpus
 # is the opposite - one occurrence is all the evidence there is - so the floor is per source.
 TATOEBA_MIN_COUNT = 2
+# Same reasoning for AISHELL: it is a speech corpus, so a pair seen once in it is just as likely to
+# be a reading slip or a one-off news phrase.
+AISHELL_MIN_COUNT = 2
+# How loud AISHELL is next to Tatoeba. Read-aloud news is not typed chat, so its pairs count once
+# by default and the weight knob exists for the benchmark to argue about (see --variant-sweep).
+AISHELL_WEIGHT = 1.0
+# `(北京)` and `[舒淇]` mark entities; the brackets are annotation and the words are text.
+ENTITY_BRACKETS = str.maketrans({"(": "", ")": "", "[": "", "]": "", "<": "", ">": ""})
+# 句子开头也是一种上下文，而且是原来唯一没有上下文的位置：解码器的第 0 个单元拿不到任何搭配
+# 证据，只能按词频挑字——这正是 "mashangle" 出 吗上了（ma 的首选字是 吗）、"xiawula" 出 下午啦
+# 的来源。这里把每段汉字的第一个单元记在一条特殊左键下，和别的词对走完全相同的折扣与打分。
+BOUNDARY = "^"
+# 一段汉字只贡献一个开头单元，见过一两次的多半是引号、错别字（语料里真有「吧杯子放在桌子上。」）,
+# 留下它们等于给这些字一个"可以开头"的信号，所以开头有自己的门槛。
+BOUNDARY_MIN_COUNT = 5
 # Longest sentence kept. Tatoeba reaches 40+ characters, and a long translated sentence is a lot
 # of extra pairs for very little signal about what people type next.
 MAX_TATOEBA_CHARS = 30
@@ -241,6 +267,8 @@ def count_tatoeba_pairs(
             seen.add(sentence)
             for run in HAN.findall(sentence):
                 units = segment(run, words, floor)
+                if units:
+                    pairs[(BOUNDARY, units[0])] += 1
                 for left, right in zip(units, units[1:]):
                     if not keep_char_pairs and len(left) == 1 and len(right) == 1:
                         continue
@@ -249,13 +277,58 @@ def count_tatoeba_pairs(
     return Counter({pair: count for pair, count in pairs.items() if count >= TATOEBA_MIN_COUNT})
 
 
+def count_aishell_pairs(
+    words: dict[str, int],
+    floor: int,
+    tables: tuple[dict[str, str], dict[str, str], frozenset[str], int],
+    keep_char_pairs: bool,
+    min_count: int = AISHELL_MIN_COUNT,
+) -> Counter[tuple[str, str]]:
+    """Adjacent-unit counts from AISHELL-1's transcripts, raw (not yet weighted)."""
+    pairs: Counter[tuple[str, str]] = Counter()
+    if not AISHELL.exists():
+        print(f"! missing {AISHELL.name}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
+        return pairs
+    seen: set[str] = set()
+    with AISHELL.open(encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            # `<uttid> <sentence>`; the id is not text.
+            _, _, raw = line.rstrip("\n").partition(" ")
+            if not raw:
+                continue
+            sentence = to_simplified(raw.translate(ENTITY_BRACKETS), tables)
+            if not usable_sentence(sentence):
+                continue
+            # The corpus repeats some prompts across speakers.
+            if sentence in seen:
+                continue
+            seen.add(sentence)
+            for run in HAN.findall(sentence):
+                units = segment(run, words, floor)
+                if units:
+                    pairs[(BOUNDARY, units[0])] += 1
+                for left, right in zip(units, units[1:]):
+                    if not keep_char_pairs and len(left) == 1 and len(right) == 1:
+                        continue
+                    pairs[(left, right)] += 1
+    print(f"  AISHELL: {len(seen):,} 句，{len(pairs):,} 个词对（≥{min_count} 次才计入）")
+    return Counter({pair: count for pair, count in pairs.items() if count >= min_count})
+
+
 @dataclass(frozen=True)
 class Sources:
     """Which corpora to read and how loud each one is."""
 
     classics: bool = False
     tatoeba: bool = True
+    # AISHELL-1 is measured by `--variant-sweep` and shipped **off**: see the note in NOTICE.md.
+    # Its read-aloud news sentences cost the sentence benchmark one first-place case
+    # (全拼 top1 28 → 27) and the 联想 strip one (top1 9 → 8) without buying anything back, which
+    # is the opposite of what a keyboard wants: the corpora it needs are *typed* conversation.
+    aishell: bool = False
     tatoeba_weight: float = TATOEBA_WEIGHT
+    aishell_weight: float = AISHELL_WEIGHT
+    aishell_min_count: int = AISHELL_MIN_COUNT
     daily_weight: float = DAILY_WEIGHT
     char_pairs: bool = True
 
@@ -279,7 +352,7 @@ def build_pairs(
         paths += sorted(RAW.glob("novel_*.txt"))
     # The weight only exists to keep the hand-written lines in proportion with a much larger
     # corpus; with no larger corpus there is nothing to weigh them against.
-    external = sources.classics or sources.tatoeba
+    external = sources.classics or sources.tatoeba or sources.aishell
     for path in paths:
         text = to_simplified(path.read_text(encoding="utf-8", errors="ignore"), tables)
         is_curated = path.name.startswith("corpus_")
@@ -291,6 +364,10 @@ def build_pairs(
             for run in HAN.findall(line):
                 units = segment(run, words, floor)
                 sentences += 1
+                if units:
+                    pairs[(BOUNDARY, units[0])] += weight
+                    if is_curated:
+                        curated.add((BOUNDARY, units[0]))
                 for left, right in zip(units, units[1:]):
                     # Both sides being a single character is the noisiest class of pair (的|了 is
                     # everywhere and says little), so it is opt-in.
@@ -305,6 +382,16 @@ def build_pairs(
         extra = count_tatoeba_pairs(words, floor, tables, sources.char_pairs)
         for pair, count in extra.items():
             pairs[pair] += count * weight
+    if sources.aishell:
+        weight = int(round(sources.aishell_weight))
+        extra = count_aishell_pairs(
+            words, floor, tables, sources.char_pairs, sources.aishell_min_count,
+        )
+        for pair, count in extra.items():
+            pairs[pair] += count * weight
+    # 开头单元自己的门槛（自撰语料的开头带 600 倍权重，永远过线）。
+    for pair in [pair for pair in pairs if pair[0] == BOUNDARY and pairs[pair] < BOUNDARY_MIN_COUNT]:
+        del pairs[pair]
     return pairs, frozenset(curated)
 
 
@@ -414,7 +501,11 @@ def main() -> int:
     # Tatoeba is on by default: it is permissively licensed *and* modern, unlike the classics.
     parser.add_argument("--tatoeba", dest="tatoeba", action="store_true", default=True)
     parser.add_argument("--no-tatoeba", dest="tatoeba", action="store_false")
+    parser.add_argument("--aishell", dest="aishell", action="store_true", default=False)
+    parser.add_argument("--no-aishell", dest="aishell", action="store_false")
     parser.add_argument("--tatoeba-weight", type=float, default=TATOEBA_WEIGHT)
+    parser.add_argument("--aishell-weight", type=float, default=AISHELL_WEIGHT)
+    parser.add_argument("--aishell-min-count", type=int, default=AISHELL_MIN_COUNT)
     parser.add_argument("--daily-weight", type=float, default=DAILY_WEIGHT)
     # Character-to-character pairs are what 联想 needs most: after a lone 我 the next thing typed
     # is usually another single character (想, 觉得's 觉...). They cost a little accuracy in the
@@ -436,7 +527,10 @@ def main() -> int:
         sources = Sources(
             classics=args.classics,
             tatoeba=args.tatoeba,
+            aishell=args.aishell,
             tatoeba_weight=args.tatoeba_weight,
+            aishell_weight=args.aishell_weight,
+            aishell_min_count=args.aishell_min_count,
             daily_weight=args.daily_weight,
             char_pairs=args.char_pairs,
         )
@@ -451,14 +545,21 @@ def main() -> int:
     # pairs earn their bytes, how loud should Tatoeba be next to the hand-written corpus.
     variants: list[tuple[str, Sources | None]] = [
         ("no-bigram", None),
-        ("daily-conditional", Sources(tatoeba=False, char_pairs=False)),
-        ("daily-chars-conditional", Sources(tatoeba=False)),
-        ("tatoeba-dw100", Sources(daily_weight=100)),
-        ("tatoeba-dw300", Sources(daily_weight=300)),
-        ("tatoeba-dw600", Sources(daily_weight=600)),
-        ("tatoeba-dw2000", Sources(daily_weight=2000)),
-        ("classics-conditional", Sources(tatoeba=False, classics=True, char_pairs=False)),
-        ("classics-chars-conditional", Sources(tatoeba=False, classics=True)),
+        ("daily-conditional", Sources(tatoeba=False, aishell=False, char_pairs=False)),
+        ("daily-chars-conditional", Sources(tatoeba=False, aishell=False)),
+        ("tatoeba-dw100", Sources(aishell=False, daily_weight=100)),
+        ("tatoeba-dw300", Sources(aishell=False, daily_weight=300)),
+        ("tatoeba-dw600", Sources(aishell=False, daily_weight=600)),
+        ("tatoeba-dw2000", Sources(aishell=False, daily_weight=2000)),
+        ("classics-conditional", Sources(tatoeba=False, aishell=False, classics=True, char_pairs=False)),
+        ("classics-chars-conditional", Sources(tatoeba=False, aishell=False, classics=True)),
+        # AISHELL-1 on top of Tatoeba. Its sentences are read aloud rather than typed, so the
+        # question the sweep answers is whether it earns a place at all, and at what confidence
+        # floor: min8 and min20 keep only pairs that recur, which is what a speech corpus has to
+        # offer a keyboard that is looking for collocations rather than for prose.
+        ("aishell-only", Sources(tatoeba=False, aishell=True)),
+        ("aishell-dw600", Sources(aishell=True)),
+        ("aishell-min8", Sources(aishell=True, aishell_min_count=8)),
     ]
     for name, sources in variants:
         if sources is None:

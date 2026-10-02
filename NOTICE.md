@@ -23,6 +23,7 @@
 | [pinyin-data](https://github.com/mozillazg/pinyin-data) | MIT | 汉字读音及其常用度排序 |
 | [pypinyin](https://github.com/mozillazg/python-pinyin) `phrases_dict.json` | MIT | **词条**读音：多音字词按词定音 |
 | [complete-hsk-vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary) | MIT | 口语常用词及其语料排名（用于让"怎么样""今天"这类词排在行业词前面） |
+| [Unihan](https://www.unicode.org/Public/UCD/latest/ucd/Unihan.zip)（`kHanyuPinlu` / `kMandarin`） | Unicode License v3 | 每个**读音**的使用频率，决定一个字挂在哪些音节下 |
 | `tools/dictgen/raw/corpus_*.txt` | **本项目原创** | 现代口语词频（只用它给"本来就常见"的词加权，不据此引入生僻词） |
 
 生成的资产是上述数据的衍生作品，再分发时请一并保留本声明。词库文件本身不包含任何
@@ -42,16 +43,25 @@
 > 曾评估过使用雾凇拼音（rime-ice）的词库，最终**未采用**：该项目为 GPL-3.0-only，
 > 且其上游语料包含 CC BY-SA 与来源不明的数据，与本项目保持 MIT 的目标冲突。
 
+> pinyin-data 按常用度排列一个字的读音，但没有频率：`乐` 因此只挂在 `le` 下（打 `yue` 出不来它），
+> `谁` 只挂在 `shui` 下（`shei` 下一个字都没有），`得` 只挂在 `de` 下（`dei` 空着）。Unihan 的
+> `kHanyuPinlu`（《现代汉语频率词典》的读音计数）与 `kMandarin`（习惯读音）补的就是这个数：
+> 一个读音占到该字出现次数的 5% 以上、或是 kMandarin 认定的读音时，这个字会**多挂**一个音节
+> （降权放置，原音节里的排位不动）。当前共 53 条次读音归位，`shei→谁`、`dei→得`、`hang→行`、
+> `yue→乐`、`xie→血`、`de→地` 都在其中。`prepare_unihan.py` 负责抽取，Unihan 压缩包不随仓库分发。
+
 ### 联想（语言模型）资产
 
 `app/src/main/assets/pinyin_bigrams.txt` 由 `tools/dictgen/build_bigram.py` 离线生成，
 它给出"上一个字/词之后最可能接什么"的搭配分数，有三个读者：整句解码、首字母简拼打分，
-以及**打完一个词之后的联想条**：
+以及**打完一个词之后的联想条**。表里另有一行特殊左键 `^`，记的是"一句话以哪个单元开头"——
+它是解码器唯一没有左邻的位置，补上它才有 马上 而不是 吗 开头（只对词生效，单字太容易是噪声）：
 
 | 来源 | 许可 | 用途 |
 | --- | --- | --- |
 | `tools/dictgen/raw/corpus_*.txt` | **本项目原创** | 现代口语搭配统计；**语料本身只有几千字，但它是唯一反映"这个键盘希望怎么被用"的文本**，所以按等价规模加权，且它的词对永不因上限被淘汰 |
 | [Tatoeba](https://tatoeba.org) 中文句子（`cmn` 导出快照，89102 句） | CC BY 2.0 FR（仅署名，无传染、无非商业限制） | 现代口语搭配统计（**默认启用**）；只统计计入次数，**句子文本不入库、不随应用分发** |
+| [AISHELL-1](https://www.openslr.org/33/) 转写文本（经 [Alibaba-NLP/AISHELL-NER](https://github.com/Alibaba-NLP/AISHELL-NER) 以同一许可分发） | Apache-2.0 | 现代书面语/新闻搭配统计；**默认关闭**，见下 |
 | [OpenCC](https://github.com/BYVoid/OpenCC) `TSCharacters` / `TSPhrases` | Apache-2.0 | 把公版繁体语料归一为简体（表在 `tools/dictgen/opencc/`，许可证随附） |
 | Project Gutenberg 公版小说（红楼梦 / 三国演义 / 豆棚闲话） | Public Domain | 词、字搭配统计；**默认关闭**，文本不入库，只发布由它统计出的计数 |
 
@@ -67,6 +77,13 @@ Tatoeba 的句子由志愿者撰写/翻译，导出文件里逐句记录了作�
 > 古典文本默认不参与统计。实测它们对现代口语搭配帮助有限，且繁简归一之前权重最高的是
 > 「孔明|曰」「下回|分解」这类章回体套语。需要时用
 > `python3 tools/dictgen/build_bigram.py --classics` 重新加入。
+
+> AISHELL-1（14 万句朗读文本，Apache-2.0）同样**默认不参与统计**，但原因是实测：
+> 它是"读出来的书面语"，不是"打出来的话"。加进来（`--aishell`）之后，全拼基准的第一名命中
+> 28 → 27、联想条 top1 9 → 8，换回来的只有 top5 30 → 31；把置信门槛提到 8 次共现以上，
+> 分数与不加时完全一致（说明它带来的高分词对本来就在语料里）。两个开关
+> （`--aishell` / `--aishell-weight`）留着，`--variant-sweep` 每次都把它和现有表一起打分，
+> 以后再评估不必重新找语料。
 
 > 联想本质是语言模型问题，理论上最干净的解法是带平滑的 n-gram 或神经语言模型。评估后
 > **未采用任何现成实现**：KenLM 为 LGPL-2.1、SRILM 为非商业许可，中文预训练语言模型多为

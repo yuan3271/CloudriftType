@@ -96,7 +96,9 @@ class PinyinEngineTest {
         val output = PinyinEngine(dictionary, nineKey = false).evaluate("zzz")
 
         assertTrue(output.candidates.isNotEmpty())
-        assertEquals("zzz", output.candidates.first().text)
+        // 读不出任何拼音的字母串必须留在候选里（随时能整串上屏），但不再抢占第一位——它现在是
+        // 列表里的最后一项，前面是引擎读出来的东西。见 [PinyinEngine.rawLast] 的注释。
+        assertTrue("原样字母仍在候选里: ${output.candidates.map { it.text }}", output.candidates.any { it.text == "zzz" })
     }
 
     @Test
@@ -131,12 +133,32 @@ class PinyinEngineTest {
     }
 
     @Test
-    fun `a finished syllable already suggests the words it opens`() {
-        val output = PinyinEngine(dictionary, nineKey = false).evaluate("ni")
-        val texts = output.candidates.map { it.text }
+    fun `a finished syllable offers characters, not the words it could open`() {
+        // Typing "kan" means 看. 看到 starts with the same syllable, but its 到 has no letter
+        // behind it at all - the word only becomes an answer once the d is typed. Before this the
+        // bar was a list of every word that happens to begin with the syllable, and 看 was the
+        // only single character in it.
+        val engine = PinyinEngine(dictionary, nineKey = false)
 
-        assertEquals("你", texts.first())
-        assertTrue("expected 你好 among ${texts.take(3)}", texts.take(3).contains("你好"))
+        val texts = engine.evaluate("kan").candidates.map { it.text }
+        assertEquals("看", texts.first())
+        assertTrue("kan must offer single characters only: $texts", texts.none { it.length > 1 })
+
+        // The next syllable's initial is that letter, and that is the whole difference.
+        assertEquals("看到", engine.evaluate("kand").candidates.first().text)
+    }
+
+    @Test
+    fun `a completion needs the beginning of every character it adds`() {
+        // 西安 reads "xian" as xi + an, so after "xi" the 安 has nothing behind it yet: the bar
+        // offers 西/洗/系/喜 and not 西安. Typing the reading out reaches it.
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertTrue(
+            "xi must not complete to 西安: ${engine.evaluate("xi").candidates.map { it.text }}",
+            engine.evaluate("xi").candidates.none { it.text == "西安" },
+        )
+        assertEquals("西安", engine.evaluate("xian").candidates.first().text)
     }
 
     @Test
@@ -160,14 +182,88 @@ class PinyinEngineTest {
     }
 
     @Test
-    fun `the white part follows the split the buffer actually spells`() {
+    fun `a sentence final particle is not buried by the word that shares its sound`() {
+        // 毫巴 is a real word (the news corpus knows it), 好吗 is not a word at all - and the two
+        // consume exactly the same input, so no frequency can separate them. What separates them
+        // is that nobody ends a sentence with 巴 or 麦, and everybody ends one with 吧 and 吗.
         val engine = PinyinEngine(dictionary, nineKey = false)
 
-        // 西安 reads "xian" as xi + an, so after "xi" its first character is already finished even
-        // though the reading cannot be split at "xi" on its own.
-        val xian = engine.evaluate("xi").candidates.first { it.text == "西安" }
+        assertEquals("好吧", engine.evaluate("haoba").candidates.first().text)
+        assertEquals("是吗", engine.evaluate("shima").candidates.first().text)
+        assertEquals("是吧", engine.evaluate("shiba").candidates.first().text)
+        assertEquals("好吗", engine.evaluate("haoma").candidates.first().text)
+        // 呀 is not even among the first three characters of "ya"; a sentence can still end on it.
+        assertEquals("好呀", engine.evaluate("haoya").candidates.first().text)
+    }
 
-        assertEquals(1, xian.unmatchedFrom)
+    @Test
+    fun `the pair model still chooses between two particles of one syllable`() {
+        // 吗 and 嘛 are both 句末语气词 and both read "ma". 你在干吗 is the standard spelling and
+        // 干嘛 is the colloquial one, so the choice between them stays the corpus's, not the
+        // particle rule's: that rule only lifts a particle over the *ordinary* character of its
+        // syllable (呀 over 压, 啦 over 拉), never over another particle.
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("你在干吗", engine.evaluate("nizaiganma").candidates.first().text)
+        assertEquals("好了吗", engine.evaluate("haolema").candidates.first().text)
+    }
+
+    @Test
+    fun `a sentence does not open on a final particle`() {
+        // 搭配表多了一行"句子开头"的上下文（`^`），而且只作用在**词**上：
+        //  - `ma` 的首选字是 吗，而 吗 不会是一句话的开头——挡住它之后，`mashangle` 里的 马上
+        //    才有机会赢（原来这里是 吗上了）；
+        //  - 句首证据不发给单字，否则 事|是|这个 会因为"是"常见而压过整词 实施。
+        val paired = PinyinDictionary.fromReaders(
+            charTable = { reader("pinyin_chars.txt") },
+            wordTable = { reader("pinyin_words.txt") },
+            bigramTable = { reader("pinyin_bigrams.txt") },
+        )
+        paired.load()
+        val engine = PinyinEngine(paired, nineKey = false)
+
+        assertEquals("马上了", engine.evaluate("mashangle").candidates.first().text)
+        // 词频单独看时 下午 更常见；语料说 下雨 才是一句话常见的开头，所以 xiayu 现在给 下雨。
+        assertEquals("下雨", engine.evaluate("xiayu").candidates.first().text)
+        // 单音节输入不受影响：`ma` 仍是 吗（它就是一个可以单独说的字）。
+        assertEquals("吗", engine.evaluate("ma").candidates.first().text)
+        // 叹词照旧可以开头，被挡掉的只有句末语气词。
+        assertTrue(engine.evaluate("a").candidates.first().text == "啊")
+    }
+
+    @Test
+    fun `a character is filed under every reading it is really used with`() {
+        // pinyin-data lists a character's readings but carries no counts, and the character table
+        // only filed the first one. Unihan's 读音频率 (《现代汉语频率词典》) is what says 乐 is read
+        // yuè in 音乐, 得 is děi in 得走了, and 谁 is shéi in speech - so those characters now sit
+        // under both syllables. "shei" had *no character at all* before this.
+        assertTrue("shei -> ${dictionary.charsFor("shei", 8)}", dictionary.charsFor("shei", 8).contains("谁"))
+        assertTrue("dei -> ${dictionary.charsFor("dei", 8)}", dictionary.charsFor("dei", 8).contains("得"))
+        assertTrue("yue -> ${dictionary.charsFor("yue", 40)}", dictionary.charsFor("yue", 40).contains("乐"))
+        assertTrue("hang -> ${dictionary.charsFor("hang", 20)}", dictionary.charsFor("hang", 20).contains("行"))
+        assertTrue("de -> ${dictionary.charsFor("de", 8)}", dictionary.charsFor("de", 8).contains("地"))
+
+        // The primary placement keeps its own syllable, and keeps its rank there.
+        assertTrue(dictionary.charsFor("shui", 8).contains("谁"))
+        assertTrue(dictionary.charsFor("ge", 8).contains("个"))
+    }
+
+    @Test
+    fun `the strip keeps the endings a written corpus under-reports`() {
+        // A sentence corpus writes 好主意 and 好用; someone typing 好 next usually wants 好吗 /
+        // 好吧 / 好呢. The floor lifts an ending the corpus has seen at all into the visible part
+        // of the 联想 strip without letting it overtake what the corpus is sure about.
+        val paired = PinyinDictionary.fromReaders(
+            charTable = { reader("pinyin_chars.txt") },
+            wordTable = { reader("pinyin_words.txt") },
+            bigramTable = { reader("pinyin_bigrams.txt") },
+        )
+        paired.load()
+        val engine = PinyinEngine(paired, nineKey = false)
+
+        val afterHao = engine.associations("好", 6).map { it.text }
+        assertTrue("expected an ending among $afterHao", afterHao.any { it in listOf("吗", "吧", "呢") })
+        assertEquals("天气", engine.associations("今天", 6).first().text)
     }
 
     @Test
@@ -269,11 +365,16 @@ class PinyinEngineTest {
             }
         }
         val learner = UserProfile(store, CoroutineScope(Dispatchers.Unconfined))
-        repeat(2) { learner.recordChoice(code = "ni", text = "你好", reading = "nihao") }
+        // The bar for "nih" leads with 你好; picking 拟合 instead, twice, is exactly the observation
+        // that has to overrule it the next time.
+        repeat(2) { learner.recordChoice(code = "nih", text = "拟合", reading = "nihe") }
 
         val engine = PinyinEngine(dictionary, nineKey = false, profile = learner)
 
-        assertEquals("你好", engine.evaluate("ni").candidates.first().text)
+        assertEquals("拟合", engine.evaluate("nih").candidates.first().text)
+        // A habit is keyed by the code and every prefix of it, so the same choice still speaks for
+        // the longer code the user types next.
+        assertEquals("拟合", engine.evaluate("nihe").candidates.first().text)
     }
 
     @Test
@@ -357,8 +458,8 @@ class PinyinEngineTest {
         // unrelated characters over the candidate bar.
         val texts = PinyinEngine(dictionary, nineKey = false).evaluate("zzz").candidates.map { it.text }
 
-        assertEquals("zzz", texts.first())
         assertTrue("lone characters must not be offered as a phrase: $texts", texts.none { it == "在在" })
+        assertTrue("原样字母仍可整串上屏: $texts", texts.contains("zzz"))
     }
 
     @Test

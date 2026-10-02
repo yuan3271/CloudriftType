@@ -7,6 +7,7 @@
 | THUOCL (THUNLP) | MIT | domain vocabulary: IT, 医学, 法律, 成语 ... |
 | pinyin-data (mozillazg) | MIT | per character readings, ordered by commonness |
 | pypinyin (mozillazg) | MIT | per *word* readings, which is the one thing per-character data cannot say |
+| Unihan (Unicode) | Unicode License v3 | how often each *reading* of a character is used (`kHanyuPinlu`, `kMandarin`) |
 
 The last table is what `tools/dictgen/fetch_corpora.sh` + `prepare_pypinyin.py` produce in
 `clean/pypinyin_phrases.txt`. Without it a word's reading is the cartesian product of its
@@ -25,6 +26,8 @@ Usage: python3 tools/dictgen/build_dict.py
 """
 
 from __future__ import annotations
+
+import argparse
 
 import json
 import math
@@ -55,6 +58,11 @@ HSK = TOOLS / "raw/hsk_complete.json"
 COLLOQUIAL_FILES = sorted((TOOLS / "raw").glob("corpus_*.txt"))
 COLLOQUIAL_WEIGHT = 0.5
 MAX_COLLOQUIAL_WORD = 4
+# AISHELL-1's transcripts (Apache-2.0) as an optional *word frequency* source: 141k modern
+# sentences, read aloud rather than typed, which makes it a much larger - and much less
+# conversational - sample of the same thing the colloquial corpus measures. Off by default
+# (weight 0); `--aishell-words` turns it on and the benchmark decides whether it earns a place.
+AISHELL_TEXT = TOOLS / "raw/aishell_ner_transcript.txt"
 # The corpus only re-ranks words that are already common; it must not *discover* words. It is a few
 # thousand characters, far too little to judge a rare word, and letting it promote one pushes a
 # low-scoring entry into the shipped table where it can change a whole sentence decode (真不错
@@ -100,6 +108,20 @@ ALTERNATE_READING_PENALTY = 120
 # Multiplied into the score of a word that only a THUOCL domain list has, so a term that is
 # frequent inside its own tiny corpus does not outrank everyday words in sentence decoding.
 THUOCL_ONLY_DISCOUNT = 0.75
+# Unihan (Unicode License v3), prepared by prepare_unihan.py: how often each *reading* of a
+# character is used in 《现代汉语频率词典》. pinyin-data lists a character's readings in order of
+# commonness but carries no counts, and ordering alone is not enough to see that 乐 is yuè in
+# 音乐, that 谁 is shéi in speech, or that 得 is děi in 得走了 - so those characters were simply
+# absent from the syllable the typist presses.
+UNIHAN_READINGS = TOOLS / "clean/unihan_readings.txt"
+# A second reading earns its own entry in the character table when the frequency dictionary shows
+# it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
+# jiào in 15%). Below that the reading exists but is rare enough that the primary placement is
+# what a typist wants - which is exactly why pinyin-data lists them in an order at all.
+SECOND_READING_SHARE = 0.05
+# And it sits this much lower than the same character's primary placement, so the syllable's own
+# characters keep the front of the list (乐 must not push 月 aside under "yue").
+SECOND_READING_DIVISOR = 4
 # Sentence decoding needs breadth more than it needs a short list: every extra word is another
 # path through the lattice. 200k rows covers the jieba corpus almost whole (348k entries, of which
 # the two character floor and the Han filter already drop a large share) and keeps the asset near
@@ -348,7 +370,90 @@ def readings_for(
     return result
 
 
+def load_aishell_words(vocabulary: set[str]) -> dict[str, int]:
+    """How often each known word occurs in AISHELL-1's transcripts.
+
+    Longest match against the words the build already knows, exactly like [load_colloquial]: the
+    transcripts are only evidence about words that are already candidates, never a source of new
+    vocabulary. The entity brackets ("(北京)", "[舒淇]") are annotation, so they are dropped and
+    what they mark is kept.
+    """
+    counts: dict[str, int] = defaultdict(int)
+    if not AISHELL_TEXT.exists():
+        print(f"! missing {AISHELL_TEXT.name}", file=sys.stderr)
+        return counts
+    with AISHELL_TEXT.open(encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            _, _, text = line.rstrip("\n").partition(" ")
+            if not text:
+                continue
+            text = text.translate(str.maketrans({"(": "", ")": "", "[": "", "]": "", "<": "", ">": ""}))
+            index = 0
+            while index < len(text):
+                for length in range(MAX_WORD_LENGTH, 0, -1):
+                    token = text[index:index + length]
+                    if token in vocabulary:
+                        counts[token] += 1
+                        index += length
+                        break
+                else:
+                    index += 1
+    return counts
+
+
+def load_second_readings() -> dict[str, list[str]]:
+    """character -> the readings beyond its first one that deserve a candidate slot.
+
+    Two things make a reading worth one: the frequency dictionary says people read the character
+    that way at least [SECOND_READING_SHARE] of the time, or Unihan's `kMandarin` names it the
+    customary reading (谁 is shéi there and shuí in pinyin-data's order, and "shei" had no
+    character at all before this).
+    """
+    if not UNIHAN_READINGS.exists():
+        print(
+            f"! missing {UNIHAN_READINGS.name}（跑 tools/dictgen/fetch_corpora.sh 生成）",
+            file=sys.stderr,
+        )
+        return {}
+    counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    customary: dict[str, str] = {}
+    with UNIHAN_READINGS.open(encoding="utf-8") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) != 4:
+                continue
+            character, syllable, count, kind = parts[0], parts[1], int(parts[2]), parts[3]
+            if kind == "mandarin":
+                customary[character] = syllable
+            else:
+                counts[character][syllable] = max(counts[character][syllable], count)
+    order: dict[str, list[str]] = {}
+    for character, readings in counts.items():
+        total = sum(readings.values())
+        if total <= 0:
+            continue
+        chosen = [
+            syllable
+            for syllable, count in sorted(readings.items(), key=lambda item: -item[1])
+            if count / total >= SECOND_READING_SHARE
+        ]
+        marked = customary.get(character)
+        if marked and marked not in chosen:
+            chosen.append(marked)
+        if chosen:
+            order[character] = chosen
+    return order
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--aishell-words",
+        type=float,
+        default=0.0,
+        help="AISHELL-1 转写文本的词频权重（0 = 关闭；基准测试用 -tools/tune/score.sh 判定）",
+    )
+    args = parser.parse_args()
     for path in (JIEBA, PYINYIN_DATA):
         if not path.exists():
             print(f"! missing {path}", file=sys.stderr)
@@ -393,6 +498,20 @@ def main() -> int:
         if word_scores.get(word, 0) < COLLOQUIAL_MIN_SCORE:
             continue
         word_scores[word] = word_scores[word] + score_of(count, COLLOQUIAL_WEIGHT)
+
+    # AISHELL-1 的词频（可选）：同一件事的更大样本，但它是"读出来的书面语"，不是"打出来的话"，
+    # 所以默认关闭；打开时也用同一个 COLLOQUIAL_MIN_SCORE 闸门，只重排本来就常见的词。
+    if args.aishell_words > 0:
+        counts = load_aishell_words(set(word_scores))
+        touched = 0
+        for word, count in counts.items():
+            if word_scores.get(word, 0) < COLLOQUIAL_MIN_SCORE:
+                continue
+            bonus = score_of(count, args.aishell_words)
+            if bonus:
+                word_scores[word] += bonus
+                touched += 1
+        print(f"AISHELL 词频: {len(counts)} 个词出现，{touched} 个词加权（权重 {args.aishell_words}）")
 
     by_reading: dict[str, list[tuple[str, int]]] = defaultdict(list)
     # A character's own frequency as a standalone word is the right signal for ordering single
@@ -467,6 +586,26 @@ def main() -> int:
     for char in derived:
         weight = standalone.get(char, 0) * 1000 + derived_rank.get(char, 0)
         by_syllable[char_reading_of[char]].append((char, weight))
+
+    # 次读音：同一个字在两个音节下都是候选。Unihan 说得出"这个字真的会这么念"（乐 yuè、血 xiě、
+    # 得 děi、谁 shéi），而 pinyin-data 只给首读音，字表因此只在一个音节里见过它——"yue" 里没有
+    # 乐、"shei" 下一个字都没有，就是这条漏的。降权放置，首读音那一份排位不受影响。
+    second_readings = load_second_readings()
+    placed = 0
+    for char, syllables in second_readings.items():
+        if char not in derived:
+            continue
+        primary = char_reading_of[char]
+        known = char_readings[char]
+        weight = (standalone.get(char, 0) * 1000 + derived_rank.get(char, 0)) // SECOND_READING_DIVISOR
+        for syllable in syllables:
+            # 只放 pinyin-data 自己列出来的读音：Unihan 在这里的作用是"有多常用"，不是引入一个
+            # 构建里其它环节复现不了的读音。
+            if syllable == primary or syllable not in known:
+                continue
+            by_syllable[syllable].append((char, weight))
+            placed += 1
+    print(f"Unihan: {placed} 条次读音归位（{len(second_readings)} 字有读音频率）")
 
     with (ASSETS / "pinyin_chars.txt").open("w", encoding="utf-8") as out:
         for syllable in sorted(by_syllable):

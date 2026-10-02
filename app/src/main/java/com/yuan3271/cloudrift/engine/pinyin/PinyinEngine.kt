@@ -157,6 +157,11 @@ class PinyinEngine(
                             -candidate.text.length
                         }
                     },
+                    // Last, so it only ever breaks a tie between readings of the same length:
+                    // 好吧 has to come out in front of 毫巴 and 是吧 in front of 十八, which no
+                    // frequency can say - both are real words and one of them is simply not what
+                    // anyone means. See [SPOKEN_TAIL_PHRASES].
+                    { candidate -> if (candidate.text == SPOKEN_TAIL_PHRASES[buffer]) 0 else 1 },
                 ),
             ),
         )
@@ -171,11 +176,11 @@ class PinyinEngine(
      */
     private fun rawLast(candidates: List<Candidate>): List<Candidate> {
         if (candidates.none { it.kind == CandidateKind.Raw }) return candidates
-        // Conversion only shows up here from the mixed decoder (an exact word hit or a run with a
-        // spelled part); 简拼 alone is Initials, and that is the case the raw letters stay ahead of.
-        if (candidates.none { it.kind == CandidateKind.Mixed || it.kind == CandidateKind.Conversion }) {
-            return candidates
-        }
+        // 原样字母永远排在真读音后面。这里原来留了一个例外：一串字母只读成简拼（候选全是 Initials）
+        // 时把原样字母留在最前，理由是"zzz → 在在 是噪声，字母才是答案"。广谱回归台（573 句自撰
+        // 语料）量出来这个例外代价太大——它让 **520/573** 句的首字母输入第一名变成一个谁都不要的
+        // 字母串；噪声那一半现在由解码器自己挡掉了（只由单字拼凑的路径根本不进候选），所以例外可以
+        // 撤掉：字母串还在列表里，随时可以整串上屏。
         val ordered = ArrayList<Candidate>(candidates.size)
         ordered.addAll(candidates.filter { it.kind != CandidateKind.Raw })
         ordered.addAll(candidates.filter { it.kind == CandidateKind.Raw })
@@ -197,9 +202,15 @@ class PinyinEngine(
     override fun associations(text: String, limit: Int): List<Candidate> {
         if (!dictionary.isReady || text.isEmpty()) return emptyList()
         for (context in associationContexts(text)) {
-            val words = dictionary.nextWords(context, limit)
+            // A wider pool than the strip will show, because the 句末语气词 are lifted inside it:
+            // 可以了 and 可以吗 are what someone typing 可以 usually wants next, and the corpus has
+            // both - just below 可以接受 and 可以想象, which are what a *sentence* corpus writes.
+            val words = dictionary.nextWords(context, maxOf(limit * 3, limit))
             if (words.isEmpty()) continue
-            return words.map { entry ->
+            val ranked = words.sortedWith(
+                compareByDescending<WordEntry> { tailParticleScore(it) }.thenBy { it.word },
+            ).take(limit)
+            return ranked.map { entry ->
                 Candidate(
                     text = entry.word,
                     consumed = 0,
@@ -209,6 +220,20 @@ class PinyinEngine(
             }
         }
         return emptyList()
+    }
+
+    /**
+     * What a prediction is worth in the 联想 strip.
+     *
+     * A 句末语气词 the corpus has seen at all is raised to [PREDICTION_PARTICLE_FLOOR] - a floor,
+     * not a bonus, so it lands in the visible part of the strip without ever overtaking a
+     * continuation the corpus is actually more sure about (今天→天气 stays ahead of 今天→吗, and
+     * 什么→时候 stays ahead of 什么→呢). A particle with no evidence stays at 0 and stays out.
+     */
+    private fun tailParticleScore(entry: WordEntry): Int {
+        val word = entry.word
+        if (entry.score <= 0 || word.length != 1 || word[0] !in PREDICTION_PARTICLES) return entry.score
+        return maxOf(entry.score, PREDICTION_PARTICLE_FLOOR)
     }
 
     /** Longest first: the committed text, then its 4/3/2 character tails. */
@@ -329,16 +354,39 @@ class PinyinEngine(
     private fun decodeTop(buffer: String, bounds: IntArray, count: Int): List<Pair<String, Float>> {
         val syllables = bounds.size - 1
         val paths = Array(syllables + 1) { ArrayList<Path>(count) }
-        paths[0].add(Path(0f, "", ""))
+        // The first unit is scored against the sentence boundary, not against nothing: without it
+        // position 0 is the one place the decoder has no association evidence at all, which is how
+        // 吗 (the leading character of "ma") could open a sentence. See [SENTENCE_START].
+        paths[0].add(Path(0f, "", SENTENCE_START))
         for (start in 0 until syllables) {
             if (paths[start].isEmpty()) continue
             val syllable = buffer.substring(bounds[start], bounds[start + 1])
+            // The last syllable is the only place a sentence-final particle can be, and the only
+            // place it is worth reading past the top few characters of the table: 呗 is the 16th
+            // character of "bei" and 嘞 the 18th of "lei", yet 好呗 / 走嘞 are exactly what someone
+            // typing those letters means.
+            val isTail = start + 1 == syllables
+            // The rule exists to beat the *ordinary* character of the same syllable (压 for 呀, 拉
+            // for 啦, 把 for 吧, 被 for 呗). It deliberately does nothing for a syllable whose own
+            // first character is already a particle - 吗/嘛, 哦/噢/喔, 哟/唷 - because choosing
+            // between two particles is the pair model's business, and that is what keeps 干吗 from
+            // coming out as 干嘛.
+            val particles = if (isTail) {
+                val tail = TAIL_PARTICLES[syllable].orEmpty()
+                val best = dictionary.charsFor(syllable, 1)
+                if (best.isNotEmpty() && best[0] !in tail) tail else ""
+            } else {
+                ""
+            }
             // Not just the single best character: letters that read the same cover homophones
             // (ba is 把 and 吧), and which one is right is not a per-character fact - it is what
             // the pair model knows (走 is followed by 吧, never by 把). Ranking them by the table
             // order with a small decay lets the association decide, which is how 我们走吧 stops
             // coming out as 我们走把.
-            val characters = dictionary.charsFor(syllable, SENTENCE_CHAR_LIMIT)
+            val characters = dictionary.charsFor(
+                syllable,
+                if (particles.isEmpty()) SENTENCE_CHAR_LIMIT else TAIL_CHAR_LIMIT,
+            )
             val last = minOf(syllables, start + MAX_SENTENCE_WORD_SYLLABLES)
             // Up to WORDS_PER_STEP words per span, so the second best reading of a span ("试试"
             // next to "实施") is a path of its own rather than being lost to the best one.
@@ -350,10 +398,39 @@ class PinyinEngine(
             }
             for (path in paths[start]) {
                 for ((rank, character) in characters.withIndex()) {
+                    // 一句话不会以句末语气词开头（"吗/吧/呢/啦/呀/嘛…"；能当叹词的 啊/哦/哇/哟
+                    // 不算在这一类里）。ma 的首选字恰好是 吗，不挡掉它，"mashangle" 就只出
+                    // 吗上了——而 马上 就在隔壁。
+                    if (start == 0 && character in FINAL_ONLY_PARTICLES) continue
                     // The association model conditions on the last *unit*, character or word: after
                     // a lone 我 the next word should be scored just like after a word, otherwise a
                     // sentence decoded mostly into single characters gets no association at all.
-                    val pair = dictionary.bigramScore(path.lastToken, character.toString())
+                    // At the start of the run the boundary evidence is deliberately *not* used for
+                    // single characters: which **word** opens a sentence is information (马上,
+                    // 下雨, 实施), which *character* opens one mostly means "this character is
+                    // common" - 是, 那, 好 - and the lattice then uses it to prefer 事|是|这个 over
+                    // the word 实施. The word steps still get it, see [SENTENCE_START].
+                    val pair = if (path.lastToken == SENTENCE_START) {
+                        0
+                    } else {
+                        dictionary.bigramScore(path.lastToken, character.toString())
+                    }
+                    // A 句末语气词 needs no evidence and pays no rank penalty at the end of a
+                    // sentence: it is what the user typed, and it is the one thing the corpus
+                    // cannot be asked about (好呀 is spelled 好压 in a news corpus, 下雨啦 as
+                    // 下雨拉). Everywhere else the ordinary rule stands.
+                    val particle = particles.indexOf(character) >= 0
+                    if (particle) {
+                        push(
+                            paths[start + 1],
+                            path.score + CHARACTER_SCORE - UNIT_PENALTY +
+                                pair * BIGRAM_WEIGHT + TAIL_PARTICLE_BONUS,
+                            path.text + character,
+                            count,
+                            lastToken = character.toString(),
+                        )
+                        continue
+                    }
                     // The best character of a syllable is always a path. A lower-ranked homophone
                     // only joins in when the pair model actually expects it here (走 -> 吧), so the
                     // bar does not fill with 我门/我闷-style variants of a word that is already right.
@@ -563,7 +640,13 @@ class PinyinEngine(
         if (words.isEmpty()) return
         val expected = hintCharacters(head)
         val completions = ArrayList<Ranked>(words.size)
+        val budget = syllableBudget(buffer)
         for (word in words) {
+            // One character per syllable, and no more; see [syllableBudget]. Typing "kan" means 看,
+            // and 看到 belongs to "kand" - where the d is the 到's own letter. Without this the
+            // bar buried the character the user was typing under every word that happens to begin
+            // with the same syllable.
+            if (word.word.length > budget) continue
             val matched = uncoveredCharacters(buffer, word.reading)
                 .coerceIn(0, word.word.length)
             val untyped = word.word.length - matched
@@ -619,20 +702,30 @@ class PinyinEngine(
         if (letters.any { it !in 'a'..'z' }) return
         // position -> the paths that reach it, best first
         val paths = Array(letters.length + 1) { ArrayList<InitialPath>(INITIALS_PATHS) }
-        paths[0].add(InitialPath(consumed = 0, text = "", score = 0))
+        // 首字母/混合那半套解码同样从句子开头起步，两套解码对"第一个词"的判断才是一致的。
+        paths[0].add(InitialPath(consumed = 0, text = "", score = 0, lastWord = SENTENCE_START))
 
         for (start in 0 until letters.length) {
             if (paths[start].isEmpty()) continue
             // A single letter may stand for one character (我, 去, 了 ...). Without this step the
             // run can never be cut the way it is actually typed - 简拼 is 我|今天|去|了|北京 - and
             // the initials index has no single character words in it at all.
+            val letter = letters.substring(start, start + 1)
+            val tail = start + 1 == letters.length
+            // 收尾那一步额外把语气词带上：单字母那一步只给"这个音节里最常用的字"，`l` 底下是 里/来/路,
+            // 了 排不进这几个，于是 `xinkule` 只能出 辛苦里。语气词是句子最可能的结尾，见 addInitialStep。
+            val tailParticles = if (tail) {
+                TAIL_PARTICLES.filterKeys { it.startsWith(letter) }.values.flatMap { it.map(Char::toString) }
+            } else {
+                emptyList()
+            }
             addInitialStep(
                 paths = paths,
                 start = start,
                 length = 1,
-                texts = dictionary.initialCharacters(letters.substring(start, start + 1), INITIALS_CHAR_LIMIT)
-                    .map { it.toString() },
+                texts = dictionary.initialCharacters(letter, INITIALS_CHAR_LIMIT).map { it.toString() } + tailParticles,
                 scoreOf = { CHARACTER_SCORE.toInt() },
+                tail = tail,
             )
             // The 全拼 half of a mixed run: a syllable spelled out in full.
             addSpelledSyllableSteps(paths, letters, start)
@@ -832,6 +925,8 @@ class PinyinEngine(
         length: Int,
         texts: List<String>,
         scoreOf: (String) -> Int,
+        /** True for the one letter step that ends the run, see the 句末语气词 note below. */
+        tail: Boolean = false,
     ) {
         val end = start + length
         if (texts.isEmpty() || end >= paths.size) return
@@ -840,14 +935,20 @@ class PinyinEngine(
             for (path in paths[start]) {
                 val combined = path.text + text
                 if (next.any { it.text == combined }) continue
+                // 一句话的最后**一个字母**也遵守"句末语气词优先"：`xinkule` 的 l 应该是 了，而单字母那一步
+                // 按音节常用度给字（里/来），搭配模型根本没参与——573 句的自撰语料里，`辛苦了 → 辛苦里`
+                // 就是这么来的。只有收尾那一步、只有语气词字，其余照旧不带搭配分。
+                val particle = tail && text.length == 1 && text[0] in TAIL_PARTICLE_CHARS
+                val pair = if (particle) dictionary.bigramScore(path.lastWord, text) else 0
                 next.add(
                     InitialPath(
                         consumed = end,
                         text = combined,
-                        // No association term here on purpose: a one letter step is not evidence of
-                        // what follows anything, and feeding it the 联想 score only let lone
-                        // characters outrank real words. The word step above keeps it.
-                        score = path.score + scoreOf(text) - INITIALS_UNIT_PENALTY,
+                        // No association term for a lone letter in general: one letter is not
+                        // evidence of what follows anything, and feeding every step the 联想 score
+                        // only let lone characters outrank real words. The word step above keeps it.
+                        score = path.score + scoreOf(text) - INITIALS_UNIT_PENALTY +
+                            (if (particle) pair * INITIALS_BIGRAM_WEIGHT + PARTICLE_STEP_BONUS else 0),
                         lastWord = text,
                         usedWord = path.usedWord,
                         usedInitials = true,
@@ -1045,6 +1146,22 @@ class PinyinEngine(
     private fun typedForm(syllable: String): String = if (nineKey) T9.encode(syllable) else syllable
 
     /**
+     * How many characters the buffer has room for: one per syllable it spells, plus one for the
+     * syllable it is in the middle of ("kand" is kan + the start of a second one, so two).
+     *
+     * This is the bound on 码前缀补全. A completion is a guess about what the user has *not*
+     * typed yet, and the only honest amount to guess is "one character per syllable you gave me":
+     * with "kan" the user has asked for one character (看), and 看到 is not more of that answer,
+     * it is a different reading of input that has not been given (kandao). The letters are the
+     * evidence - "kand" has the d of 到 in it, "kan" does not.
+     */
+    private fun syllableBudget(buffer: String): Int {
+        val split = syllableSplit(buffer) ?: return 0
+        val whole = split.bounds.size - 1
+        return whole + if (split.fragment.isEmpty()) 0 else 1
+    }
+
+    /**
      * Length of the longest prefix of [buffer] that is a sequence of complete syllables.
      * Returns 0 when even the first character cannot start a syllable.
      */
@@ -1088,6 +1205,86 @@ class PinyinEngine(
     }
 
     private fun hasInitial(letter: Char): Boolean = PinyinSyllables.hasInitial(letter)
+
+    /**
+     * 句末语气词, grouped by their syllable. A sentence ends on one of these far more often than the
+     * news corpus suggests: 好呀, 下雨啦, 好吧, 是吗 are things people type all day and things a
+     * written corpus writes as 好压 / 下雨拉 / 毫巴 / 十八. So a character in this table is a
+     * first-class reading of its syllable - but only in the last position, which is the one place
+     * it cannot be confused with the ordinary word that happens to share its sound (把/八 for 吧,
+     * 压 for 呀, 拉 for 啦).
+     *
+     * The interjections that *open* a sentence (哎, 唉, 诶, 嗯, 喂, 嗨, 嘿) are deliberately not
+     * here: they are 叹词, and they are already the leading character of their syllable.
+     */
+    private val TAIL_PARTICLES: Map<String, String> = mapOf(
+        "a" to "啊",
+        "ba" to "吧",
+        "bei" to "呗",
+        "de" to "的",
+        "la" to "啦",
+        "le" to "了",
+        "lei" to "嘞",
+        "lie" to "咧",
+        "lou" to "喽",
+        "luo" to "啰",
+        "ma" to "吗嘛",
+        "na" to "哪",
+        "ne" to "呢",
+        "o" to "哦噢喔",
+        "wa" to "哇",
+        "ya" to "呀",
+        "yo" to "哟唷",
+    )
+
+    /**
+     * What the 联想 strip is allowed to lift: the endings a written corpus under-represents
+     * (好**吧**, 是**吗**, 走**啦**), not 的 and 了 - those two are already the first thing the
+     * corpus says after most words (知道→了, 好→的), so a bonus would only push them in front of
+     * the *content* the person is actually reaching for (今天→天气).
+     */
+    private val PREDICTION_PARTICLES: Set<Char> = "吧吗呢啊呀啦哦嘛哇哟呗咯喽咧噢喔唷".toSet()
+
+    /** [TAIL_PARTICLES] as characters: the 26 key tail rule and the 简拼 tail step both need it. */
+    private val TAIL_PARTICLE_CHARS: Set<Char> = TAIL_PARTICLES.values.joinToString("").toSet()
+
+    /**
+     * 只能收尾、不能开头的语气词。和 [PREDICTION_PARTICLES] 差在 啊/哦/哇/哟：那四个既是句末
+     * 语气词又是叹词，`啊，你说什么` 是正常的开头，所以它们不在禁止之列；剩下的（吧/吗/呢/啦/
+     * 呀/嘛/呗/咯/喽/咧/喔/唷）没有人会拿来开头。
+     */
+    private val FINAL_ONLY_PARTICLES: Set<Char> = "吧吗呢啦呀嘛呗咯喽咧喔唷".toSet()
+
+    /**
+     * 口语句末短语: reading -> what someone typing those letters means.
+     *
+     * The two character 语气词 phrases are the one place where the word list is actively wrong for
+     * a keyboard: 毫巴, 十八 and 号码 are all real words, all three are what the corpus ranks first
+     * for "haoba", "shiba" and "haoma", and not one of them is what the person typing means. The
+     * sentence decoder does read all three correctly (好|吧 is a better pair than 毫|巴), it just
+     * arrives after the dictionary word because a word outranks a sentence of the same length.
+     *
+     * Curated, in the same spirit as [PinyinDictionary.COMMON_WORDS]: a short product statement
+     * about what a Chinese keyboard is expected to offer first, not a statistic. Only the exact
+     * reading is lifted, and only as the last tie breaker, so it cannot move anything else.
+     */
+    private val SPOKEN_TAIL_PHRASES: Map<String, String> = mapOf(
+        "haoba" to "好吧",
+        "haoma" to "好吗",
+        "shima" to "是吗",
+        "shiba" to "是吧",
+        "duiba" to "对吧",
+        "xingba" to "行吧",
+        "zouba" to "走吧",
+        "laiba" to "来吧",
+        "haoya" to "好呀",
+        "shiya" to "是呀",
+        "duiya" to "对呀",
+        "haola" to "好啦",
+        "laila" to "来啦",
+        "zoula" to "走啦",
+        "xingma" to "行吗",
+    )
 
     private fun normalize(raw: String): String {
         val builder = StringBuilder(raw.length)
@@ -1135,6 +1332,31 @@ class PinyinEngine(
          * apart (吧/把 after 走) - not about the long tail.
          */
         private const val SENTENCE_CHAR_LIMIT = 3
+        /**
+         * Characters tried for the *last* syllable of a run, when that syllable can close a
+         * sentence. The 句末语气词 sit deep in their syllable's table - 呗 is the 16th character of
+         * "bei", 嘞 the 18th of "lei" - and they are the one class of character that a sentence can
+         * end on with nothing in the corpus to back it up. Only the particles are read that far;
+         * for every other character the pair rule below still applies.
+         */
+        private const val TAIL_CHAR_LIMIT = 20
+        /**
+         * What a 句末语气词 is worth at the end of the run, on top of the rank-0 score it is given.
+         * Small next to the unit penalty, but it is what decides 好啦 over 好拉 and 好呀 over 好压:
+         * there the pair model is silent about both, so the tie has to be broken deliberately.
+         */
+        private const val TAIL_PARTICLE_BONUS = 250f
+        /**
+         * 首字母解码收尾那一步给语气词的加分。和 [TAIL_PARTICLE_BONUS] 同一件事、同一量级，
+         * 只是那条路径的分数是整数。
+         */
+        private const val PARTICLE_STEP_BONUS = 250
+        /**
+         * Where an observed 句末语气词 sits in the 联想 strip. 800 is "clearly visible, below the
+         * words the corpus is most sure about": 可以吗 keeps its place in the strip next to
+         * 可以接受, and 今天吗 still does not come out ahead of 今天天气.
+         */
+        private const val PREDICTION_PARTICLE_FLOOR = 800
         /** Charged per rank of character, so a lower-ranked homophone needs the pair model to win. */
         private const val SENTENCE_CHAR_DECAY = 60f
         /**
@@ -1194,6 +1416,10 @@ class PinyinEngine(
         /** Labels the candidate bar shows under a 首字母 / mixed reading. */
         private const val INITIALS_ANNOTATION = "首字母"
         private const val MIXED_ANNOTATION = "混合"
+        /**
+         * 句子开头的左侧上下文，与 `tools/dictgen/build_bigram.py` 的 `BOUNDARY` 同一个键。
+         */
+        private const val SENTENCE_START = "^"
         /**
          * Per-unit cost of the 首字母 path, the same role [UNIT_PENALTY] plays in the sentence
          * decoder: without it every letter could be covered by its own character and the longest
