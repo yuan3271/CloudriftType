@@ -19,6 +19,25 @@ internal val sharedClient: OkHttpClient by lazy {
         .build()
 }
 
+/**
+ * The correction endpoint is a short text round trip, so it gets a deadline the recognition
+ * endpoint must not have (a two minute recording legitimately takes longer than 15 s to upload
+ * and transcribe).
+ *
+ * Without this cap a half-open connection could hold the panel on 「修正中…」 for the shared
+ * client's 120 s read timeout, twice over with the retry below - close to four minutes with no
+ * button that does anything. Now the wait is bounded, and running out of time falls back to the
+ * raw transcript, which is a result the user can already use.
+ *
+ * newBuilder() shares the connection pool and dispatcher with [sharedClient], so this costs no
+ * extra threads.
+ */
+internal val correctionClient: OkHttpClient by lazy {
+    sharedClient.newBuilder()
+        .callTimeout(CORRECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        .build()
+}
+
 internal fun ApiEndpoint.endpointUrl(path: String): String =
     baseUrl.trimEnd('/') + "/" + path.trimStart('/')
 
@@ -28,13 +47,14 @@ internal fun ApiEndpoint.endpointUrl(path: String): String =
  */
 internal fun executeWithRetry(
     description: String,
+    client: OkHttpClient = sharedClient,
     buildRequest: () -> Request,
 ): Response {
     var attempt = 0
     while (true) {
         attempt++
         val response = try {
-            sharedClient.newCall(buildRequest()).execute()
+            client.newCall(buildRequest()).execute()
         } catch (e: IOException) {
             if (attempt < 2) {
                 Thread.sleep(RETRY_DELAY_MS)
@@ -61,5 +81,8 @@ private fun readErrorDetail(response: Response): String? = runCatching {
 }.getOrNull()
 
 class VoiceInputException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/** Deadline for one correction call. See [correctionClient]. */
+internal const val CORRECTION_TIMEOUT_MS = 15_000L
 
 private const val RETRY_DELAY_MS = 900L

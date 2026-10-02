@@ -239,7 +239,7 @@ object KeyboardLayouts {
         ),
         listOf(
             math("-"),
-            dial("4", "GHI"),
+            dial("4", ""),
             dial("5", ""),
             dial("6", ""),
             math(",", weight = WIDE),

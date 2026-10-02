@@ -153,8 +153,15 @@ class ImeController(
         editor.clearComposing()
         refreshSettings()
         updateEnterLabel()
-        // A fresh input session always starts on the keys, never inside the settings sheet.
-        _state.value = _state.value.copy(quickSettingsVisible = false, clipboardVisible = false)
+        // A fresh input session always starts on the keys, never inside the settings sheet - and
+        // never on the symbol or 123 page either. Those pages are "for this number, right now";
+        // leaving the keyboard on 123 and finding it still on 123 the next time an input box is
+        // tapped is how a keyboard ends up unable to type letters at all.
+        _state.value = _state.value.copy(
+            quickSettingsVisible = false,
+            clipboardVisible = false,
+            page = KeyboardPage.Letters,
+        )
         if (!AppGraph.engines.dictionaryReady.value) AppGraph.engines.warmUp()
     }
 

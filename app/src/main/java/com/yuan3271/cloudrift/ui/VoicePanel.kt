@@ -77,8 +77,8 @@ fun VoicePanel(
             when (state) {
                 is VoiceState.Idle -> Unit
                 is VoiceState.Recording -> RecordingContent(state, onStop, onCancel)
-                is VoiceState.Transcribing -> BusyContent("识别中…", null)
-                is VoiceState.Correcting -> BusyContent("修正中…", state.transcript)
+                is VoiceState.Transcribing -> BusyContent("识别中…", null, onCancel)
+                is VoiceState.Correcting -> BusyContent("修正中…", state.transcript, onCancel)
                 is VoiceState.Ready -> Box(
                     // A tap anywhere on the result takes the keyboard out of automatic mode for
                     // this round: the text stays until the user says 上屏.
@@ -92,7 +92,7 @@ fun VoicePanel(
                 ) {
                     ReadyContent(state, autoApplyDelayMs, autoApplyPending, onRetry, onCancel, onCommit)
                 }
-                is VoiceState.Failed -> FailedContent(state, onRetry, onOpenPermission)
+                is VoiceState.Failed -> FailedContent(state, onRetry, onCancel, onOpenPermission)
             }
         }
     }
@@ -243,7 +243,7 @@ private fun LevelMeter(level: Float) {
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-private fun BusyContent(title: String, transcript: String?) {
+private fun BusyContent(title: String, transcript: String?, onCancel: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -265,6 +265,9 @@ private fun BusyContent(title: String, transcript: String?) {
                 )
             }
         }
+        // 识别和纠错都可能卡在网络上，而这块面板会把按键整块顶掉：没有这个按钮，等待期间
+        // 用户既不能打字也不能退出，只能等超时。
+        TextButton(onClick = onCancel) { Text("取消") }
     }
 }
 
@@ -372,6 +375,7 @@ private fun AutoApplyCountdown(delayMs: Int) {
 private fun FailedContent(
     state: VoiceState.Failed,
     onRetry: () -> Unit,
+    onCancel: () -> Unit,
     onOpenPermission: () -> Unit,
 ) {
     Column(
@@ -390,6 +394,9 @@ private fun FailedContent(
             } else {
                 Button(onClick = onRetry) { Text("重试") }
             }
+            // 重试之外必须有一条退路：失败面板同样占着整块按键区，只剩「重试」时，一次识别
+            // 出错就等于把键盘锁在了这个面板上。
+            TextButton(onClick = onCancel) { Text("取消") }
         }
     }
 }

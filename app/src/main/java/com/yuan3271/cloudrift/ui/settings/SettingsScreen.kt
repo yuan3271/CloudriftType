@@ -87,6 +87,7 @@ fun SettingsScreen(
 ) {
     val grantState = rememberMicrophoneGranted()
     var hasMicrophone by remember { mutableStateOf(grantState) }
+    var confirmClearLearning by remember { mutableStateOf(false) }
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted -> hasMicrophone = granted }
@@ -404,8 +405,13 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
-                    OutlinedButton(onClick = actions.clearLearning) { Text("清除记录") }
+                    OutlinedButton(onClick = { confirmClearLearning = true }) { Text("清除记录") }
                 }
+                Spacer(Modifier.height(10.dp))
+                LearningTransferRows(
+                    exportLearning = actions.exportLearning,
+                    importLearning = actions.importLearning,
+                )
             }
 
             SectionTitle("输入体验", CloudriftIcons.Keyboard)
@@ -488,6 +494,35 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (confirmClearLearning) {
+        // 学习记录是几千次上屏攒出来的，清掉不可恢复；一次误触就抹掉它，代价和"多点一下"不成
+        // 比例，所以这里要一次明确的确认。
+        AlertDialog(
+            onDismissRequest = { confirmClearLearning = false },
+            title = { Text("清除学习记录？") },
+            text = {
+                Text(
+                    "将删除全部 ${userStats.learnedCommits} 次上屏的学习结果、" +
+                        "${userStats.habits} 条习惯和 ${userStats.inventedWords} 个自造词，无法恢复。" +
+                        "建议先导出备份。",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        actions.clearLearning()
+                        confirmClearLearning = false
+                    },
+                ) {
+                    Text("清除", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearLearning = false }) { Text("取消") }
+            },
+        )
     }
 }
 
@@ -901,11 +936,13 @@ private fun SpeechEndpointCard(
             onSelect = { style -> onChange(endpoint.copy(style = style)) },
         )
         Spacer(Modifier.height(10.dp))
-        PresetRow(
+        ConfirmablePresetRow(
+            endpoint = endpoint,
             presets = listOf(
-                "OpenAI" to { onChange(endpoint.merge(AppSettings.openAiSpeechPreset())) },
-                "阿里云千问" to { onChange(endpoint.merge(AppSettings.aliyunSpeechPreset())) },
+                "OpenAI" to AppSettings.openAiSpeechPreset(),
+                "阿里云千问" to AppSettings.aliyunSpeechPreset(),
             ),
+            onChange = onChange,
         )
         Spacer(Modifier.height(12.dp))
 
@@ -993,11 +1030,13 @@ private fun ChatEndpointCard(endpoint: ApiEndpoint, onChange: (ApiEndpoint) -> U
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(10.dp))
-        PresetRow(
+        ConfirmablePresetRow(
+            endpoint = endpoint,
             presets = listOf(
-                "OpenAI" to { onChange(endpoint.merge(AppSettings.openAiChatPreset())) },
-                "阿里云百炼" to { onChange(endpoint.merge(AppSettings.dashScopeChatPreset())) },
+                "OpenAI" to AppSettings.openAiChatPreset(),
+                "阿里云百炼" to AppSettings.dashScopeChatPreset(),
             ),
+            onChange = onChange,
         )
         Spacer(Modifier.height(12.dp))
         EndpointField(
@@ -1039,12 +1078,51 @@ private fun ProviderSelector(current: ApiStyle, onSelect: (ApiStyle) -> Unit) {
     }
 }
 
+/**
+ * 服务商预设按一下就会把 Base URL 和模型换掉，所以先问一句再动手.
+ *
+ * 之所以必须确认：这两个按钮长得像"切换显示"（旁边就是一模一样的两格选择器），实际却是**写入**
+ * 操作。手滑点到另一家，正在用的地址和模型就换了，而换了以后键盘不会报错，只会在你下次说话时
+ * 用了错的接口——这类误操作必须挡在点击和生效之间。
+ *
+ * 文案说的是实话：ApiEndpoint.merge 只覆盖 Base URL 和模型，用户自己填的 API Key 不受影响
+ * （见 merge 的实现），所以这里不吓唬人说 Key 会丢。
+ */
 @Composable
-private fun PresetRow(presets: List<Pair<String, () -> Unit>>) {
+private fun ConfirmablePresetRow(
+    endpoint: ApiEndpoint,
+    presets: List<Pair<String, ApiEndpoint>>,
+    onChange: (ApiEndpoint) -> Unit,
+) {
+    var pending by remember { mutableStateOf<Pair<String, ApiEndpoint>?>(null) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        presets.forEach { (label, apply) ->
-            OutlinedButton(onClick = apply) { Text(label) }
+        presets.forEach { (label, preset) ->
+            OutlinedButton(onClick = { pending = label to preset }) { Text(label) }
         }
+    }
+    pending?.let { (label, preset) ->
+        AlertDialog(
+            onDismissRequest = { pending = null },
+            title = { Text("切换到 $label 预设？") },
+            text = {
+                Text(
+                    "会把 Base URL 和模型换成 $label 的预设，已经填好的 API Key 会保留。",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onChange(endpoint.merge(preset))
+                        pending = null
+                    },
+                ) {
+                    Text("切换")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pending = null }) { Text("取消") }
+            },
+        )
     }
 }
 

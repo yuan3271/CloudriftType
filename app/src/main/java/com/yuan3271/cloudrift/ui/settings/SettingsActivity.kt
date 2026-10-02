@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.data.AppGraph
+import com.yuan3271.cloudrift.data.ImportOutcome
 import com.yuan3271.cloudrift.theme.CloudriftTheme
 
 class SettingsActivity : ComponentActivity() {
@@ -48,6 +49,8 @@ class SettingsActivity : ComponentActivity() {
                         openSystemKeyboardSettings = ::openSystemKeyboardSettings,
                         showKeyboardPicker = ::showKeyboardPicker,
                         clearLearning = AppGraph.profile::clear,
+                        exportLearning = AppGraph.profile::exportPayload,
+                        importLearning = AppGraph.profile::importPayload,
                         checkForUpdate = { AppGraph.updates.checkIfDue(force = true) },
                         downloadUpdate = { update?.let(AppGraph.updates::download) },
                         downloadUpdateViaMirror = {
@@ -90,6 +93,9 @@ data class SettingsActions(
     val openSystemKeyboardSettings: () -> Unit,
     val showKeyboardPicker: () -> Unit,
     val clearLearning: () -> Unit,
+    /** The learnt profile as one portable string; the screen picks how to hand it over. */
+    val exportLearning: () -> String,
+    val importLearning: (String) -> ImportOutcome,
     val checkForUpdate: () -> Unit,
     val downloadUpdate: () -> Unit,
     val downloadUpdateViaMirror: () -> Unit,

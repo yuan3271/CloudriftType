@@ -10,8 +10,10 @@ import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.input.LayoutId
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -164,6 +166,11 @@ class VoiceInputController(
      * when it is not using it" looked like from the outside.
      */
     fun dismiss() {
+        // A pipeline that is already running has to be stopped too, not just forgotten: its
+        // `publish(Ready)` would otherwise land *after* the user cancelled and pop the result
+        // panel back up over the keyboard they had just gone back to.
+        work?.cancel()
+        work = null
         stopCapture()
         cleanupFiles()
         publish(VoiceState.Idle)
@@ -206,12 +213,16 @@ class VoiceInputController(
                 corrected = text != transcript
             }
             publish(VoiceState.Ready(transcript = transcript, text = text, corrected = corrected))
+        } catch (e: CancellationException) {
+            // Cancelled means the user dismissed the panel: no state to publish, and above all no
+            // 「失败」 blinking up after the cancel they just asked for.
+            throw e
         } catch (e: VoiceInputException) {
             publish(VoiceState.Failed(e.message ?: "语音识别失败"))
         } catch (e: Exception) {
             publish(VoiceState.Failed(e.message ?: "语音识别失败"))
         } finally {
-            withContext(Dispatchers.IO) { runCatching { file.delete() } }
+            withContext(NonCancellable + Dispatchers.IO) { runCatching { file.delete() } }
         }
     }
 

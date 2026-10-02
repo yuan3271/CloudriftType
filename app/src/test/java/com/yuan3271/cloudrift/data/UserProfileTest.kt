@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -95,6 +96,84 @@ class UserProfileTest {
         assertEquals(1, stats.habits)
         assertEquals(1, stats.inventedWords)
         assertEquals(2, stats.learnedCommits)
+    }
+
+    @Test
+    fun `an exported payload carries a profile to another device`() {
+        val store = MemoryStore()
+        val source = profile(store)
+        source.rememberWord("zhangwei", "张伟")
+        repeat(2) { source.recordChoice("ni", "你好", "nihao") }
+
+        val target = profile()
+        val outcome = target.importPayload(source.exportPayload())
+
+        assertEquals(true, outcome.ok)
+        assertEquals("张伟", target.inventedWord("zhangwei"))
+        assertEquals(2, habitOf(target, "ni", "你好"))
+    }
+
+    @Test
+    fun `importing the same payload twice does not inflate the evidence`() {
+        val source = profile()
+        source.recordChoice("ni", "你好", "nihao")
+        val payload = source.exportPayload()
+
+        val target = profile()
+        target.importPayload(payload)
+        target.importPayload(payload)
+
+        // Two imports of one pick must still be one pick, otherwise a habit would cross
+        // UserProfile.HABIT_THRESHOLD just by being transferred twice.
+        assertEquals(1, habitOf(target, "ni", "你好"))
+    }
+
+    @Test
+    fun `importing merges with what the device already knew`() {
+        val source = profile()
+        source.recordChoice("ni", "你好", "nihao")
+        source.rememberWord("zhangwei", "张伟")
+
+        val target = profile()
+        repeat(2) { target.recordChoice("wo", "我", "wo") }
+        target.importPayload(source.exportPayload())
+
+        assertEquals(2, habitOf(target, "wo", "我"))
+        assertEquals(1, habitOf(target, "ni", "你好"))
+        assertEquals("张伟", target.inventedWord("zhangwei"))
+    }
+
+    @Test
+    fun `a payload from nowhere else is refused without touching the profile`() {
+        val learner = profile()
+        repeat(2) { learner.recordChoice("wo", "我", "wo") }
+
+        val outcome = learner.importPayload("这不是云隙输入的学习记录")
+
+        assertEquals(false, outcome.ok)
+        assertEquals(2, habitOf(learner, "wo", "我"))
+    }
+
+    @Test
+    fun `the payload survives being written to a file and read back`() {
+        val source = profile()
+        repeat(50) { index ->
+            source.recordChoice("ni", "你好$index", "nihao")
+            source.rememberWord("zhangwei$index", "张伟")
+        }
+
+        val payload = source.exportPayload()
+        // 导出走的是系统文件选择器，文件头尾常有换行被读进来：单行、纯 ASCII 才不会在
+        // 存取之间被改坏，round-trip 也才能成立。
+        assertTrue("payload has whitespace: ${payload.take(40)}", payload.none { it.isWhitespace() })
+        assertTrue("payload is not ASCII", payload.all { it.code in 32..126 })
+
+        val target = profile()
+        val outcome = target.importPayload(payload)
+
+        assertEquals(true, outcome.ok)
+        assertEquals("张伟", target.inventedWord("zhangwei0"))
+        assertEquals(1, habitOf(target, "ni", "你好0"))
     }
 
     private fun habitOf(learner: UserProfile, code: String, text: String): Int =

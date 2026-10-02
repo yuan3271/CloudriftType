@@ -2,6 +2,11 @@ package com.yuan3271.cloudrift.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.util.Base64
+import java.util.zip.GZIPInputStream
+import java.util.zip.GZIPOutputStream
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,6 +25,19 @@ data class UserStats(
     val habits: Int = 0,
     /** Number of commits the profile has learned from. */
     val learnedCommits: Int = 0,
+)
+
+/**
+ * What came out of an import, in the words the settings screen shows.
+ *
+ * Importing never fails halfway: the payload is parsed and validated first, and only then merged,
+ * so a rejected file cannot leave the profile half updated.
+ */
+data class ImportOutcome(
+    val ok: Boolean,
+    val message: String,
+    val habitsMerged: Int = 0,
+    val wordsMerged: Int = 0,
 )
 
 /**
@@ -126,6 +144,104 @@ class UserProfile(
         publish()
     }
 
+    /**
+     * The learned profile as one portable string.
+     *
+     * The same string is what 「导出文件」 writes and what 「导出二维码」 encodes, which is why
+     * the two ways are interchangeable: a file can be imported by scanning nothing, and a scanned
+     * code can be pasted into a file. It is the stored JSON (the very object [persist] writes),
+     * gzipped and base64url encoded because a QR code holds ~2 KB and the raw JSON does not fit.
+     */
+    fun exportPayload(): String {
+        val json = profileJson().toString().toByteArray(Charsets.UTF_8)
+        val compressed = ByteArrayOutputStream().use { buffer ->
+            GZIPOutputStream(buffer).use { it.write(json) }
+            buffer.toByteArray()
+        }
+        return PAYLOAD_PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(compressed)
+    }
+
+    /**
+     * Merges a payload back in.
+     *
+     * Merging rather than replacing is deliberate: the usual reason to import is a new phone, and
+     * the new phone has already learned things of its own. Counts are merged with `max`, not by
+     * adding - importing the same file twice must not look like twice the evidence, or a habit
+     * would cross its threshold just by being transferred twice.
+     */
+    fun importPayload(raw: String): ImportOutcome {
+        val root = decodePayload(raw.trim())
+            ?: return ImportOutcome(false, "这不是云隙输入的学习记录")
+        if (root.optInt(KEY_VERSION, 0) <= 0) {
+            return ImportOutcome(false, "学习记录缺少版本号，无法确认格式")
+        }
+        val incomingChoices = root.optJSONObject(KEY_CHOICES)
+        val incomingInvented = root.optJSONObject(KEY_INVENTED)
+        val incomingCounts = root.optJSONObject(KEY_COUNTS)
+
+        var habits = 0
+        incomingChoices?.let { choiceJson ->
+            for (code in choiceJson.keys()) {
+                val bucket = choiceJson.optJSONObject(code) ?: continue
+                val target = choices.getOrPut(code.take(MAX_CODE_CHARS)) { HashMap(4) }
+                for (text in bucket.keys()) {
+                    val count = bucket.optInt(text)
+                    if (count <= 0) continue
+                    val merged = maxOf(target[text] ?: 0, count)
+                    if (merged != (target[text] ?: 0)) {
+                        target[text] = merged
+                        habits++
+                    }
+                }
+            }
+        }
+        var words = 0
+        incomingInvented?.let { wordJson ->
+            for (reading in wordJson.keys()) {
+                val word = wordJson.optString(reading)
+                if (word.isEmpty() || invented.containsKey(reading)) continue
+                if (invented.size >= MAX_INVENTED_WORDS) break
+                invented[reading] = word
+                words++
+            }
+        }
+        incomingCounts?.let { countJson ->
+            for (word in countJson.keys()) {
+                val count = countJson.optInt(word)
+                if (count <= 0) continue
+                val merged = maxOf(wordCounts[word] ?: 0, count)
+                if (merged > (wordCounts[word] ?: 0) && wordCounts.size < MAX_WORDS) {
+                    wordCounts[word] = merged
+                }
+            }
+        }
+
+        saveJob?.cancel()
+        persist()
+        publish()
+        val detail = buildString {
+            append("已合并 ")
+            append(if (habits > 0) "$habits 条习惯" else "0 条新习惯")
+            append(" · ")
+            append(if (words > 0) "$words 个自造词" else "0 个自造词")
+        }
+        return ImportOutcome(true, detail, habits, words)
+    }
+
+    /** Accepts both the encoded payload and a plain JSON profile (a hand-inspected file). */
+    private fun decodePayload(raw: String): JSONObject? {
+        if (raw.isEmpty()) return null
+        if (!raw.startsWith(PAYLOAD_PREFIX)) {
+            return runCatching { JSONObject(raw) }.getOrNull()
+        }
+        val encoded = raw.removePrefix(PAYLOAD_PREFIX)
+        return runCatching {
+            val bytes = Base64.getUrlDecoder().decode(encoded)
+            val json = GZIPInputStream(ByteArrayInputStream(bytes)).use { it.readBytes() }
+            JSONObject(String(json, Charsets.UTF_8))
+        }.getOrNull()
+    }
+
     /** Flushes pending changes; called when the keyboard is torn down. */
     fun flush() {
         saveJob?.cancel()
@@ -149,8 +265,16 @@ class UserProfile(
     }
 
     private fun persist() {
+        store.write(KEY_PROFILE, profileJson().toString())
+    }
+
+    /** The exact document that is stored, exported and (after encoding) scanned. */
+    private fun profileJson(): JSONObject {
         val root = JSONObject()
         runCatching {
+            root.put(KEY_VERSION, PROFILE_VERSION)
+            root.put(KEY_EXPORTED_AT, System.currentTimeMillis())
+
             val choiceJson = JSONObject()
             for ((code, bucket) in choices) {
                 val trimmed = bucket.entries.sortedByDescending { it.value }.take(MAX_TEXTS_PER_CODE)
@@ -169,9 +293,8 @@ class UserProfile(
                 countJson.put(word, count)
             }
             root.put(KEY_COUNTS, countJson)
-
-            store.write(KEY_PROFILE, root.toString())
         }
+        return root
     }
 
     private fun load() {
@@ -214,6 +337,17 @@ class UserProfile(
         private const val KEY_CHOICES = "choices"
         private const val KEY_INVENTED = "invented"
         private const val KEY_COUNTS = "counts"
+        private const val KEY_VERSION = "version"
+        private const val KEY_EXPORTED_AT = "exportedAt"
+
+        /** Bumped when the document's meaning changes; imported documents must state it. */
+        private const val PROFILE_VERSION = 1
+
+        /**
+         * Marks a string as a 云隙输入 learning record. Kept short on purpose: every character
+         * here is a character the QR code cannot spend on data.
+         */
+        const val PAYLOAD_PREFIX = "CRP1:"
     }
 }
 

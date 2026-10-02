@@ -53,7 +53,7 @@ class ChatCorrectionClient {
             .post(payload.toString().toRequestBody(JSON_MEDIA_TYPE))
             .build()
 
-        executeWithRetry("文本修正") { request }.use { response ->
+        executeWithRetry("文本修正", client = correctionClient) { request }.use { response ->
             val body = response.body.string()
             val content = runCatching {
                 JSONObject(body)

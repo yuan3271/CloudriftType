@@ -1,8 +1,12 @@
 package com.yuan3271.cloudrift.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.core.animate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,33 +22,34 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 
 /**
  * The clipboard panel: a screen of its own, sized like the key area so opening it does not resize
@@ -181,76 +187,107 @@ private fun ClipRow(entry: ClipEntry, onPick: () -> Unit, armedColor: Color?) {
 }
 
 /**
- * Swipe left to delete, swipe right to put the entry back on the clipboard. Copying springs the row
- * back into place; deleting does not, because the entry is gone.
+ * 左滑删除、右滑复制，**松手那一刻**按方向执行.
+ *
+ * 这里原来用 SwipeToDismissBox：它的动作要等行被拖过 dismiss 阈值才发生，一次"明显想删"的短
+ * 滑动如果没滑够就什么都不做。现在动作属于松手——任何一次刻意的横向拖动都会点亮行，手指抬起
+ * 时由方向决定动作（左删、右复制）。剩下的一点点位移要求只用来把"滑动"和"点一下插入"分开。
+ *
+ * Copying springs the row back into place; deleting does not, because the entry is gone.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeActionsRow(
     onCopy: () -> Unit,
     onDelete: () -> Unit,
     content: @Composable (armedColor: Color?) -> Unit,
 ) {
-    val state = rememberSwipeToDismissBoxState(
-        // Nothing happens while the finger is down. Swiping only moves the row and lights it up;
-        // the action runs once the row has settled, which is the release the user was promised.
-        confirmValueChange = { it != SwipeToDismissBoxValue.Settled },
-    )
-    LaunchedEffect(state.currentValue) {
-        when (state.currentValue) {
-            SwipeToDismissBoxValue.EndToStart -> onDelete()
-            SwipeToDismissBoxValue.StartToEnd -> {
-                onCopy()
-                // Copying is not destructive, so the row comes back.
-                state.reset()
-            }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val trigger = with(density) { SWIPE_TRIGGER_DP.dp.toPx() }
+    val limit = with(density) { SWIPE_LIMIT_DP.dp.toPx() }
+    var offsetX by remember { mutableFloatStateOf(0f) }
 
-            else -> Unit
+    // Copying is not destructive, so the row slides back; so does a swipe that did not travel far
+    // enough to count.
+    fun springBack() {
+        if (offsetX == 0f) return
+        scope.launch {
+            animate(offsetX, 0f) { value, _ -> offsetX = value }
         }
     }
-    // The state flips its target as soon as the finger is far enough that releasing would trigger
-    // the action, which is exactly the moment the row should say "let go now".
-    val armedColor = when (state.targetValue) {
-        SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
-        SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+
+    // The row lights up as soon as releasing would act, which is now the whole of the gesture.
+    val armedColor = when {
+        offsetX <= -trigger -> MaterialTheme.colorScheme.errorContainer
+        offsetX >= trigger -> MaterialTheme.colorScheme.primaryContainer
         else -> null
     }
-    SwipeToDismissBox(
-        state = state,
-        enableDismissFromStartToEnd = true,
-        enableDismissFromEndToStart = true,
-        backgroundContent = {
-            Box(
+
+    Box(modifier = Modifier.fillMaxWidth()) {
+        // Hints the row covers while it rests; the moving row reveals them.
+        Box(
+            modifier = Modifier
+                // matchParentSize, not fillMaxSize: inside a LazyColumn item the height constraint
+                // is unbounded, and fillMaxSize would collapse the hint layer to nothing.
+                .matchParentSize()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .padding(horizontal = 16.dp),
+        ) {
+            Icon(
+                imageVector = CloudriftIcons.Clipboard,
+                contentDescription = "复制",
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                    .padding(horizontal = 16.dp),
-            ) {
-                // Right swipe reveals the copy hint from the start edge, left swipe the delete
-                // hint from the end edge; the row itself covers both while it rests.
-                Icon(
-                    imageVector = CloudriftIcons.Clipboard,
-                    contentDescription = "复制",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .size(20.dp),
-                )
-                Icon(
-                    imageVector = CloudriftIcons.Close,
-                    contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .size(20.dp),
-                )
-            }
-        },
-    ) {
-        content(armedColor)
+                    .align(Alignment.CenterStart)
+                    .size(20.dp),
+            )
+            Icon(
+                imageVector = CloudriftIcons.Close,
+                contentDescription = "删除",
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(20.dp),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.roundToInt(), 0) }
+                .draggable(
+                    orientation = Orientation.Horizontal,
+                    state = rememberDraggableState { delta ->
+                        offsetX = (offsetX + delta).coerceIn(-limit, limit)
+                    },
+                    onDragStopped = {
+                        val travelled = offsetX
+                        when {
+                            travelled <= -trigger -> {
+                                offsetX = 0f
+                                onDelete()
+                            }
+
+                            travelled >= trigger -> {
+                                onCopy()
+                                springBack()
+                            }
+
+                            else -> springBack()
+                        }
+                    },
+                ),
+        ) {
+            content(armedColor)
+        }
     }
 }
+
+/** How far the row has to travel before letting go counts as a swipe rather than a tap. */
+private const val SWIPE_TRIGGER_DP = 20f
+
+/** The row slides this far at most, so a long drag does not carry it off the panel. */
+private const val SWIPE_LIMIT_DP = 96f
 
 /** Today shows the clock, anything older shows the date too. */
 private fun formatTimestamp(millis: Long): String {
