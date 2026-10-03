@@ -32,7 +32,7 @@ object KeyboardLayouts {
                 LayoutId.English -> qwertyRows(layout, shifted, enterLabel)
                 LayoutId.Pinyin26 -> qwertyRows(layout, shifted, enterLabel)
                 LayoutId.JapaneseRomaji -> qwertyRows(layout, shifted, enterLabel)
-                LayoutId.Pinyin9 -> nineKeyRows()
+                LayoutId.Pinyin9 -> nineKeyRows(enterLabel)
             }
             if (numberRow && layout != LayoutId.Pinyin9) {
                 listOf(numberRowKeys()) + base
@@ -139,34 +139,39 @@ object KeyboardLayouts {
     // ---- Chinese nine key ---------------------------------------------------------
 
     /**
-     * The nine key pad is a grid, so every row carries the same four units: the digit keys stay
-     * square and line up column by column instead of the function row stretching twice as wide as
-     * the digits. The space bar still gets the extra width inside that budget.
+     * 九键：**五列**，数字占中间三列，左右各一列。
+     *
+     * 原来只有四列（三个数字 + 右边一列 `⌫ / ，/ 。`），数字那块的中心落在整行 37.5% 的地方，
+     * 整块键盘看上去往左偏。现在左边补一列功能键（`符 / 中 / 换行`），右边保留原来那一列
+     * （`⌫` 仍在右上角，`，` `。` 跟着它），数字三列就被夹在正中间；底排的空格键正好铺在
+     * 数字下面。每行都是五个单位（底排 1 + 3 + 1），所以列列对齐、换页不长高。
      */
-    private fun nineKeyRows(): List<List<KeyDef>> = listOf(
+    private fun nineKeyRows(enterLabel: String): List<List<KeyDef>> = listOf(
         listOf(
+            KeyDef.modifier(KeyCode.Symbols, "符", weight = 1f),
             digit("1", ""),
             digit("2", "ABC"),
             digit("3", "DEF"),
             KeyDef.backspace.copy(weight = 1f),
         ),
         listOf(
+            KeyDef.modifier(KeyCode.Language, languageLabel(LayoutId.Pinyin9), weight = 1f),
             digit("4", "GHI"),
             digit("5", "JKL"),
             digit("6", "MNO"),
             KeyDef.immediate("，"),
         ),
         listOf(
+            KeyDef.enter.copy(label = enterLabel, weight = 1f),
             digit("7", "PQRS"),
             digit("8", "TUV"),
             digit("9", "WXYZ"),
             KeyDef.immediate("。"),
         ),
         listOf(
-            KeyDef.modifier(KeyCode.Symbols, "符", weight = 0.8f),
-            KeyDef.modifier(KeyCode.Language, languageLabel(LayoutId.Pinyin9), weight = 0.8f),
-            KeyDef.space.copy(label = "空格", weight = 1.4f),
-            KeyDef.enter.copy(label = "换行", weight = 1f),
+            KeyDef.spacer(1f),
+            KeyDef.space.copy(label = "空格", weight = 3f),
+            KeyDef.spacer(1f),
         ),
     )
 
