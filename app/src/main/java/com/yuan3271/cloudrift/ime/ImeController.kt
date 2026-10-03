@@ -90,10 +90,12 @@ class ImeController(
      */
     private var associationSeed: String? = null
 
-    /** Last single character that went in, used to spot a word the user is spelling out. */
-    private var lastCharacter: CharacterCommit? = null
-
-    private data class CharacterCommit(val text: String, val reading: String, val at: Long)
+    /**
+     * The run of single characters that went in back to back, used to spot a word the user is
+     * spelling out one character at a time. See [CharacterChain] for why the whole run is kept and
+     * not just the last pair.
+     */
+    private val characterChain = CharacterChain(AUTO_WORD_WINDOW_MS, AUTO_WORD_MAX_CHARS)
 
     init {
         scope.launch {
@@ -226,7 +228,7 @@ class ImeController(
         }
         // The caret moved without us: the user is editing somewhere else, so the character chain
         // that could become a learned word is broken.
-        lastCharacter = null
+        characterChain.clear()
         if (_state.value.isComposing) commitBuffer()
         dropStaleAssociations()
     }
@@ -263,23 +265,21 @@ class ImeController(
 
         AppGraph.profile.recordChoice(code, candidate.text, candidate.annotation)
 
-        // Two single characters committed back to back are a word of their own: 张 then 伟 teaches
-        // 张伟 (reading "zhangwei") even though no dictionary ships it.
+        // Single characters committed back to back are a word of their own: 张, 伟, 来 teaches
+        // 张伟来 (reading "zhangweilai") even though no dictionary ships it.
         val now = System.currentTimeMillis()
-        val previous = lastCharacter
         val isCharacter = candidate.kind == CandidateKind.Character &&
             candidate.annotation.isNotEmpty() &&
             candidate.text.length == 1
         if (isCharacter) {
-            if (previous != null && now - previous.at <= AUTO_WORD_WINDOW_MS) {
-                AppGraph.profile.rememberWord(
-                    reading = previous.reading + candidate.annotation,
-                    word = previous.text + candidate.text,
-                )
+            // Every step of the run is learned, not just its end: 张伟 and then 张伟来 are both
+            // remembered, so the shorter reading stays typeable too. Past the learned-word length
+            // there is nothing more to remember, and the run is dropped rather than kept growing.
+            characterChain.append(candidate.annotation, candidate.text, now)?.let { learned ->
+                AppGraph.profile.rememberWord(reading = learned.reading, word = learned.word)
             }
-            lastCharacter = CharacterCommit(candidate.text, candidate.annotation, now)
         } else {
-            lastCharacter = null
+            characterChain.clear()
         }
     }
 
@@ -365,7 +365,7 @@ class ImeController(
     /** Inserts text from a panel (clipboard, snippets) without touching the reading buffer. */
     fun commitText(text: String) {
         if (text.isEmpty()) return
-        lastCharacter = null
+        characterChain.clear()
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
         editor.commit(text)
@@ -521,7 +521,7 @@ class ImeController(
 
     fun clearAllText() {
         onClearAllArmedChanged(false)
-        lastCharacter = null
+        characterChain.clear()
         clearBuffer()
         selfEditCounter++
         editor.clearAll()
@@ -649,6 +649,7 @@ class ImeController(
         autoApplyJob?.cancel()
         autoApplyJob = null
         _state.value = _state.value.copy(autoApplyPending = false)
+        characterChain.clear()
         selfEditCounter++
         editor.commit(ready.text)
         voice.dismiss()
@@ -748,6 +749,7 @@ class ImeController(
 
     /** Commits whatever is in the reading buffer without accepting a candidate. */
     private fun commitBuffer() {
+        characterChain.clear()
         val current = _state.value
         if (current.raw.isEmpty()) {
             editor.clearComposing()
@@ -762,7 +764,7 @@ class ImeController(
 
     private fun commitLiteral(text: String) {
         if (text.isEmpty()) return
-        lastCharacter = null
+        characterChain.clear()
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
         // 只有**成对键**（符号页最前面那些「（）」「“”」）才一次出两个并把光标放中间；
@@ -781,7 +783,7 @@ class ImeController(
      * Deleting what is on screen one character at a time is the only thing a backspace needs to do.
      */
     private fun backspace() {
-        lastCharacter = null
+        characterChain.clear()
         // A selected range is the user's target, not the text next to the caret, and
         // deleteSurroundingText is ignored by most editors while a selection is live - pressing the
         // key is what makes them delete the selection.
@@ -820,6 +822,8 @@ class ImeController(
         val isDoubleSpace = doubleSpaceArmed && now - lastSpaceAt <= DOUBLE_SPACE_WINDOW_MS
         lastSpaceAt = now
         doubleSpaceArmed = !isDoubleSpace
+        // A space is not another character of the word being spelled out.
+        characterChain.clear()
         if (isDoubleSpace && current.layout == LayoutId.English) {
             selfEditCounter++
             // Replace the previous space with a period and a space.
@@ -833,6 +837,7 @@ class ImeController(
     private fun enter() {
         // In a composition language Enter means "commit exactly what I typed", not "accept the
         // candidate" - that is what Space is for. So "nihao" + Enter inserts "nihao".
+        characterChain.clear()
         if (_state.value.isComposing) {
             commitRawLiteral()
             return
@@ -853,6 +858,7 @@ class ImeController(
 
     /** Commits the reading buffer verbatim, without converting it. */
     private fun commitRawLiteral() {
+        characterChain.clear()
         val current = _state.value
         val literal = engine.literal(current.raw)
         selfEditCounter++
@@ -987,8 +993,10 @@ class ImeController(
         )
 
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
-        /** How long two single character commits may be apart and still form a learned word. */
+        /** How long two single character commits may be apart and still belong to one learned word. */
         private const val AUTO_WORD_WINDOW_MS = 3000L
+        /** Longest run of single characters that is still remembered as one learned word. */
+        private const val AUTO_WORD_MAX_CHARS = 12
         /** Bounds the corner drag may move the floating keyboard within. */
         const val MIN_FLOATING_WIDTH_PERCENT = 45
         const val MAX_FLOATING_WIDTH_PERCENT = 100

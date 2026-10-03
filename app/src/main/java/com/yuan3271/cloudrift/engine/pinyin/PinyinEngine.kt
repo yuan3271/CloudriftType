@@ -337,17 +337,43 @@ class PinyinEngine(
     }
 
     /**
-     * 只留下"语料里真的这样连过"的读法。
+     * 把"语料里从来没这样连过"的一整串读法收敛掉。
      *
-     * 组合解码能拼出无穷多读法，而大多数读法不是中文：`毫无|青年`、`辛苦|里`、`不及|慢慢|来`
-     * 里的每一段都是词典里的词或常用字，但**相邻两段**在语料里从来没有一起出现过（证据 0）。
-     * 这类读法整条去掉，而不是排在后面——排在后面用户还得翻。
+     * 组合解码能拼出无穷多读法，而大多数读法不是中文：`毫无|青年`、`辛苦|里`、`不及|慢慢|来`、
+     * `转账|一|不错` 里的每一段都是词典里的词或常用字，相邻两段却在语料里从来没一起出现过
+     * （证据 0）。这类读法凑在一起就是用户眼里的"不成句的候选"。
      *
-     * 一条有证据的都没有时（新词、专名、语料没覆盖的说法）原样返回：宁可给没有证据的猜测，
-     * 也不能让候选栏空掉。
+     * 但只在**一整串读法一条证据都没有**时收敛：那种情况下剩下的全是同一串音节的同音字洗牌，
+     * 留解码器最看好的那一条就够。只要有一条读法带证据，一条都不删——语料没覆盖、却确实是用户
+     * 想打的句子（`那|挺|好|的`、`票|买|好|了|吗`）和噪声在证据这一维上完全一样，多删一条就少
+     * 一句正常话（广谱回归台实测）。词组与专名是词典里的词，走另一条候选来源，不受影响。
      */
-    private fun attested(readings: List<Reading>): List<Reading> =
-        readings.filter { it.evidence > 0 }.ifEmpty { readings }
+    private fun attested(readings: List<Reading>): List<Reading> {
+        // 没有搭配模型时"证据"恒为 0，那不是"语料里没连过"，是"无从知道"（测试里的词典就是
+        // 这种），照删会把每条读法都删掉。
+        if (!dictionary.hasAssociationModel) return readings
+        if (readings.size <= UNBACKED_READINGS) return readings
+        // 只要有一条读法带着语料证据，就一条都不删。
+        //
+        // 这一条是量出来的，不是保守：同一个字形骨架下常常有真也有假（`那|挺|好|的` 对
+        // `那|听|好|的`、`票|买|好|了|吗` 对 `票|买|好|了|马`），"删掉没证据的"分不出谁是谁，
+        // 广谱回归台实测每删一条就少一句正常话。所以真正被删的只有另一种情况——一整串读法**一条
+        // 证据都没有**：那不是"挑了错的"，而是"这串音节根本没被语料读到过"，剩下的全是同音字洗牌
+        // （`毫无|青年`、`辛苦|里`、`不及|慢慢|来`、`转账|一|不错`），留一条最好的猜测就够，铺满
+        // 八条只会让候选栏看起来全是"不成句的结果"。
+        if (readings.any { it.evidence > 0 }) return readings
+        return readings.take(UNBACKED_READINGS)
+    }
+
+    /**
+     * 一条接缝的搭配证据：句首边界（[SENTENCE_START]）不是接缝。
+     *
+     * `^今天` 说明"今天"能开句，它没有说这条读法左右两段能不能连。把它算进去以后，几乎每条读法
+     * 都能凑出一分"证据"，[attested] 于是形同虚设——`辛苦|里`、`毫无|青年`、`转账|一|不错` 全部
+     * 照样留在候选里。
+     */
+    private fun internalEvidence(lastUnit: String, pair: Int): Int =
+        if (lastUnit == SENTENCE_START) 0 else pair
 
     private fun sentence(text: String, reading: String, unmatchedFrom: Int) = Candidate(
         text = text,
@@ -470,7 +496,11 @@ class PinyinEngine(
                             path.text + entry.word,
                             count,
                             lastToken = entry.word,
-                            evidence = path.evidence + pair,
+                            // The sentence boundary is not an internal join: "^今天" says 今天 can
+                            // open a sentence, it says nothing about whether the units of this
+                            // reading belong together. Counting it made almost every reading look
+                            // attested (see [attested]).
+                            evidence = path.evidence + internalEvidence(path.lastToken, pair),
                         )
                     }
                 }
@@ -493,7 +523,11 @@ class PinyinEngine(
         lastToken: String = "",
         evidence: Int = 0,
     ) {
-        if (paths.any { it.text == text }) return
+        // 去重要连上下文一起看：一条路径的分数只取决于（到哪了、文本、最后一段是什么），两条
+        // 文本相同、切分不同的路径不是同一条。`今天|天气` 与词典词 `今天天气` 都写"今天天气"，
+        // 以前按文本去重把后者挤掉，于是续在后面的搭配分是拿 `今天天气` 去算的，正确读法
+        // `今天|天气|很好` 永远排不上来。加上 lastToken 以后两条各走各的，最好的那条赢。
+        if (paths.any { it.text == text && it.lastToken == lastToken }) return
         if (paths.size >= count && paths.last().score >= score) return
         paths.add(Path(score, text, lastToken, evidence))
         paths.sortByDescending { it.score }
@@ -776,7 +810,8 @@ class PinyinEngine(
                     for (path in paths[start]) {
                         val next = paths[start + length]
                         val text = path.text + word.word
-                        if (next.any { it.text == text }) continue
+                        // 同上：文本相同的两条读法切分可能不同，续在后面的搭配分也不同。
+                        if (next.any { it.text == text && it.lastWord == word.word }) continue
                         // The same association model the sentence decoder uses, and it is what this
                         // path was missing: "wjtqlbj" reads as 我今天|去了|北京 rather than
                         // 伪静态|权利|比较 not because either word is more frequent on its own, but
@@ -793,7 +828,7 @@ class PinyinEngine(
                                 usedInitials = true,
                                 usedSyllable = path.usedSyllable || mixed,
                                 units = path.units + 1,
-                                evidence = path.evidence + pair,
+                                evidence = path.evidence + internalEvidence(path.lastWord, pair),
                             ),
                         )
                         next.sortByDescending { it.score }
@@ -850,8 +885,14 @@ class PinyinEngine(
             }
             if (ranked.size >= INITIALS_LIMIT) break
         }
-        val backed = ranked.filter { it.second > 0 }
-        out.addAll((backed.ifEmpty { ranked }).map { it.first }.take(INITIALS_LIMIT))
+        // 和整句解码同一条规矩（见 [attested]）：只要有一条带证据的读法就一条都不删；一条证据都
+        // 没有时，那串字母只是把同音字洗来洗去，留最好的那条。
+        val selected = if (!dictionary.hasAssociationModel || ranked.any { it.second > 0 }) {
+            ranked
+        } else {
+            ranked.take(UNBACKED_READINGS)
+        }
+        out.addAll(selected.map { it.first }.take(INITIALS_LIMIT))
     }
 
     /**
@@ -878,7 +919,7 @@ class PinyinEngine(
                 val character = chars[rank].toString()
                 for (path in paths[start]) {
                     val combined = path.text + character
-                    if (next.any { it.text == combined }) continue
+                    if (next.any { it.text == combined && it.lastWord == character }) continue
                     val pair = dictionary.bigramScore(path.lastWord, character)
                     if (rank > 0 && pair <= 0) continue
                     next.add(
@@ -894,7 +935,7 @@ class PinyinEngine(
                             usedInitials = path.usedInitials,
                             usedSyllable = true,
                             units = path.units + 1,
-                            evidence = path.evidence + pair,
+                            evidence = path.evidence + internalEvidence(path.lastWord, pair),
                         ),
                     )
                 }
@@ -923,7 +964,7 @@ class PinyinEngine(
             for (word in words) {
                 for (path in paths[start]) {
                     val combined = path.text + word.word
-                    if (next.any { it.text == combined }) continue
+                    if (next.any { it.text == combined && it.lastWord == word.word }) continue
                     val pair = dictionary.bigramScore(path.lastWord, word.word)
                     next.add(
                         InitialPath(
@@ -937,7 +978,7 @@ class PinyinEngine(
                             // The word was typed out in full, so this half of the run is 全拼.
                             usedSyllable = true,
                             units = path.units + 1,
-                            evidence = path.evidence + pair,
+                            evidence = path.evidence + internalEvidence(path.lastWord, pair),
                         ),
                     )
                 }
@@ -969,7 +1010,7 @@ class PinyinEngine(
         for (text in texts) {
             for (path in paths[start]) {
                 val combined = path.text + text
-                if (next.any { it.text == combined }) continue
+                if (next.any { it.text == combined && it.lastWord == text }) continue
                 // 一句话的最后**一个字母**也遵守"句末语气词优先"：`xinkule` 的 l 应该是 了，而单字母那一步
                 // 按音节常用度给字（里/来），搭配模型根本没参与——573 句的自撰语料里，`辛苦了 → 辛苦里`
                 // 就是这么来的。只有收尾那一步、只有语气词字，其余照旧不带搭配分。
@@ -988,7 +1029,7 @@ class PinyinEngine(
                         usedWord = path.usedWord,
                         usedInitials = true,
                         units = path.units + 1,
-                        evidence = path.evidence + pair,
+                        evidence = path.evidence + internalEvidence(path.lastWord, pair),
                     ),
                 )
             }
@@ -1366,10 +1407,17 @@ class PinyinEngine(
         private const val MAX_SENTENCE_WORD_SYLLABLES = 6
         /**
          * Characters the sentence decoder tries per syllable. The character table only ranks
-         * them, it does not score them, so this is about homophones that the pair model can tell
-         * apart (吧/把 after 走) - not about the long tail.
+         * them, it does not score them, so a rank wide enough to reach the character the *pair
+         * model* likes is what this buys.
+         *
+         * 3 was too narrow: 杯 is the 6th character of "bei" (被背北備倍**杯**), so with 3 the
+         * decoder could not even build 我|想|喝|杯|咖啡 and the correct reading was never on the
+         * bar to begin with - no amount of filtering can remove a wrong candidate if the right one
+         * was never generated. 16 is where the 573 句广谱台 stops improving (496 vs 432 at 3);
+         * the `rank > 0 && pair <= 0` rule above still keeps the bar from filling with 我门/我闷,
+         * and a 46 letter buffer still decodes in 0.1 ms.
          */
-        private const val SENTENCE_CHAR_LIMIT = 3
+        private const val SENTENCE_CHAR_LIMIT = 16
         /**
          * Characters tried for the *last* syllable of a run, when that syllable can close a
          * sentence. The 句末语气词 sit deep in their syllable's table - 呗 is the 16th character of
@@ -1466,6 +1514,11 @@ class PinyinEngine(
         private const val INITIALS_UNIT_PENALTY = 1200
         /** Segmentations cache, bounded so a long session cannot grow it without limit. */
         private const val COVER_CACHE_LIMIT = 256
+        /**
+         * 没有任何语料证据时，最多还留几条读法。1 是量出来的：删光会让新词/专名/生僻说法失去
+         * 整句候选，多留则同音字洗牌又铺满候选栏；详见 [attested]。
+         */
+        private const val UNBACKED_READINGS = 1
         /** Nine key signatures never get longer than the longest syllable's digit count. */
         private const val MAX_T9_SYLLABLE_LENGTH = 6
         /**

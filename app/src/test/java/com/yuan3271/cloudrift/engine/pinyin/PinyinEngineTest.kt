@@ -3,6 +3,7 @@ package com.yuan3271.cloudrift.engine.pinyin
 import com.yuan3271.cloudrift.engine.CandidateKind
 import com.yuan3271.cloudrift.data.StringStore
 import com.yuan3271.cloudrift.data.UserProfile
+import com.yuan3271.cloudrift.ime.CharacterChain
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -395,6 +396,31 @@ class PinyinEngineTest {
         val engine = PinyinEngine(dictionary, nineKey = false, profile = learner)
 
         assertEquals("张伟来了", engine.evaluate("zhangweilaile").candidates.first().text)
+    }
+
+    @Test
+    fun `a word the user confirmed character by character comes back as one candidate`() {
+        val store = object : StringStore {
+            private val values = HashMap<String, String>()
+            override fun read(key: String): String? = values[key]
+            override fun write(key: String, value: String) {}
+        }
+        val learner = UserProfile(store, CoroutineScope(Dispatchers.Unconfined))
+        // The situation this guards: the three-at-once results for "zhangweilai" have nothing the
+        // user wants, so they confirm 张, then 伟, then 来. Next time the whole reading is typed,
+        // that exact grouping has to be on offer - 只记相邻两个字的话这里只会出 张伟 / 伟来。
+        val chain = CharacterChain(windowMillis = 3000L, maxChars = 12)
+        listOf("zhang" to "张", "wei" to "伟", "lai" to "来").forEachIndexed { index, (reading, character) ->
+            chain.append(reading, character, index * 400L)?.let {
+                learner.rememberWord(reading = it.reading, word = it.word)
+            }
+        }
+
+        val engine = PinyinEngine(dictionary, nineKey = false, profile = learner)
+
+        assertEquals("张伟来", engine.evaluate("zhangweilai").candidates.first().text)
+        // Every step of the run is remembered, so the shorter grouping is typeable too.
+        assertEquals("张伟", engine.evaluate("zhangwei").candidates.first().text)
     }
 
     private fun reader(name: String) = BufferedReader(

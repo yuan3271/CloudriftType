@@ -315,6 +315,15 @@ class PinyinDictionary(
         return table["$left\t$right"] ?: 0
     }
 
+    /**
+     * 这份词典到底有没有搭配模型。
+     *
+     * 没有的时候 [bigramScore] 对每一对都返回 0——那是"无从知道"，不是"语料里没有这个连法"。
+     * 两者必须分得开：解码器会用"证据"判断一条读法成不成话，把"没有模型"当成"没有证据"会让
+     * 每个候选都掉进同一个兜底分支里。
+     */
+    val hasAssociationModel: Boolean get() = bigramSource != null
+
     private fun loadBigrams(): HashMap<String, Int> {
         val table = HashMap<String, Int>(1 shl 14)
         val byLeft = HashMap<String, MutableList<WordEntry>>(1 shl 13)

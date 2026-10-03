@@ -48,8 +48,9 @@ data class ImportOutcome(
  *  - **habits**: which candidate was picked for which code. Picking 你好 for "ni" twice is what
  *    makes 你好 the first suggestion next time. Two, not one, because a single tap is usually a
  *    one-off and not a habit.
- *  - **invented words**: typing 张 then 伟 teaches the keyboard 张伟 (reading zhangwei) even
- *    though no dictionary ships it.
+ *  - **invented words**: typing 张, 伟, 来 one single character at a time teaches the keyboard
+ *    张伟来 (reading zhangweilai) even though no dictionary ships it - and every prefix of the run
+ *    (张伟) with it, so the shorter reading stays typeable too. See `ime.CharacterChain`.
  *
  * The profile never leaves the device (its preferences file is excluded from backup and device
  * transfer) and can be cleared from the settings screen. Everything here is plain deterministic
