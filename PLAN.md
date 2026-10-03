@@ -138,7 +138,7 @@
 | 134 | Lint 从 1 error / 23 warning / 1 hint 清到 0 error / 2 warning：修掉 IME 服务 `onEvaluateInputViewShown` 漏调 super、清单冗余 label、未被引用的 `colors.xml`、`UseKtx` 五处、Compose Modifier 参数位次四处、`mutableFloatStateOf` | 完成 |
 | 135 | 仓库卫生：删掉被 git 跟踪的 `tools/icons/__pycache__/*.pyc`，`.gitignore` 补 `__pycache__/` 与 `*.pyc` | 完成 |
 | 136 | 测试：新增 4 条（批量化习惯分与逐条一致、首字母桶顺序稳定且限额、音节前缀查询顺序与缓存一致），145 个用例全绿 | 完成 |
-| 137 | 发布 0.2.38（versionCode 42）：整体优化（包体、热路径、Lint、文档） | 进行中 |
+| 137 | 发布 0.2.38（versionCode 42）：整体优化（包体、热路径、Lint、文档）；145 个用例全绿 + assembleRelease + tag/Release 资产 | 完成 |
 
 ## 0.2.38：整体优化（发布包体、输入热路径、构建与文档）
 
@@ -231,6 +231,24 @@ applicationContext，加 `@SuppressLint` 并写明理由）。
 | `./gradlew assembleRelease` | 通过，签名 `CN=yuan3271`，versionCode 42 / versionName 0.2.38 |
 | APK 结构核对 | `apkanalyzer`：1 个 dex、3,074 个类定义，三个入口类保号；`unzip`：四张资产表原样 |
 | 真机 | 待用户复核（这一轮动过 dex 形态，弹键盘是第一个要看的） |
+
+### 六、0.2.38 发布
+
+commit `86be9df`、tag `v0.2.38`、[Release 云隙输入 0.2.38](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.38)
+已上传资产 `cloudrift-type-0.2.38-release.apk`（4,153,504 字节）。
+
+| 项目 | 结果 |
+| --- | --- |
+| 本地 sha256 | `d734ddac87ef9a8cc40c018c7dde6d8719d342d9761638b56f4a9241933646f3` |
+| GitHub 资产 `digest` | `sha256:d734ddac87ef9a8cc40c018c7dde6d8719d342d9761638b56f4a9241933646f3`（与本地逐字节一致） |
+| `./gradlew testDebugUnitTest` | 145 个用例全绿 |
+| `./gradlew :app:lintRelease` | 通过：0 error / 2 warning |
+| `./gradlew assembleRelease` | 通过，签名 `CN=yuan3271`，versionCode 42 / versionName 0.2.38 |
+| 真机 | 待用户复核（**先确认键盘能弹出**：这一版换了 dex 形态，回退装 0.2.37 即可） |
+
+> `github.com` 这轮是通的：`git push origin main` 与 `git push origin v0.2.38` 都是普通推送成功。
+> 沙箱内取不到凭据（keychain 被挡），提权后 osxkeychain 正常返回，Release 由 REST API 创建、
+> 资产用 `uploads.github.com` 上传。
 
 ## 不成句候选的收敛、逐字组词整串记住、两处挡住它们的解码器缺陷
 
