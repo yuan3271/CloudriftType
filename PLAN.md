@@ -127,7 +127,7 @@
 | 123 | 自训练拼音对应：把 MIT 的词→拼音对齐表训成字/上下文读音模型（`train_readings.py` -> `clean/trained_readings.txt`），替掉逐字笛卡尔积，词表随之从 18.8 万涨到 20.0 万词；留出集词级读音 94.9% → 97.3%。**默认启用**（`--no-trained-readings` 关） | 完成 |
 | 124 | 更大的日常词库：用 Tatoeba 8.9 万句给"至少出现 4 次"的词保底（底分 650），日常词层从 4,283 个扩到两万多、可打性 72.6% → 84.4%，代价是全拼广谱台 453 → 412。`干嘛` 压过 `干吗`，两条用例按"选择归语料"的既有口径改成 `干嘛`。**默认启用**（`--no-tatoeba-floor` 关） | 完成 |
 | 125 | 新增 `tools/tune/everyday.py`：量 Kotlin 基准量不到的日常词可打性、HSK 读音留出集与 9:1 读音留出实验；并修掉 `HSK30_FLOOR` 被实验值污染导致的构建不可复现（现在旧管线可逐字节重建 0.2.35 资产） | 完成 |
-| 126 | 发布 0.2.36（versionCode 40）：自训练拼音对应 + 更大的日常词库，测试全绿 + assembleRelease + tag/Release 资产 | 进行中 |
+| 126 | 发布 0.2.36（versionCode 40）：自训练拼音对应 + 更大的日常词库，测试全绿 + assembleRelease + tag/Release 资产 | 完成 |
 
 ## 自训练拼音对应与更大的日常词库
 
@@ -196,6 +196,26 @@ Tatoeba 是用户投稿、没人校对，口语与错写的比重比规范语料
   还原，导致中途一大批测量都带着污染（同一份代码重建不出 0.2.35 的资产，`爱好` 从 663 变 960）。
   还原后再关掉两个新开关，旧管线能**逐字节**重建 `pinyin_words.txt`（0 行差异）——这条现在是
   每次改动的对照基准。
+
+### 七、0.2.36 发布
+
+commit `0b9c274`、tag `v0.2.36`、[Release 云隙输入 0.2.36](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.36)
+已上传资产 `cloudrift-type-0.2.36-release.apk`（12,374,033 字节）。
+
+| 项目 | 结果 |
+| --- | --- |
+| 本地 sha256 | `2c65f4b0d95daa383709bf2459b097affa7f580547a5292f4e6ed7dec8c5d9a9` |
+| GitHub 资产 `digest` | `sha256:2c65f4b0d95daa383709bf2459b097affa7f580547a5292f4e6ed7dec8c5d9a9`（与本地逐字节一致） |
+| `./gradlew testDebugUnitTest` | 131 个用例全绿（两条语气词用例按新语料改成 `干嘛`） |
+| `./gradlew assembleRelease` | 通过，签名 `CN=yuan3271`，versionCode 40 / versionName 0.2.36 |
+| 真机 | 待用户复核（自训练读音、日常词库保底对长句的影响） |
+
+> `github.com` 依旧不通（`git push` 秒失败），仍走 Git Data API：先按本地对象建 blob 与 tree
+> （`base_tree` 用远端父提交的 tree），再建 commit。**首次尝试被 422 挡下**——从 `git cat-file`
+> 解析作者邮箱时把 `>` 带进了 `email` 字段（`email can't contain '<' or '>'`），修掉解析后远端
+> 返回的 SHA 与本地 `0b9c274` 完全一致，`refs/heads/main` 与 `refs/tags/v0.2.36` 同时更新。
+> 这次不用再重建提交对象：author/committer/date（`2026-10-03T13:30:00+08:00`）与消息原样传给
+> API，SHA 自己就对上了。
 
 ### 六、0.2.35 发布
 
