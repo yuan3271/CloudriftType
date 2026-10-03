@@ -146,6 +146,96 @@
 | 142 | 符号表逐字复算：全角 95 键（10 对 + 85 单）与半角 75 键（6 对 + 69 单）全部正确；**成对键（两字键）此前漏在"全角表不许混半角"那条测试之外**，现在补上逐字对账与清单钉子。用户报的"「（」等全角成对键是半角"在 0.2.38 的源码与安装包里都复现不出来，**待用户给出复现路径** | 部分（待复现） |
 | 143 | 本地构建 0.2.39（versionCode 43）：154 个用例全绿 + assembleRelease 产物落 `dist/`；广谱台与改前逐字一致（全拼 496/573、首字母 82/573、九键二字词 458/634、46 字母缓冲 0.4 ms） | 完成 |
 | 144 | 发布 0.2.39（versionCode 43）：tag `v0.2.39`、[Release 云隙输入 0.2.39](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.39) 已上传资产 `cloudrift-type-0.2.39-release.apk`（4,153,504 字节，sha256 `c11bd98e…`，与本地逐字节一致） | 完成 |
+| 145 | 英文词表覆盖到高考：接入 [KyleBing/english-vocabulary](https://github.com/KyleBing/english-vocabulary)（BSD-3-Clause）的人教 PEP 小学 + 中考 / 高考词表，去重后 **3,997 词**，并进 `EnglishWords.ALL`（三张表合计 4,081 词）。生成链路 `tools/wordgen/`，生成物 `EnglishSchoolWords.kt` | 完成 |
+| 146 | 修复中文模式下退格删不掉最后一个字：`EditorProxy.clearComposing()` 从 `finishComposingText()`（把上屏区原地定稿、文字留下）改为 `setComposingText("")` + `finishComposingText()`（真的删掉）。新增 `EditorProxyTest` 锁住"先删、再收尾" | 完成 |
+| 147 | 剪贴板候选提示：新复制的内容在候选栏递一次（图标 + 文字，点一下粘贴；右边的叉只收掉提示、历史照留）。`ClipboardStore.pending` + `ImeUiState.clipboardOffer` + `CandidateBar.ClipboardOfferStrip` | 完成 |
+| 148 | 重画剪贴板 / 键盘图标：剪贴板的夹子改成"长在轮廓上的缺口"（原来是实心药丸压在顶边上，糊成蘑菇头）；键盘改成"空格键上方两排键帽"（原来是三颗大点 + 一条短杠，像一张脸）。`tools/icons/build_icons.py` 仍是唯一真源 | 完成 |
+| 149 | 本地构建 0.2.40（versionCode 44）：156 个用例全绿 + `assembleRelease` 产物落 `dist/`（4,170,144 字节，sha256 `e05c2e73…`） | 完成 |
+
+## 0.2.40：英文词表覆盖到高考、退格删不掉最后一个字、剪贴板候选提示、两个图标重画
+
+用户一次点了四件事，四件都落地。
+
+### 一、英文词表：小初高一直到高考
+
+`EnglishWords` 原本是两张手写的表：`CORE`（1,003 个技术 / 键盘 / 常用词，0.2.13 起）与
+`EVERYDAY`（391 个每天都会打的词，0.2.39 补）。它们回答的是"打字的人此刻最可能要哪个词"，
+而不是"课本上收过哪些词"——`abandon`、`pronunciation`、`volleyball`、`strawberry`
+一个都不在里面。
+
+现在补第三张：`EnglishSchoolWords`，来自
+[KyleBing/english-vocabulary](https://github.com/KyleBing/english-vocabulary)（BSD-3-Clause）的
+**人教版 PEP 小学三~六年级** ＋ **中考 / 高考词汇表**，去重后 **3,997 词**。
+
+| 层 | 词数 | 是什么 |
+| --- | --- | --- |
+| `CORE` | 1,003 | 手挑的常用 / 键盘 / 技术词 |
+| `EVERYDAY` | 391 | 手挑的日常词（`hello` / `thanks` / `tomorrow`） |
+| `EnglishSchoolWords` | 3,997 | **生成**：小初高到高考的课程标准词汇 |
+
+三张表并起来 4,081 词。顺序就是补全优先序（英文布局按这个顺序取上限，中文模式下打英文词时
+也是先扫前面的），所以课本词排在"每天都会打的词"后面。
+
+生成链路与词库资产同一套约定：`tools/wordgen/fetch_words.sh` 抓原始数据到
+`tools/wordgen/raw/`（不入版本库），`tools/wordgen/build_english_words.py` 生成
+`EnglishSchoolWords.kt`（**生成文件，改生成器别手改**）。只收"一个词"——`pencil box`、
+`get up` 这类词组丢掉（补全的是一个词，不是短语），带括号或句点的条目也丢掉，统一转小写；
+大小写仍由用户打出来的还原（`EnglishWords.matchCase`）。
+
+`EnglishEngineTest` 新增一条钉子：`aband → abandon`、`pronun → pronunciation`、
+`volley → volleyball`、`strawb → strawberry`、`unfort → unfortunately`——这五个词只在生成表里，
+掉一个就说明那张表没接进来。
+
+### 二、退格删不掉最后一个字（真 bug）
+
+现象：中文模式下打两个字母（`a` `a`），按两下退格应该删干净，实际最后那个字母留在输入框里。
+
+根因在 `EditorProxy.clearComposing()`：它用 `finishComposingText()` 收尾，而这个调用的语义是
+**把上屏区原地定稿、文字留下**。上屏区在这个输入法里始终只是"当前缓冲的预览"（中文模式下
+就是那串还没成字的拼音字母），从来没有该留下的时候。前几次退格是把预览**换成更短的串**，
+看不出问题；只有从 1 个字清到 0 时才走"收尾"那条路，于是只在最后一步留下来——正好对上
+用户描述的"只剩最后一个时删不掉"。
+
+改法：先把上屏区替换成空串（`setComposingText("")`，真的删掉），再 `finishComposingText()`
+结束这次组合。新增 `EditorProxyTest`，用动态代理假造一个 `InputConnection` 记下每一次调用，
+锁住两件事：清上屏区必须**先删再收尾**；没有上屏区时一个调用都不发。
+
+### 三、剪贴板提示（新内容进候选栏）
+
+复制多半发生在**别的应用里**，那时键盘并不在屏幕上。所以提示不是弹在复制的那一刻，而是留给
+**下一次打开键盘**：候选栏显示「剪贴板图标 + 刚复制的那段文字」，点一下直接贴到光标处；
+右边的叉只把这条提示收掉，剪贴板历史里那条照留（下次再复制同一段内容还会再提示）。
+
+- `ClipboardStore` 多一路 `pending`（新进剪贴板、还没处理的那条）与 `acknowledgePending()`；
+  清空历史、删掉那一条时一并清 pending。
+- `ImeUiState.clipboardOffer`，控制器订阅后同步到 UI 状态。
+- 候选栏只在**没有候选**时才显示它（一开始打字就让位给候选，不用用户自己关），内容压成一行、
+  超出省略——复制的多半是带换行的整段文字，44dp 的候选栏摊不开。
+
+### 四、剪贴板 / 键盘图标重画
+
+两张图崩在同一个原因上：**拿一个实心块压在别人的描边上**。
+
+- **剪贴板**：夹子原来是一颗实心药丸压在顶边上，两条白边叠在一起糊成蘑菇头。现在夹子
+  **长在轮廓上**——顶边自己绕上去一块（左右平边 `y=5.4`、中间抬到 `y=4.2`），整块板子只有
+  一条连续的边。
+- **键盘**：原来是"三颗大点 + 一条短杠"，点上杠下，读起来像一张脸 / 聊天气泡。用户的要求是
+  "空格键上面至少得有两排"：现在是**上两排各三颗键帽**，下面一条宽空格键。键画成圆角方
+  （键帽）而不是圆点，20dp 上不糊成一团。中间比过 7 个方案（两排 / 三排、圆点 / 键帽、
+  空格键宽窄），选的是小尺寸下仍读得出"键盘"的那一个。
+
+图标集 26 个，生成物 `CloudriftIcons.kt` 与 `tools/design/icons-preview.svg` 一起更新，
+其余 24 个图标逐字节未变。
+
+### 验证记录（0.2.40）
+
+- `./gradlew testDebugUnitTest`：**156 个用例全绿**（新增 3 条：`EditorProxyTest` 2 条 +
+  `EnglishEngineTest` 的词表钉子 1 条）。
+- `./gradlew assembleRelease`：通过，产物 4,170,144 字节，签名 `CN=yuan3271`，versionCode 44。
+- 图标：`tools/design/icons-preview.svg` 经 QuickLook 渲染逐个检查（新的剪贴板 / 键盘与
+  其余 24 个对照）。
+- **尚未验证**：真机上的运行表现（键盘弹出、剪贴板提示的实际触发时机、退格手感的连续性）——
+  按约定不用模拟器，需要在真机上实测。
 
 ## 0.2.39：候选一颗单字都不省、中文模式下的英文词、`Z` 旁边改成大小写
 

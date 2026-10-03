@@ -30,9 +30,18 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
         isComposing = false
     }
 
-    /** Drops the composing region without inserting anything. */
+    /**
+     * 丢掉正在显示的上屏区，**连同它的文字一起**。
+     *
+     * 这里原来用 `finishComposingText()`，而它的语义是"把上屏区原地定稿、文字留下"。上屏区在
+     * 这个输入法里始终只是"当前缓冲的预览"（中文模式下就是那串还没成字的拼音字母），从来没有
+     * 该留下的时候——于是缓冲从 1 个字清到 0 时，最后一个字母会留在输入框里不动：退格看着
+     * 像没反应。先把上屏区替换成空串（真的删掉），再收尾结束这次组合。
+     */
     fun clearComposing() {
         if (!isComposing) return
+        val connection = connection
+        connection?.setComposingText("", 1)
         connection?.finishComposingText()
         isComposing = false
     }

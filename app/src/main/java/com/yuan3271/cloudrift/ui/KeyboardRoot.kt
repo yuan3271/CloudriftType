@@ -301,6 +301,8 @@ private fun KeyboardSurface(
                     state = state,
                     onCandidate = controller::selectCandidate,
                     onExpand = controller::toggleCandidatesExpanded,
+                    onPasteClipboardOffer = controller::pasteClipboardOffer,
+                    onDismissClipboardOffer = controller::dismissClipboardOffer,
                 )
             }
 

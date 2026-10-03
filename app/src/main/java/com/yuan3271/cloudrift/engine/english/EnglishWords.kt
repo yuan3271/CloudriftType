@@ -7,6 +7,10 @@ package com.yuan3271.cloudrift.engine.english
  *  - [com.yuan3271.cloudrift.engine.pinyin.PinyinEngine], which offers the same words while the
  *    user is typing **pinyin** - "hello" and "computer" are not readings of any Chinese word, and
  *    someone who typed them meant the English word.
+ *
+ * Three layers, in this order: hand-picked technical / everyday words ([CORE]), the throwaway
+ * words people actually type all day ([EVERYDAY]), and the full 小初高（到高考）curriculum
+ * vocabulary ([EnglishSchoolWords], generated). Order matters, see [ALL].
  */
 object EnglishWords {
 
@@ -128,8 +132,14 @@ object EnglishWords {
         .split(Regex("\\s+"))
         .filter { it.isNotBlank() }
 
-    /** [CORE] 在前、[EVERYDAY] 在后，重复的词只留第一次出现的位置。 */
-    val ALL: List<String> = (CORE + EVERYDAY).distinct()
+    /**
+     * [CORE] 在前、[EVERYDAY] 次之、[EnglishSchoolWords] 收尾：重复的词只留第一次出现的位置。
+     *
+     * 顺序就是补全的优先序——英文布局按这个顺序取前 [InputEngine] 条上限，中文模式下打英文
+     * 词时列表里排在前面的先被扫描到。所以"每天都会打的词"必须排在"课本上才有的词"前面。
+     * 小学 / 初中 / 高中（到高考）的课程标准词汇单独放一张生成表（见 `tools/wordgen`）。
+     */
+    val ALL: List<String> = (CORE + EVERYDAY + EnglishSchoolWords.ALL).distinct()
 
     /**
      * [word] drawn the way the user typed it: all caps stay all caps, a leading capital stays.

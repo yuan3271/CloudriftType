@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.engine.Candidate
@@ -48,6 +50,8 @@ fun CandidateBar(
     state: ImeUiState,
     onCandidate: (Int) -> Unit,
     onExpand: () -> Unit,
+    onPasteClipboardOffer: () -> Unit,
+    onDismissClipboardOffer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(
@@ -58,7 +62,18 @@ fun CandidateBar(
         contentAlignment = Alignment.CenterStart,
     ) {
         if (state.candidates.isEmpty()) {
-            IdleStrip(state = state)
+            // 刚复制进来的内容优先占这条栏：它是一次性的"要不要粘贴"，而 layout 名随时都在。
+            // 一旦开始打字（有候选）就让位给候选，不用用户自己关。
+            val offer = state.clipboardOffer
+            if (offer != null) {
+                ClipboardOfferStrip(
+                    text = offer.text.replace(OFFER_WHITESPACE, " ").trim(),
+                    onPaste = onPasteClipboardOffer,
+                    onDismiss = onDismissClipboardOffer,
+                )
+            } else {
+                IdleStrip(state = state)
+            }
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LazyRow(
@@ -88,6 +103,58 @@ fun CandidateBar(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * 剪贴板提示：图标 + 刚复制的那段内容，点一下直接贴到光标处；右边的叉只把这条提示收掉，
+ * 历史里那条仍在（下次复制同一段内容还会再提示）。
+ *
+ * 内容压成一行——复制的多半是一段带换行的文字，候选栏只有 44dp，摊开就什么都不剩了。
+ */
+@Composable
+private fun ClipboardOfferStrip(
+    text: String,
+    onPaste: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(14.dp))
+                .clickable(onClick = onPaste)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = CloudriftIcons.Clipboard,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        IconButton(onClick = onDismiss, modifier = Modifier.size(34.dp)) {
+            Icon(
+                imageVector = CloudriftIcons.Close,
+                contentDescription = "关闭剪贴板提示",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }
@@ -186,3 +253,4 @@ internal fun candidateLabel(candidate: Candidate, dim: Color): AnnotatedString {
 
 private val CANDIDATE_BAR_HEIGHT = 44.dp
 private const val MAX_VISIBLE = 12
+private val OFFER_WHITESPACE = Regex("\\s+")

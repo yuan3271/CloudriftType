@@ -38,6 +38,13 @@ emoji 分组（表情 / 人物 / 动物 / 食物 / 出行 / 活动 / 物品 / �
 （肤色、发色等修饰件）不下发——它们单独出现只会打出看不见的东西。全角 / 半角符号表是人工
 整理的常用集合（见 `KeyboardLayouts.kt`），不来自任何第三方表。
 
+**英文词表**：`EnglishSchoolWords.kt`（英文补全与中文模式下的英文词所用的**小初高到高考**词表）
+由 `tools/wordgen/build_english_words.py` 从
+[KyleBing/english-vocabulary](https://github.com/KyleBing/english-vocabulary)（BSD-3-Clause）生成：
+小学取人教 PEP 三~六年级词头，初中 / 高中取中考 / 高考词汇表词头，只保留单个词、统一小写。
+再分发时请一并保留该项目与作者的许可声明，许可证全文随源保留在
+`tools/wordgen/LICENSE-english-vocabulary.txt`。
+
 > 成语表（chinese-xinhua 的 `idiom.json`、THUOCL 的成语表、5 万条成语表）**不进词表**。
 > 词表要的是"人们天天打的词"，成语是另一件事；实测也确实是负收益（撤掉它们并把日常词汇表
 > 接进来之后，手挑 31 句不变，见 `PLAN.md` 的 0.2.35 一节）。新华字典的词语表（`ci.json`，

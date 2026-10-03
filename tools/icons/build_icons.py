@@ -124,6 +124,29 @@ def round_rect(x: float, y: float, w: float, h: float, r: float) -> str:
     )
 
 
+def clipboard_board() -> str:
+    """剪贴板外框：顶边中间抬起一块当夹子，夹子长在轮廓上.
+
+    旧版把夹子画成一个实心药丸压在顶边上，两条白边叠在一起糊成蘑菇头（20dp 上最明显）。
+    这里让顶边自己绕上去——左右两段平边（y=5.4）从夹子两侧接上抬起的部分（y=4.2），
+    整块板子只有一条连续的边。左右圆角 2.8，抬起的拐角 1.2。
+    """
+    return (
+        f"M{point(4.8, 8.2)} "
+        f"A2.8,2.8 0 0,1 {point(7.6, 5.4)} "
+        f"H{_n(9.4)} "
+        f"A1.2,1.2 0 0,1 {point(10.6, 4.2)} "
+        f"H{_n(13.4)} "
+        f"A1.2,1.2 0 0,1 {point(14.6, 5.4)} "
+        f"H{_n(16.4)} "
+        f"A2.8,2.8 0 0,1 {point(19.2, 8.2)} "
+        f"V{_n(17.8)} "
+        f"A2.8,2.8 0 0,1 {point(16.4, 20.6)} "
+        f"H{_n(7.6)} "
+        f"A2.8,2.8 0 0,1 {point(4.8, 17.8)} Z"
+    )
+
+
 def poly_round(points: list[tuple[float, float]], radius: float) -> str:
     """Closed polygon with every corner replaced by an arc of [radius]."""
     count = len(points)
@@ -332,12 +355,17 @@ def build() -> list[Icon]:
         stroke(line(4.8, 19, 19.2, 19)),
     ]))
     icons.append(Icon("Keyboard", "Keyboard", [
-        # Fewer, bigger elements: the six-key version collapsed into a dark blob at 20dp.
-        stroke(round_rect(2.7, 6.0, 18.6, 12.0, 3.0), width=1.9),
-        solid(circle(7.0, 10.0, 1.15)),
-        solid(circle(12.0, 10.0, 1.15)),
-        solid(circle(17.0, 10.0, 1.15)),
-        stroke(line(9.0, 14.6, 15.0, 14.6), width=1.9),
+        # 空格键上面**两排键**，才读得出是键盘：三颗键一排、两排，下面一条宽空格键。
+        # 旧版只有一个点排横在空格上面，看着像一张脸 / 聊天气泡。键画成小键帽（圆角方）
+        # 而不是圆点，同样是为了不像眼睛——20dp 上两者都清楚。
+        stroke(round_rect(2.7, 5.2, 18.6, 13.6, 3.0), width=1.8),
+        solid(round_rect(5.85, 7.6, 2.3, 2.0, 0.8)),
+        solid(round_rect(10.85, 7.6, 2.3, 2.0, 0.8)),
+        solid(round_rect(15.85, 7.6, 2.3, 2.0, 0.8)),
+        solid(round_rect(5.85, 11.0, 2.3, 2.0, 0.8)),
+        solid(round_rect(10.85, 11.0, 2.3, 2.0, 0.8)),
+        solid(round_rect(15.85, 11.0, 2.3, 2.0, 0.8)),
+        stroke(line(8.6, 15.7, 15.4, 15.7), width=1.8),
     ]))
 
     # --- system ------------------------------------------------------------------
@@ -401,11 +429,10 @@ def build() -> list[Icon]:
         stroke("M13.6,18.6 L16.4,21.4 L21.8,13.8"),
     ]))
     icons.append(Icon("Clipboard", "Clipboard", [
-        stroke(round_rect(4.6, 4.4, 14.8, 16.6, 2.8)),
-        solid(round_rect(9.0, 2.6, 6.0, 3.6, 1.5)),
-        stroke(line(8.6, 11.0, 15.4, 11.0)),
-        stroke(line(8.6, 14.6, 15.4, 14.6)),
-        stroke(line(8.6, 18.2, 12.6, 18.2)),
+        stroke(clipboard_board()),
+        stroke(line(8.8, 9.6, 15.2, 9.6)),
+        stroke(line(8.8, 13.0, 15.2, 13.0)),
+        stroke(line(8.8, 16.4, 12.6, 16.4)),
     ]))
 
     return icons

@@ -42,6 +42,14 @@ class ClipboardStore(
     private val _entries = MutableStateFlow(load())
     val entries: StateFlow<List<ClipEntry>> = _entries.asStateFlow()
 
+    /**
+     * 刚进剪贴板、还没提示过的那一条。候选栏拿它在键盘上方显示"要不要粘贴"——复制多半发生在
+     * 别的应用里（键盘当时并不在屏幕上），所以提示不是弹在复制的那一刻，而是留给**下一次打开
+     * 键盘**；用户贴了它、或者点了右边的叉，[acknowledgePending] 就把它清掉，历史里那条不动。
+     */
+    private val _pending = MutableStateFlow<ClipEntry?>(null)
+    val pending: StateFlow<ClipEntry?> = _pending.asStateFlow()
+
     private var job: Job? = null
     private var listening = false
 
@@ -65,6 +73,7 @@ class ClipboardStore(
     fun clear() {
         _entries.value = emptyList()
         persist(emptyList())
+        acknowledgePending()
     }
 
     fun remove(entry: ClipEntry) {
@@ -72,6 +81,12 @@ class ClipboardStore(
         if (next.size == _entries.value.size) return
         _entries.value = next
         persist(next)
+        if (_pending.value?.text == entry.text) acknowledgePending()
+    }
+
+    /** 提示已经给过了（贴上了，或者用户把它关掉）：历史保留，只是不再挂在那条上。 */
+    fun acknowledgePending() {
+        _pending.value = null
     }
 
     /**
@@ -95,9 +110,13 @@ class ClipboardStore(
         if (text.isBlank()) return
 
         val current = _entries.value
+        val entry = ClipEntry(text, System.currentTimeMillis())
+        // 同一段文字连着复制两次只算一条历史，但**每一次复制都值得再提示一次**：用户刚刚
+        // 明确按了复制，那条提示就该回来。
+        _pending.value = entry
         if (current.firstOrNull()?.text == text) return
         val next = buildList {
-            add(ClipEntry(text, System.currentTimeMillis()))
+            add(entry)
             addAll(current.filterNot { it.text == text })
         }.take(LIMIT)
         _entries.value = next

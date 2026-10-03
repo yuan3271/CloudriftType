@@ -144,6 +144,11 @@ class ImeController(
             }
         }
         scope.launch {
+            clipboard.pending.collect { offer ->
+                _state.value = _state.value.copy(clipboardOffer = offer)
+            }
+        }
+        scope.launch {
             AppGraph.profile.stats.collect { stats ->
                 _state.value = _state.value.copy(userStats = stats)
             }
@@ -484,6 +489,19 @@ class ImeController(
     fun copyClipboardEntry(entry: ClipEntry) = clipboard.copyToClipboard(entry.text)
 
     fun clearClipboard() = clipboard.clear()
+
+    /**
+     * 候选栏上那条剪贴板提示：点一下就把内容贴上去（和剪贴板面板里点一条是同一个动作），
+     * 然后提示收掉——已经用过了。
+     */
+    fun pasteClipboardOffer() {
+        val offer = _state.value.clipboardOffer ?: return
+        commitText(offer.text)
+        clipboard.acknowledgePending()
+    }
+
+    /** 点右边的叉：只收掉提示，那条内容仍然留在剪贴板历史里。 */
+    fun dismissClipboardOffer() = clipboard.acknowledgePending()
 
     /** Tapping the toolbar gear again is the fastest way out of the sheet. */
     fun toggleQuickSettings() {

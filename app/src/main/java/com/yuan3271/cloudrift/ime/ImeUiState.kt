@@ -109,6 +109,11 @@ data class ImeUiState(
     /** True while the clipboard panel is open in place of the keys. */
     val clipboardVisible: Boolean = false,
     val clipboardEntries: List<ClipEntry> = emptyList(),
+    /**
+     * 刚复制进来、还没处理的那条剪贴板内容。非空时候选栏把它摆出来（图标 + 内容 + 一个叉）：
+     * 点一下直接粘贴，点叉只把提示收掉、历史里那条照留。
+     */
+    val clipboardOffer: ClipEntry? = null,
 
     /** Transient notice shown above the keyboard (permission prompts, errors). */
     val notice: String? = null,

@@ -26,3 +26,7 @@ tools/dictgen/out/
 tools/dictgen/__pycache__/
 # A/B tables written by `build_bigram.py --variant-sweep`; regenerate on demand.
 tools/tune/bigrams/
+# 英文词表原始数据（KyleBing/english-vocabulary）抓下来只为离线生成，不入版本库；
+# 生成物 EnglishSchoolWords.kt 是版本化的。
+tools/wordgen/raw/
+tools/wordgen/__pycache__/
