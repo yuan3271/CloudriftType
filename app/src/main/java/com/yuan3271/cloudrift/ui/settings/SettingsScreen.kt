@@ -79,6 +79,8 @@ import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
+// 设置页的「外观预览」画的就是键盘高度，基准同样是屏幕高度（见 KeyboardLayouts.autoKeyHeight）。
+@Suppress("ConfigurationScreenWidthHeight")
 @Composable
 fun SettingsScreen(
     settings: AppSettings,

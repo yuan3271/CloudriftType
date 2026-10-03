@@ -172,6 +172,25 @@ Gradle、AGP 与依赖仓库均已指向国内镜像（腾讯云 Gradle 镜像�
 
 产物：`app/build/outputs/apk/debug/app-debug.apk`。
 
+发布包用 R8 压缩（`isMinifyEnabled` + `isShrinkResources`）。侧载包要下载的就是这份体积：
+不压缩时 dex 里躺着整套没被用到的 androidx / Compose，解压后 26 MB、压完 12.4 MB；开 R8 之后
+只剩真正走到的那部分，整个 APK 从 12.4 MB 降到 4.2 MB。应用本体不依赖反射（不查
+`getIdentifier`、不用 `Class.forName`），入口点写在清单里由 AGP 保号，Compose / coroutines /
+OkHttp 的 consumer rules 也会自动合进来，所以全量压缩是安全的；保留规则见
+`app/proguard-rules.pro`。
+
+```bash
+./gradlew assembleRelease   # 需要 keystore.properties（签名材料不进版本库）
+```
+
+产物：`app/build/outputs/apk/release/app-release.apk`。R8 会把类名与方法名混淆，但保留了源文件
+与行号属性，所以线上/真机 logcat 里的堆栈可以直接用 `app/build/outputs/mapping/release/mapping.txt`
+还原：
+
+```bash
+retrace -verbose app/build/outputs/mapping/release/mapping.txt crash.txt
+```
+
 单元测试（覆盖拼音分词/词典、九键映射、罗马音转假名、英文补全）：
 
 ```bash

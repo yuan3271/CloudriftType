@@ -133,6 +133,104 @@
 | 129 | 整句解码的单字探索宽度 3 → 16：`杯` 是 bei 的第 6 个字，探索宽度 3 时 `我｜想｜喝｜杯｜咖啡` **根本构造不出来**（搭配表里 `喝→杯` / `杯→咖啡` 都在），正确读法从没上过候选栏，过滤也就无从谈起。宽度是量出来的平台值（3→412、8→432、16→496、24 不涨），46 字母缓冲仍 0.1 ms | 完成 |
 | 130 | 解码路径去重要带上下文：一条路径的分数取决于"到哪了 / 文本 / 最后一段是什么"，原来按文本去重，`今天｜天气` 与词典词 `今天天气` 撞成一条，续在后面的搭配分一直拿错的上下文算——`今天天气很好`、`我想喝杯咖啡` 因此排在 `今天天起很好`、`我想和被咖啡` 后面。去重键加上 `lastToken`（首字母那套加 `lastWord`）后两条路径各走各的 | 完成 |
 | 131 | 发布 0.2.37（versionCode 41）：不成句候选收敛 + 逐字组词整串记住 + 两处解码器缺陷；141 个用例全绿 + assembleRelease + tag/Release 资产 | 完成 |
+| 132 | 发布包开启 R8 全量压缩 + 资源压缩：dex 解压后 26.6 MB → 2.78 MB，APK `12,374,033 → 4,153,504` 字节（−66.4%），并保留 `SourceFile/LineNumberTable` 供 retrace | 完成 |
+| 133 | 输入热路径三处：首字母桶改在载入时排一次序（此前每次按键对每个起点 2–12 长度的 key 各排一遍 60 条）、音节前缀查询加缓存（此前每键两次全表 filter + sort）、习惯分一次算完整张候选表（前缀只切一遍） | 完成 |
+| 134 | Lint 从 1 error / 23 warning / 1 hint 清到 0 error / 2 warning：修掉 IME 服务 `onEvaluateInputViewShown` 漏调 super、清单冗余 label、未被引用的 `colors.xml`、`UseKtx` 五处、Compose Modifier 参数位次四处、`mutableFloatStateOf` | 完成 |
+| 135 | 仓库卫生：删掉被 git 跟踪的 `tools/icons/__pycache__/*.pyc`，`.gitignore` 补 `__pycache__/` 与 `*.pyc` | 完成 |
+| 136 | 测试：新增 4 条（批量化习惯分与逐条一致、首字母桶顺序稳定且限额、音节前缀查询顺序与缓存一致），145 个用例全绿 | 完成 |
+| 137 | 发布 0.2.38（versionCode 42）：整体优化（包体、热路径、Lint、文档） | 进行中 |
+
+## 0.2.38：整体优化（发布包体、输入热路径、构建与文档）
+
+这一轮没有新功能，目标是把项目本身收拾一遍：**先量再改**，测得到的才动，改不动的写清楚为什么。
+下面每一条都附了"改前 / 改后"的数字或清单，没量过的（真机手感的那些）不在这份账里。
+
+### 一、发布包体：12.4 MB → 4.2 MB（R8 全量压缩 + 资源压缩）
+
+`assembleRelease` 一直是 `isMinifyEnabled = false`。代价一直摆在明面上，只是没人去称：解压后的
+`classes.dex` 有 **26.6 MB**（三个 dex：14.6 + 11.7 + 0.3），里面绝大部分是**一行都没走到**的
+androidx / Compose / OkHttp 代码——这个应用本体只有 13,232 行 Kotlin。
+
+| 项目 | 压缩前（0.2.37） | R8 后（0.2.38） |
+| --- | --- | --- |
+| APK（用户要下载的字节数） | 12,374,033 B | **4,153,504 B**（−66.4%） |
+| `classes.dex`（解压后） | 26,620,812 B / 3 个 dex | 2,781,204 B / 1 个 dex |
+| 包内类定义 | 17,701 个（整包 androidx / Compose 都在） | 3,074 个（−82.6%） |
+| `assets/pinyin_words.txt` | 4,687,150 B | 4,687,150 B（资产原样保留） |
+
+**为什么这里敢开全量压缩**：应用本体没有反射——不查 `getIdentifier`、不用 `Class.forName`、
+没有 `ServiceLoader` 自注册、没有序列化框架（全仓 grep 过，见验证）；三个入口点
+（`CloudriftApp`、`CloudriftImeService`、`SettingsActivity`）写在清单里，AGP 自动保号；R8 需要的
+其余规则由依赖库的 consumer rules 自动合进来（Compose 的 R8 支持已经成熟，`kotlinx-coroutines`
+会用 `MainDispatcherLoader` 的规则把 `Dispatchers.Main` 静态化成直接实例化，OkHttp 自带规则）。
+
+`proguard-rules.pro` 只加了一条**给排障用**的：`-keepattributes SourceFile,LineNumberTable` 与
+`-renamesourcefileattribute SourceFile`。R8 默认会把这两个属性删掉，那样线上 logcat 里的堆栈
+只剩混淆后的名字、连行号都没有；而这个键盘的失败路径本来就只有 `Log.e`，堆栈是唯一的线索。
+
+**没有做真机验证**（沙箱里没有设备：`adb devices` 为空），所以这一条的验证只到"产物级"：
+`apkanalyzer` 确认 dex 合法且三个入口类都在、`apksigner` 确认签名 `CN=yuan3271`、`unzip` 确认
+四张资产表逐字节保留、`lintVitalRelease` 通过。**真机上的键盘弹出与输入待用户复核**——这一条
+如果出问题，表现会是替换安装后键盘不出现，回退到 0.2.37 即可。
+
+### 二、输入热路径：把"每次按键都要做的事"从按键路径里拿掉
+
+这三处都不是算法问题，是"本来只需要算一次，却在每次按键里重算"：
+
+| 位置 | 改前（每次按键） | 改后 |
+| --- | --- | --- |
+| `PinyinDictionary.wordsForInitials` | 每个查询键都对最多 60 条的桶 `sortWith` 一遍；首字母解码对**每个起点**要试 2–12 个长度，一次按键几十次排序，且 `take(limit)` 每次还拷一份列表 | 排序下沉到载入时（`buildInitialsIndex` 末尾排一次），查询只切一段 `subList` 视图 |
+| `PinyinDictionary.syllablesStartingWith` | 每键两次（`addPartialCandidates` ＋ `addLeadingSyllableCandidates`），每次把**整张字表 400+ 音节** filter + sort | 按前缀缓存（键只有几十个：单个字母或还没成音节的尾巴），上限 256 条 |
+| `UserProfile.habit` → `habitCounts` | 每个候选各扫一遍 code 的前缀（每个候选切最多 12 个子串），一次按键 48 × 12 | 前缀只切一遍，整张候选表一次算完（`habitCounts`，结果与逐条调用逐位相同） |
+
+排序口径没变（分数降序、同分按词面），所以这是纯粹的白排；`PinyinEngineTest` 新加的用例把这条
+钉住了：同一把 key 反复取顺序必须一致、分数必须非增、`limit` 取的就是前几项、单字母仍然不开词桶。
+
+### 三、Lint：1 error / 23 warning / 1 hint → 0 error / 2 warning
+
+`./gradlew :app:lintRelease` 以前是**失败**的，那一条 error 是真的：
+`CloudriftImeService.onEvaluateInputViewShown` 覆盖后没调 super（`MissingSuperCall`）。这个覆盖
+本身是有意的（这个输入法没有"硬件键盘接管了就不显示"的情形），所以修法是**保留返回值、补上
+父类调用**，并在注释里写明为什么返回值不采用。
+
+顺带清掉的 warning（都是确认过语义等价的）：清单里与 application 重复的 `android:label`、
+未被任何地方引用的 `res/values/colors.xml`（图标用的是同名 **drawable**，不是 color）、
+五处 `SharedPreferences.edit { }` / `String.toUri` / `Int.toDrawable`、四处 Compose 的
+Modifier 参数位次（调用方本来就用具名参数）、`KeyboardRoot` 里 `mutableStateOf(0f)` →
+`mutableFloatStateOf(0f)`（少一次装箱）、`AppGraph.engines` 的 `StaticFieldLeak`（只持有
+applicationContext，加 `@SuppressLint` 并写明理由）。
+
+剩下两条是**决定不改**，写在这里免得下次又被当成待办：
+
+- `OldTargetApi`：`targetSdk 36` 而 `compileSdk 37.2`。抬 targetSdk 会同时打开一批新的兼容行为
+  （边到边、前台服务、权限），键盘这种"必须有窗口、必须常驻"的进程要一条条过；这一轮没有真机，
+  不拿它冒险。
+- `ObsoleteSdkInt`：lint 建议把 `mipmap-anydpi-v26` 合并进 `mipmap-anydpi`。**试过，构建直接挂**：
+  `AAPT: error: resource mipmap/ic_launcher not found`——AGP 9.4.1 / AAPT2 不认没有版本限定符的
+  `anydpi` 目录（`app/build/intermediates/merged-not-compiled-resources` 里压根没有这两个文件）。
+  已改回 `-v26`，这条 warning 属于工具链，不属于项目。
+
+另外，`SettingsScreen` 里三处 `Slider`（色相、鲜艳度，以及 `ValueSlider` 的实现——键盘高度、
+圆角、底部间距、字母大小都走它）用的是 Material3 已标记 deprecated 的重载（新重载要把
+`SliderState` 建出来自己管）。**这一轮不迁移**：这些滑杆没有自动化测试，而新重载的状态同步
+语义（外部值变化时是否回灌）我没法在真机上确认——猜错的表现是"滑杆拖不动"。留到有真机时连着
+一起改。
+
+### 四、仓库卫生
+
+`tools/icons/__pycache__/make_launcher_from_image.cpython-314.pyc` 被 git 跟踪着（1 个 3KB 的
+字节码），删掉；`.gitignore` 补上 `__pycache__/` 与 `*.pyc`，以后跑 `build_icons.py` 不会再冒出来。
+`dist/` 仍然只在本地产物目录里，不进版本库（发布资产走 GitHub Release）。
+
+### 五、验证
+
+| 项目 | 结果 |
+| --- | --- |
+| `./gradlew testDebugUnitTest` | **145 个用例全绿**（0.2.37 是 141，本轮 +4） |
+| `./gradlew :app:lintRelease` | **通过**：0 error / 2 warning（改前 1 error / 23 warning / 1 hint） |
+| `./gradlew assembleRelease` | 通过，签名 `CN=yuan3271`，versionCode 42 / versionName 0.2.38 |
+| APK 结构核对 | `apkanalyzer`：1 个 dex、3,074 个类定义，三个入口类保号；`unzip`：四张资产表原样 |
+| 真机 | 待用户复核（这一轮动过 dex 形态，弹键盘是第一个要看的） |
 
 ## 不成句候选的收敛、逐字组词整串记住、两处挡住它们的解码器缺陷
 

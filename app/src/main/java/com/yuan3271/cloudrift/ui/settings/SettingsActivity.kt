@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.net.Uri
 import android.provider.Settings
 import android.view.inputmethod.InputMethodInfo
 import android.view.inputmethod.InputMethodManager
@@ -15,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.data.ImportOutcome
@@ -59,7 +59,7 @@ class SettingsActivity : ComponentActivity() {
                         openRelease = {
                             val url = update?.releaseUrl ?: RELEASES_URL
                             runCatching {
-                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
                             }
                         },
                         finish = ::finish,

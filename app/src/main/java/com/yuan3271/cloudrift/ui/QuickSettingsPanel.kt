@@ -50,6 +50,8 @@ import kotlin.math.roundToInt
  * The settings the user actually reaches for while typing, kept inside the keyboard so that
  * leaving the current app is only ever one deliberate tap away.
  */
+// 同 KeyboardRoot：键盘高度以屏幕高度为基准换算，窗口本身就是键盘，不能用 containerSize。
+@Suppress("ConfigurationScreenWidthHeight")
 @Composable
 fun QuickSettingsPanel(
     state: ImeUiState,

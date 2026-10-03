@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.data
 
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.core.content.edit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -122,7 +123,7 @@ class ClipboardStore(
             )
         }
         runCatching {
-            prefs.edit().putString(KEY_HISTORY, array.toString()).apply()
+            prefs.edit { putString(KEY_HISTORY, array.toString()) }
         }
     }
 

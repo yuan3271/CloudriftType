@@ -54,6 +54,7 @@ import kotlin.math.roundToInt
 @Composable
 fun VoicePanel(
     state: VoiceState,
+    modifier: Modifier = Modifier,
     autoApplyDelayMs: Int = 0,
     autoApplyPending: Boolean = false,
     onStop: () -> Unit,
@@ -64,7 +65,6 @@ fun VoicePanel(
     onCommit: () -> Unit,
     onOpenPermission: () -> Unit,
     onCancelAutoApply: () -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -119,8 +119,8 @@ fun VoicePanel(
 fun ListeningStrip(
     level: Float,
     elapsedMs: Long,
-    cancelArmed: Boolean = false,
     modifier: Modifier = Modifier,
+    cancelArmed: Boolean = false,
 ) {
     Row(
         modifier = modifier

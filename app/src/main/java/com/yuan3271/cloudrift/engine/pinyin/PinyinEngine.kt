@@ -257,7 +257,9 @@ class PinyinEngine(
     private fun personalize(code: String, ranked: List<Candidate>, limit: Int): List<Candidate> {
         val profile = profile ?: return ranked
 
-        val habits = ranked.map { it to profile.habit(code, it.text) }
+        // 一次算完整张列表的习惯分（前缀只切一遍），不是每个候选各扫一遍——这条路径每次按键都跑。
+        val counts = profile.habitCounts(code, ranked.map { it.text })
+        val habits = ranked.mapIndexed { index, candidate -> candidate to counts[index] }
         val promoted = habits.filter { it.second >= UserProfile.HABIT_THRESHOLD }
             .sortedByDescending { it.second }
             .map { it.first }

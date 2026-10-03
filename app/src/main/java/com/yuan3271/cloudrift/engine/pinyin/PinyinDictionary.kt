@@ -42,6 +42,9 @@ class PinyinDictionary(
      */
     private val syllableRanks = HashMap<String, Int>(1024)
 
+    /** See [syllablesStartingWith]: prefix -> the syllables it can still become, weight ordered. */
+    private val syllablesByPrefix = HashMap<String, List<String>>(64)
+
     /**
      * The readings, sorted, so "what could this code still become" costs a binary search plus a
      * short scan instead of a pass over all 56k readings on every keystroke.
@@ -207,6 +210,11 @@ class PinyinDictionary(
                 fill(initialsIndex.getOrPut(typed) { ArrayList(4) }, reading, penalty, entries)
             }
         }
+
+        // 排一次，别每次按键都排。桶只会被 [fill] 追加，而它写入的分数就是候选排序用的分数，
+        // 所以载入之后顺序就定了；此前 [wordsForInitials] 每被调一次就 sortWith 一遍，而
+        // 首字母解码对每个起点都要试 2–12 个长度的 key（一次按键几十次），这是纯粹的白排。
+        for (bucket in initialsIndex.values) bucket.sortWith(INITIALS_ORDER)
     }
 
     /**
@@ -256,8 +264,9 @@ class PinyinDictionary(
     fun wordsForInitials(initials: String, limit: Int): List<WordEntry> {
         if (initials.length < 2) return emptyList()
         val bucket = initialsIndex[initials] ?: return emptyList()
-        bucket.sortWith(compareByDescending<WordEntry> { it.score }.thenBy { it.word })
-        return bucket.take(limit)
+        // 桶在载入时已经按 [INITIALS_ORDER] 排好，这里只切一段视图：`take` 每个 key 都会拷一份
+        // 最多 60 条的列表，而这个方法在一次按键里要被调几十次。
+        return if (bucket.size <= limit) bucket else bucket.subList(0, limit)
     }
 
     /**
@@ -359,13 +368,22 @@ class PinyinDictionary(
         return if (row.size <= limit) row else row.subList(0, limit)
     }
 
+    /**
+     * 以 [prefix] 开头的音节，按语料权重从高到低。
+     *
+     * 每按一个键都要用（`addPartialCandidates` 与 `addLeadingSyllableCandidates` 各一次），而
+     * 算一次要把整张字表（400+ 音节）filter + sort 一遍，所以结果按前缀缓存：前缀要么是单个
+     * 字母，要么是缓冲区那一小截还没成音节的尾巴，键的数量是几十个而不是无限。
+     */
     fun syllablesStartingWith(prefix: String, limit: Int): List<String> {
-        val merged = LinkedHashSet(charTable.keys.filter { it.startsWith(prefix) })
-        merged.addAll(PinyinSyllables.startingWith(prefix))
-        // Most used syllable first: typing one letter should lead with 那 before 囊.
-        return merged
-            .sortedWith(compareByDescending<String> { syllableWeights[it] ?: 0 }.thenBy { it })
-            .take(limit)
+        val ordered = syllablesByPrefix.getOrPut(prefix) {
+            if (syllablesByPrefix.size >= SYLLABLE_CACHE_LIMIT) syllablesByPrefix.clear()
+            val merged = LinkedHashSet(charTable.keys.filter { it.startsWith(prefix) })
+            merged.addAll(PinyinSyllables.startingWith(prefix))
+            // Most used syllable first: typing one letter should lead with 那 before 囊.
+            merged.sortedWith(compareByDescending<String> { syllableWeights[it] ?: 0 }.thenBy { it })
+        }
+        return if (ordered.size <= limit) ordered else ordered.subList(0, limit)
     }
 
     // ---- nine key ----------------------------------------------------------------
@@ -514,18 +532,18 @@ class PinyinDictionary(
          * on screen when someone types two letters.
          */
         private const val INITIALS_PER_BUCKET = 60
-        /** Charged per rank a syllable sits down its letter's list when ranking initials hits. */
         /**
-         * Charged per rank a syllable sits down its letter's list. Kept modest: too strong and it
-         * overrules the corpus on every word, which pushed 你好 behind a dozen place names even
-         * with the common word bonus applied.
-         */
-        /**
+         * Charged per rank a syllable sits down its letter's list, when ranking initials hits.
+         *
          * Set to zero now that the dictionary carries a conversational frequency (the HSK ranks).
          * It was a proxy for "would a person say this", and a bad one: 芝's syllable is commoner
          * than 怎's, so it preferred 芝麻鱼 to 怎么样. Real frequencies do that job properly.
          */
         private const val INITIALS_RANK_PENALTY = 0
+        /** How an initials bucket is ordered; see [buildInitialsIndex] and [wordsForInitials]. */
+        private val INITIALS_ORDER = compareByDescending<WordEntry> { it.score }.thenBy { it.word }
+        /** Bounded so a long session of partial readings cannot grow the syllable cache forever. */
+        private const val SYLLABLE_CACHE_LIMIT = 256
         /** Lifts a greeting over a place name inside a bucket; see [commonWordBonus]. */
         private const val INITIALS_COMMON_BONUS = 900
 

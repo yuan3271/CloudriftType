@@ -47,6 +47,40 @@ class UserProfileTest {
         assertEquals(0, habitOf(learner, "hao", "你好"))
     }
 
+    /**
+     * The engine asks about a whole candidate list at once on every keystroke, so the batched
+     * answer has to be the same answer: same counts, same order, and a prefix of the code counts
+     * for a longer one exactly as [UserProfile.habit] does.
+     */
+    @Test
+    fun `the batched habit counts match asking one candidate at a time`() {
+        val learner = profile()
+        repeat(2) { learner.recordChoice(code = "ni", text = "你好", reading = "nihao") }
+        repeat(3) { learner.recordChoice(code = "wo", text = "我", reading = "wo") }
+
+        val texts = listOf("你好", "我", "你们", "你好")
+        val batched = learner.habitCounts("wo", texts)
+
+        assertEquals(texts.size, batched.size)
+        texts.forEachIndexed { index, text ->
+            assertEquals("$text at $index", habitOf(learner, "wo", text), batched[index])
+        }
+        // 逐字确认的那条路也要一致：一个从未出现过的候选是 0，而不是继承上一个候选的分。
+        assertEquals(0, batched[2])
+    }
+
+    @Test
+    fun `an empty code or list has no habits`() {
+        val learner = profile()
+        repeat(2) { learner.recordChoice(code = "ni", text = "你好", reading = "nihao") }
+
+        // 没有码就没有前缀可查，但候选列表的形状要原样返回：调用方按下标取值。
+        val none = learner.habitCounts("", listOf("你好"))
+        assertEquals(1, none.size)
+        assertEquals(0, none[0])
+        assertTrue(learner.habitCounts("ni", emptyList()).isEmpty())
+    }
+
     @Test
     fun `words the user spelled out are remembered and offered`() {
         val learner = profile()

@@ -59,8 +59,8 @@ fun NumberPanel(
     cornerRadius: Dp,
     keyBackground: KeyBackground,
     callbacks: KeyCallbacks,
-    labelScale: Float = 1f,
     modifier: Modifier = Modifier,
+    labelScale: Float = 1f,
 ) {
     // 四行键 + 三条缝：左右两边共用这个高度，行才对得齐。
     val gridHeight = keyHeight * STRIP_ROWS + KEY_GAP * (STRIP_ROWS - 1)

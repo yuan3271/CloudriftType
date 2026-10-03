@@ -1,5 +1,6 @@
 package com.yuan3271.cloudrift.data
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.yuan3271.cloudrift.engine.EngineRegistry
 import com.yuan3271.cloudrift.engine.emoji.EmojiCatalog
@@ -21,6 +22,11 @@ object AppGraph {
         private set
     lateinit var updates: UpdateChecker
         private set
+    /**
+     * 单例，只持有 applicationContext（[init] 就把它换成了 application context），所以这不是
+     * 会拖住 Activity 的那种静态引用。
+     */
+    @SuppressLint("StaticFieldLeak")
     lateinit var engines: EngineRegistry
         private set
 

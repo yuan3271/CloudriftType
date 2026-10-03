@@ -62,8 +62,8 @@ fun SymbolPanel(
     cornerRadius: Dp,
     keyBackground: KeyBackground,
     callbacks: KeyCallbacks,
-    labelScale: Float = 1f,
     modifier: Modifier = Modifier,
+    labelScale: Float = 1f,
 ) {
     val gridHeight = keyHeight * VISIBLE_ROWS + KEY_GAP * (VISIBLE_ROWS - 1)
     // 空串表示"还没选过"：落到第一个分类，而不是给出一页空白。

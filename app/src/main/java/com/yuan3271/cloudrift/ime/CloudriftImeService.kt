@@ -2,7 +2,6 @@ package com.yuan3271.cloudrift.ime
 
 import android.util.Log
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.view.Gravity
 import android.view.ViewGroup
 import android.view.View
@@ -19,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.core.graphics.drawable.toDrawable
 import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.input.InputWindowHost
 import com.yuan3271.cloudrift.theme.CloudriftTheme
@@ -64,7 +64,7 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         attachComposeOwnersToWindow()
         // The keyboard paints its own surface. Without this the window's own background shows as a
         // thick frame around the rounded card (and around the floating card's margins).
-        window?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        window?.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
         // The keyboard owns its own bottom inset, which is what lets the rounded surface sit
         // flush against a gesture navigation bar.
         window?.window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
@@ -221,7 +221,15 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
      */
     override fun onEvaluateFullscreenMode(): Boolean = false
 
-    override fun onEvaluateInputViewShown(): Boolean = true
+    /**
+     * 输入视图永远显示。这个输入法存在的意义就是被显示——没有"硬件键盘接管了所以不需要它"这种
+     * 情形——所以结果不取自父类；但父类那一步仍然要走完（lint `MissingSuperCall`，也是框架
+     * 更新状态的地方），只是它的返回值这里不采用。
+     */
+    override fun onEvaluateInputViewShown(): Boolean {
+        super.onEvaluateInputViewShown()
+        return true
+    }
 
     override fun onDestroy() {
         controller?.dispose()

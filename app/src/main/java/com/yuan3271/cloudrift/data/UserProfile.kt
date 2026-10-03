@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.Base64
@@ -129,6 +130,32 @@ class UserProfile(
             end--
         }
         return total
+    }
+
+    /**
+     * [habit] for a whole candidate list, in candidate order.
+     *
+     * The prefixes of [code] do not depend on the candidate, so they are cut once instead of once
+     * per candidate - and this is the middle of the keystroke path: every candidate the engine
+     * produced is asked about, on every key. The counts are identical to calling [habit] in a loop.
+     */
+    fun habitCounts(code: String, texts: List<String>): IntArray {
+        val counts = IntArray(texts.size)
+        if (code.isEmpty() || texts.isEmpty()) return counts
+        val buckets = ArrayList<Map<String, Int>>(MAX_CODE_CHARS)
+        var end = minOf(code.length, MAX_CODE_CHARS)
+        while (end > 0) {
+            choices[code.substring(0, end)]?.let(buckets::add)
+            end--
+        }
+        if (buckets.isEmpty()) return counts
+        for (index in texts.indices) {
+            val text = texts[index]
+            var total = 0
+            for (bucket in buckets) total += bucket[text] ?: 0
+            counts[index] = total
+        }
+        return counts
     }
 
     /** Words this user assembled themselves whose reading matches the code exactly. */
@@ -364,6 +391,6 @@ interface StringStore {
 private class SharedPreferencesStore(private val prefs: SharedPreferences) : StringStore {
     override fun read(key: String): String? = prefs.getString(key, null)
     override fun write(key: String, value: String) {
-        prefs.edit().putString(key, value).apply()
+        prefs.edit { putString(key, value) }
     }
 }

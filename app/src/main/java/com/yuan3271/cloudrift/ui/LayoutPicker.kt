@@ -36,10 +36,10 @@ import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 @Composable
 fun LayoutPickerOverlay(
     current: LayoutId,
+    modifier: Modifier = Modifier,
     available: List<LayoutId> = LayoutId.enabled(japaneseEnabled = false),
     onSelect: (LayoutId) -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     Box(
         modifier = modifier

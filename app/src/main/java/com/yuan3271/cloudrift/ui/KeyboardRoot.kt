@@ -42,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -159,6 +160,10 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
     }
 }
 
+// 键盘高度是按**屏幕**高度算的（autoKeyHeight），不是按窗口高度——这里的窗口就是键盘自己，
+// 拿 containerSize 当输入会绕成一个圈。Compose 的 ConfigurationScreenWidthHeight 检查针对的是
+// "用 Configuration 尺寸去布局内容"，不适用；宽度只用来把拖动的像素换算成百分比。
+@Suppress("ConfigurationScreenWidthHeight")
 @Composable
 private fun KeyboardSurface(
     state: ImeUiState,
@@ -184,7 +189,7 @@ private fun KeyboardSurface(
     val labelScale = state.keyLabelScalePercent / 100f
     // 按键区的实际高度，用来把「手指位移」换算成「按键高度变化量」（见 FloatingResize.kt）。
     // 只在真的变了才写回去，免得每次布局都触发一次重组。
-    var keyAreaHeightPx by remember { mutableStateOf(0f) }
+    var keyAreaHeightPx by remember { mutableFloatStateOf(0f) }
     // 每一页都用同一个圆角：数字页以前是拨号盘（圆角固定成半高），看上去和 26 键不是一套键，
     // 现在跟着设置走，数字键和字母键长得一样。
     val cornerRadius = state.keyCornerRadiusDp.dp

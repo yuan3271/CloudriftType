@@ -20,8 +20,8 @@ android {
         applicationId = "com.yuan3271.cloudrift"
         minSdk = 26
         targetSdk = 36
-        versionCode = 41
-        versionName = "0.2.37"
+        versionCode = 42
+        versionName = "0.2.38"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -37,7 +37,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // 侧载包，体积就是用户要下载的东西：不压缩时 dex 里躺着整套未用到的 androidx /
+            // Compose，解压后 26 MB，压完 12.4 MB；R8 之后只剩用到的那部分（见 PLAN 0.2.38）。
+            // 应用本体没有任何反射（不查 `getIdentifier`、不用 `Class.forName`），入口点写在
+            // 清单里由 AGP 保号，依赖库的 consumer rules（Compose / coroutines / OkHttp）也会自动
+            // 合进来，所以这里开全量压缩是安全的；保留规则与理由见 proguard-rules.pro。
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

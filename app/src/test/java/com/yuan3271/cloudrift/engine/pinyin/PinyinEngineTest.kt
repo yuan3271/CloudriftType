@@ -449,6 +449,35 @@ class PinyinEngineTest {
         assertEquals("你", engine.evaluate("ni").candidates.first().text)
     }
 
+    /**
+     * 首字母桶的排序从"每次 lookup 排一遍"挪到了载入时（见 `PinyinDictionary.buildInitialsIndex`），
+     * 因为一次按键会对每个起点试 2–12 长度的 key。这里钉住契约：同一把 key 反复取顺序一致、
+     * 按分数从高到低、`limit` 取的就是前几项，而且单字母仍然只给字不给词。
+     */
+    @Test
+    fun `initials buckets are ordered and stable across calls`() {
+        val all = dictionary.wordsForInitials("nh", 60).map { it.word }
+        assertTrue("nh bucket is empty", all.isNotEmpty())
+        assertEquals(all, dictionary.wordsForInitials("nh", 60).map { it.word })
+
+        val scores = dictionary.wordsForInitials("nh", 60).map { it.score }
+        assertEquals(scores.sortedDescending(), scores)
+
+        assertEquals(all.take(5), dictionary.wordsForInitials("nh", 5).map { it.word })
+        assertTrue("a single letter must not open a word bucket", dictionary.wordsForInitials("n", 10).isEmpty())
+    }
+
+    /** 音节前缀查询同理：结果按语料权重排好并缓存，`limit` 之外的部分不参与排序。 */
+    @Test
+    fun `syllable prefix lookups are ordered and limited`() {
+        val all = dictionary.syllablesStartingWith("sh", 1000)
+        assertTrue("expected several sh syllables, got $all", all.size > 5)
+        assertTrue(all.all { it.startsWith("sh") })
+        assertEquals(all.take(3), dictionary.syllablesStartingWith("sh", 3))
+        // 走缓存的那次（第二次调用）必须给出同样的顺序。
+        assertEquals(all, dictionary.syllablesStartingWith("sh", 1000))
+    }
+
     @Test
     fun `a readable full pinyin word is never buried by a 简拼 reading of the same letters`() {
         // The bug this guards: "wo" also reads as w|o = 无藕, "women" as 无藕木耳南, "shang" as

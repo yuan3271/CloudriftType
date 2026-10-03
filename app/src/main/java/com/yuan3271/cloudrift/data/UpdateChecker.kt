@@ -2,7 +2,8 @@ package com.yuan3271.cloudrift.data
 
 import android.app.DownloadManager
 import android.content.Context
-import android.net.Uri
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import com.yuan3271.cloudrift.BuildConfig
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
@@ -71,7 +72,7 @@ class UpdateChecker(
         scope.launch {
             try {
                 val found = withContext(Dispatchers.IO) { fetchLatest() }
-                prefs.edit().putLong(KEY_LAST_CHECK, now).apply()
+                prefs.edit { putLong(KEY_LAST_CHECK, now) }
                 when (found) {
                     // A null answer keeps whatever we already knew: a flaky network is not news.
                     null -> Unit
@@ -105,7 +106,7 @@ class UpdateChecker(
             append(".apk")
         }
         runCatching {
-            val request = DownloadManager.Request(Uri.parse(url))
+            val request = DownloadManager.Request(url.toUri())
                 .setTitle("云隙输入 ${info.versionName}")
                 .setDescription(if (viaMirror) "正在通过加速镜像下载" else "正在下载新版本")
                 .setMimeType(APK_MIME)
@@ -155,13 +156,13 @@ class UpdateChecker(
 
     private fun clear() {
         _available.value = null
-        prefs.edit().remove(KEY_CACHED).apply()
+        prefs.edit { remove(KEY_CACHED) }
     }
 
     private fun cache(info: UpdateInfo) {
         runCatching {
-            prefs.edit()
-                .putString(
+            prefs.edit {
+                putString(
                     KEY_CACHED,
                     JSONObject()
                         .put("version", info.versionName)
@@ -169,7 +170,7 @@ class UpdateChecker(
                         .put("apk", info.apkUrl ?: "")
                         .toString(),
                 )
-                .apply()
+            }
         }
     }
 
