@@ -93,7 +93,7 @@ class PinyinCorpusBenchmarkTest {
             println("  $mode 诊断: 第一名是原样字母 $rawTop1 次；去掉原样字母后第一名命中 $top1WithoutRaw 次")
             misses.take(8).forEach { println("    miss $it") }
             // 松地板，只防"整块功能坏掉"，不当作目标。首字母天生弱得多（一串声母本来就多解），
-            // 所以两条线分开定：全拼 50%、首字母 10%（当前分别是 492/573 与 73/573）。
+            // 所以两条线分开定：全拼 50%、首字母 10%（当前分别是 496/573 与 82/573）。
             val floor = if (mode == "全拼") rows.size / 2 else rows.size / 10
             assertTrue("$mode top5 过低: $top5/${rows.size}", top5 >= floor)
         }

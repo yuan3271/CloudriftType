@@ -75,6 +75,14 @@ data class EngineOutput(
 interface InputEngine {
     val kind: EngineKind
 
+    /**
+     * How many candidates the keyboard asks for on every keystroke. Most engines are happy with
+     * the default; the Chinese one is not, because **one syllable can ship up to a hundred single
+     * characters** and none of them is allowed to fall off the end of the list (see
+     * `PinyinEngine.CHAR_LIMIT`).
+     */
+    val candidateLimit: Int get() = DEFAULT_CANDIDATE_LIMIT
+
     /** Called on every keystroke with the full raw buffer. Must be cheap enough for typing. */
     fun evaluate(raw: String, limit: Int = DEFAULT_CANDIDATE_LIMIT): EngineOutput
 

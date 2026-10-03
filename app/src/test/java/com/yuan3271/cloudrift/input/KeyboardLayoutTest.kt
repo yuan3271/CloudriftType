@@ -67,7 +67,21 @@ class KeyboardLayoutTest {
         assertEquals(listOf("1", "2", "3"), grid[0].take(3).map { it.output })
         assertEquals(listOf("4", "5", "6"), grid[1].take(3).map { it.output })
         assertEquals(listOf("7", "8", "9"), grid[2].take(3).map { it.output })
-        assertEquals(listOf("0", "00", "."), grid[3].take(3).map { it.output })
+        // `00` 在 `0` 左边（用户点名换位）。
+        assertEquals(listOf("00", "0", "."), grid[3].take(3).map { it.output })
+    }
+
+    /**
+     * 中文（26 键）的 `Z` 左边那颗是**大小写键**，不是中英切换：切语言工具栏上那颗 `中` 一直在，
+     * 而拼音键盘上要打大写字母的场合更常见。英文本来就是 shift，日文罗马音保留语言键。
+     */
+    @Test
+    fun `the key next to z is shift in chinese and english, language in japanese`() {
+        assertEquals(KeyCode.Shift, rows(LayoutId.Pinyin26)[2].first().code)
+        assertEquals(KeyCode.Shift, rows(LayoutId.English)[2].first().code)
+        assertEquals(KeyCode.Language, rows(LayoutId.JapaneseRomaji)[2].first().code)
+        // 换掉这一颗不动行宽：shift 与语言键都是 1.5 单位。
+        assertEquals(listOf(10.0), totals(rows(LayoutId.Pinyin26)).distinct())
     }
 
     @Test
@@ -117,7 +131,7 @@ class KeyboardLayoutTest {
             |    +     1     2     3     ⌫
             |    -     4     5     6     =
             |    ×     7     8     9    换行
-            |    符     0    00     .   ABC
+            |    符    00     0     .   ABC
             """.trimMargin().trimEnd(),
             picture,
         )
@@ -172,6 +186,35 @@ class KeyboardLayoutTest {
             assertTrue("全角表里混进了半角的 $halfForm", full.none { it.output == halfForm })
             assertTrue("半角表里混进了全角的 $fullForm", half.none { it.output == fullForm })
         }
+
+        // 成对键也要逐个对账。上面那两条只查 `output.length == 1`，于是**两字键整个漏在网外**——
+        // 用户报的"全角左侧组合是半角"正是这个位置：一对里哪怕只有一个字符是半角，两字键都查不出来。
+        val asciiInFullPairs = full.filter { it.output.length == 2 }
+            .flatMap { it.output.toList() }
+            .filter { it.code in 0x21..0x7e }
+        val wideInHalfPairs = half.filter { it.output.length == 2 }
+            .flatMap { it.output.toList() }
+            .filter { it.code in 0xff00..0xffef }
+        assertTrue("全角成对键里出现了半角字符: ${asciiInFullPairs.map { it.toString() }}", asciiInFullPairs.isEmpty())
+        assertTrue("半角成对键里出现了全角字符: ${wideInHalfPairs.map { it.toString() }}", wideInHalfPairs.isEmpty())
+    }
+
+    /**
+     * 成对键本身：全角一排、半角一排，开闭成对，一字不差。第一对就是 `（）`——用户点名的那一颗。
+     */
+    @Test
+    fun `the pair keys are the paired forms of both widths`() {
+        val full = KeyboardLayouts.symbolBar(SymbolWidth.Full).filter { it.output.length == 2 }.map { it.output }
+        val half = KeyboardLayouts.symbolBar(SymbolWidth.Half).filter { it.output.length == 2 }.map { it.output }
+
+        assertEquals(
+            listOf("（）", "【】", "《》", "〈〉", "「」", "『』", "“”", "‘’", "〔〕", "〖〗"),
+            full,
+        )
+        assertEquals(listOf("()", "[]", "{}", "<>", "\"\"", "''"), half)
+        // 两字键在两套表里都摆在最前面（用户伸手就够得到的地方）。
+        assertEquals(full, KeyboardLayouts.symbolBar(SymbolWidth.Full).map { it.output }.take(full.size))
+        assertEquals(half, KeyboardLayouts.symbolBar(SymbolWidth.Half).map { it.output }.take(half.size))
     }
 
     /**

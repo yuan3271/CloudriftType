@@ -714,7 +714,7 @@ class ImeController(
     }
 
     private fun applyBuffer(raw: String) {
-        val output = engine.evaluate(raw)
+        val output = engine.evaluate(raw, engine.candidateLimit)
         val preview = output.composingPreview.ifEmpty { raw }
         _state.value = _state.value.copy(
             raw = raw,

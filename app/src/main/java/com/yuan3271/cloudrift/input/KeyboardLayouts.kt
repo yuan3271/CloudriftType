@@ -94,7 +94,14 @@ object KeyboardLayouts {
             add(KeyDef.spacer())
         }
         val bottom = buildList {
-            if (en) add(KeyDef.shift) else add(KeyDef.modifier(KeyCode.Language, languageLabel(layout)))
+            // 中文模式下 Z 旁边那颗是**大小写键**，不再是中英切换：拼音键盘上要打大写字母
+            // （英文缩写、密码、英文单词）的场合比切语言多，而切语言工具栏上那颗 `中` 一直都在。
+            // 英文本来就是 shift；日文罗马音沿用原来的语言键。
+            when {
+                layout == LayoutId.JapaneseRomaji ->
+                    add(KeyDef.modifier(KeyCode.Language, languageLabel(layout)))
+                else -> add(KeyDef.shift)
+            }
             addAll("zxcvbnm".map { letter(it, shifted) })
             add(KeyDef.backspace)
         }
@@ -257,7 +264,7 @@ object KeyboardLayouts {
      * ⎡滑⎤  1   2   3   ⌫     第一列是一条**可以滑动的竖条**（[mathStrip]），左下角
      * ⎢动⎥  4   5   6   =     固定一颗 `符`（[numberSymbolKey]）。
      * ⎢栏⎥  7   8   9   ⏎
-     * ⎣符⎦  0   00  .   ABC
+     * ⎣符⎦  00  0   .   ABC
      * ```
      *
      * 退格在最顶上（用户要求：它用得最多，别贴在角落），等号与回车各往下让一格。
@@ -266,7 +273,8 @@ object KeyboardLayouts {
         listOf(digit("1"), digit("2"), digit("3"), KeyDef.backspace.copy(weight = COLUMN)),
         listOf(digit("4"), digit("5"), digit("6"), math("=")),
         listOf(digit("7"), digit("8"), digit("9"), KeyDef.enter.copy(label = enterLabel, weight = COLUMN)),
-        listOf(digit("0"), digit("00"), digit("."), KeyDef.modifier(KeyCode.Letters, "ABC", weight = COLUMN)),
+        // `00` 在 `0` 左边（用户点名换位）。
+        listOf(digit("00"), digit("0"), digit("."), KeyDef.modifier(KeyCode.Letters, "ABC", weight = COLUMN)),
     )
 
     /**

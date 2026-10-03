@@ -5,6 +5,7 @@ import com.yuan3271.cloudrift.engine.CandidateKind
 import com.yuan3271.cloudrift.engine.EngineKind
 import com.yuan3271.cloudrift.engine.EngineOutput
 import com.yuan3271.cloudrift.engine.InputEngine
+import com.yuan3271.cloudrift.engine.english.EnglishWords
 import com.yuan3271.cloudrift.data.UserProfile
 import com.yuan3271.cloudrift.data.CandidateOrder
 
@@ -25,6 +26,12 @@ class PinyinEngine(
 ) : InputEngine {
 
     override val kind: EngineKind = if (nineKey) EngineKind.Pinyin9 else EngineKind.Pinyin26
+
+    /**
+     * 一个音节最多带 [CHAR_LIMIT] 个单字，而候选栏要能把它们都显示出来，所以中文引擎要的条数
+     * 比接口默认值多（见 [InputEngine.candidateLimit]）。
+     */
+    override val candidateLimit: Int = CANDIDATE_LIMIT
 
     private val nineKey = nineKey
 
@@ -99,7 +106,122 @@ class PinyinEngine(
             syllables = syllableSplit(buffer)?.bounds?.size?.minus(1) ?: 1,
             candidates = dedupe(candidates, limit),
         )
-        return EngineOutput(candidates = personalize(buffer, ordered, limit))
+        // 英文词按权重插进中文候选里：谁排第一由权重说了算（见 [mergeEnglish]）。
+        val merged = mergeEnglish(ordered, englishCandidates(raw, buffer), buffer.length)
+        return EngineOutput(candidates = personalize(buffer, dedupe(merged, limit), limit))
+    }
+
+    // ---- 中文模式下的英文词 --------------------------------------------------------
+
+    /**
+     * 中文模式下也能打英文词。
+     *
+     * 拼音键盘上打出 "hello"、"computer" 这种字母串时，中文引擎能给的只是几个不成词的读法
+     * （`喝理论喔`、`成欧盟铺`），而那串字母**本来就是英文单词**。规则由用户定：
+     *
+     *  - 输入长度至少 [ENGLISH_MIN_INPUT] 个字母（太短的串到处都能撞上英文词，`he`/`men` 这种）；
+     *  - **没有拼错**：屏幕上那串字母必须是候选词的前缀（`comput` → `computer`），拼到
+     *    [ENGLISH_PERCENT_NUMERATOR]% 就能上（`compu` 也出 `computer`）；
+     *  - 或者**完全输入**：整词打满（`hello`）本身就是证据，不需要百分比。
+     *
+     * 英文之间只看**拼全了多少**：越全越靠前，一样全时短的词在前（它离打满更近）。
+     * 它和中文字谁排第一见 [mergeEnglish]。
+     */
+    private fun englishCandidates(raw: String, buffer: String): List<Candidate> {
+        if (nineKey || buffer.length < ENGLISH_MIN_INPUT) return emptyList()
+        if (buffer.any { it !in 'a'..'z' }) return emptyList()
+        val matches = ArrayList<Candidate>(ENGLISH_LIMIT)
+        for (word in EnglishWords.ALL) {
+            if (word.length < buffer.length) continue
+            if (!word.startsWith(buffer)) continue
+            val typedFully = word.length == buffer.length
+            // 只打了一小半的词不算"对应"，整词打满才不需要这条。
+            if (!typedFully && word.length * ENGLISH_PERCENT_NUMERATOR > buffer.length * 100) continue
+            matches.add(
+                Candidate(
+                    text = EnglishWords.matchCase(raw, word),
+                    consumed = buffer.length,
+                    kind = CandidateKind.Prediction,
+                    score = englishWeight(buffer.length, word.length),
+                    // 没打出来的那截和码前缀补全一样淡显。
+                    unmatchedFrom = if (typedFully) -1 else buffer.length,
+                ),
+            )
+        }
+        if (matches.isEmpty()) return emptyList()
+        matches.sortWith(
+            // 拼得越全越靠前；一样全的两条，短的在前（要补的字母少）。
+            compareByDescending<Candidate> { it.score }.thenBy { it.text.length }.thenBy { it.text },
+        )
+        return if (matches.size <= ENGLISH_LIMIT) matches else matches.subList(0, ENGLISH_LIMIT)
+    }
+
+    /**
+     * 拼全了多少：[ENGLISH_MIN_WEIGHT]（刚好 [ENGLISH_PERCENT_NUMERATOR]%）→ [ENGLISH_MAX_WEIGHT]（打满）。
+     * 整数运算，免得每次按键都做浮点除法。
+     */
+    private fun englishWeight(typed: Int, length: Int): Int {
+        val span = ENGLISH_MAX_WEIGHT - ENGLISH_MIN_WEIGHT
+        val above = typed * 100 - ENGLISH_PERCENT_NUMERATOR * length
+        return ENGLISH_MIN_WEIGHT + span * above / (length * (100 - ENGLISH_PERCENT_NUMERATOR))
+    }
+
+    /**
+     * 英文词插进排好的中文候选里，位置由**权重**决定：权重高过某一颗中文候选，就排在它前面。
+     *
+     * 两边的权重同一把尺子量（0–[WHOLE_WORD_WEIGHT]）：
+     *
+     * | 候选 | 权重 | 为什么 |
+     * | --- | --- | --- |
+     * | 词典词，整串字母都是它（`women → 我们`、`shanghai → 上海`） | [WHOLE_WORD_WEIGHT] | 拼音打出了一个真词，这就是答案 |
+     * | 整串就是一个音节的单字（`chang → 常`） | [SYLLABLE_CHAR_WEIGHT] | 打的是一个完整音节，不是英文 |
+     * | 整句解码 / 码前缀补全（还有字没打出来） | [SENTENCE_WEIGHT] | 覆盖了整串，但一半是引擎猜的 |
+     * | 首字母 / 混合读法 | [INITIALS_WEIGHT] | 是"这串字母怎么读"的一种猜法，不是词 |
+     * | 只读了前半截的候选（`hello` 里的 和） | [PARTIAL_WEIGHT] | 它回答的是头两个字母，不是这串 |
+     * | 原样字母 | [PARTIAL_WEIGHT] | 读不出东西时的兜底 |
+     *
+     * 英文那边是 [ENGLISH_MIN_WEIGHT]–[ENGLISH_MAX_WEIGHT]：刚够 60% 的英文词压不过整句，
+     * 拼满的词与整词**打平**——打平时中文在前，所以 `women` 的第一位仍是 `我们`，而 `hello`
+     * 在中文这边只有不成词的读法，第一位就是 `hello`。
+     */
+    private fun mergeEnglish(
+        chinese: List<Candidate>,
+        english: List<Candidate>,
+        bufferLength: Int,
+    ): List<Candidate> {
+        if (english.isEmpty()) return chinese
+        val merged = ArrayList<Candidate>(chinese.size + english.size)
+        var index = 0
+        for (word in english) {
+            while (index < chinese.size &&
+                candidateWeight(chinese[index], bufferLength) >= word.score
+            ) {
+                merged.add(chinese[index])
+                index++
+            }
+            merged.add(word)
+        }
+        while (index < chinese.size) {
+            merged.add(chinese[index])
+            index++
+        }
+        return merged
+    }
+
+    /** 一颗中文候选在"谁排第一"这件事上的分量；量纲与理由见 [mergeEnglish]。 */
+    private fun candidateWeight(candidate: Candidate, bufferLength: Int): Int = when {
+        candidate.kind == CandidateKind.Raw -> PARTIAL_WEIGHT
+        candidate.kind == CandidateKind.Initials ||
+            candidate.kind == CandidateKind.Mixed -> INITIALS_WEIGHT
+        // 整句：分数是哨兵值（Int.MAX_VALUE），覆盖了整串。
+        candidate.score == Int.MAX_VALUE -> SENTENCE_WEIGHT
+        // 单字：整串就是一个音节时它是这串字母的答案，只覆盖前半截时它只回答那一截。
+        candidate.text.length == 1 ->
+            if (candidate.consumed >= bufferLength) SYLLABLE_CHAR_WEIGHT else PARTIAL_WEIGHT
+        // 词典词，整串字母都是它。
+        candidate.consumed >= bufferLength && candidate.unmatchedFrom < 0 -> WHOLE_WORD_WEIGHT
+        candidate.consumed >= bufferLength -> SENTENCE_WEIGHT
+        else -> PARTIAL_WEIGHT
     }
 
     /**
@@ -190,7 +312,22 @@ class PinyinEngine(
     private fun untypedCharacters(candidate: Candidate): Int =
         if (candidate.unmatchedFrom < 0) 0 else candidate.text.length - candidate.unmatchedFrom
 
-    override fun literal(raw: String): String = normalize(raw)
+    /**
+     * 原样上屏的字母：只丢掉非字母数字，**大小写照用户打的留**——中文模式下那颗大小写键不是
+     * 摆设，打了 `Hello` 再按回车就该出 `Hello`。匹配用的 [normalize] 仍然一律小写，拼音不受影响。
+     */
+    override fun literal(raw: String): String {
+        val builder = StringBuilder(raw.length)
+        for (ch in raw) {
+            when {
+                ch in 'a'..'z' -> builder.append(ch)
+                ch in 'A'..'Z' -> builder.append(ch)
+                ch in '0'..'9' -> builder.append(ch)
+                else -> Unit
+            }
+        }
+        return builder.toString()
+    }
 
     /**
      * 联想: what the association table says tends to follow what was just committed.
@@ -1392,8 +1529,18 @@ class PinyinEngine(
     }
 
     companion object {
+        /**
+         * 候选条数。48 是"一个音节的字全塞得下"这个假设下的旧值，而字表里 68 个音节超过 48 个字
+         * （`yi`/`ji`/`zhi` 这些排满 [CHAR_LIMIT]），限额一卡就把字**省略**掉了——用户点的就是
+         * 这件事。现在按"字表上限 + 词 + 英文词"留够。
+         */
+        private const val CANDIDATE_LIMIT = 128
         private const val WORD_LIMIT = 24
-        private const val CHAR_LIMIT = 48
+        /**
+         * 一个音节最多带多少单字。**必须等于** `tools/dictgen/build_dict.py` 的
+         * `MAX_CHARS_PER_SYLLABLE`：字表里有多少就出多少，不再截断。
+         */
+        private const val CHAR_LIMIT = 100
         private const val PARTIAL_SYLLABLE_LIMIT = 12
         /** How many "words this code can still become" to offer. */
         private const val COMPLETION_LIMIT = 12
@@ -1455,8 +1602,10 @@ class PinyinEngine(
         private const val WORDS_PER_STEP = 6
         /** How many whole-sentence readings to offer. */
         private const val SENTENCE_LIMIT = 8
-        /** Characters the "convert only the first syllable" fallback may add. */
-        private const val PREFIX_CHAR_LIMIT = 12
+        /**
+         * 只转换第一个音节那条兜底路可以带多少字。和 [CHAR_LIMIT] 同一个理由：**一颗字都不许省**。
+         */
+        private const val PREFIX_CHAR_LIMIT = CHAR_LIMIT
         /** Shortest buffer treated as 首字母; a single letter stays a character lookup. */
         private const val INITIALS_MIN_LENGTH = 2
         /** Shortest word initials step; single letters have no word to stand for. */
@@ -1521,6 +1670,28 @@ class PinyinEngine(
          * 整句候选，多留则同音字洗牌又铺满候选栏；详见 [attested]。
          */
         private const val UNBACKED_READINGS = 1
+
+        // ---- 中文模式下的英文词（见 [englishCandidates] 与 [mergeEnglish]）-------------
+
+        /** 少于这么多字母就不猜英文：`he`/`men`/`can` 这种串到处都是词，猜了只会添乱。 */
+        private const val ENGLISH_MIN_INPUT = 5
+        /** 一次最多给几个英文词。 */
+        private const val ENGLISH_LIMIT = 6
+        /** 拼到百分之多少就可以进候选（用户定的 60%）。 */
+        private const val ENGLISH_PERCENT_NUMERATOR = 60
+        /** 刚好拼够 [ENGLISH_PERCENT_NUMERATOR]% 时的权重。 */
+        private const val ENGLISH_MIN_WEIGHT = 700
+        /** 整词打满时的权重。 */
+        private const val ENGLISH_MAX_WEIGHT = 1000
+        /** 词典词覆盖了整串字母——拼音真的打出了一个词。 */
+        private const val WHOLE_WORD_WEIGHT = 1000
+        /** 整串就是一个音节的单字，或整句解码／码前缀补全：覆盖整串，但一半是猜的。 */
+        private const val SYLLABLE_CHAR_WEIGHT = 950
+        private const val SENTENCE_WEIGHT = 950
+        /** 首字母与混合读法：一种读法，不是词。 */
+        private const val INITIALS_WEIGHT = 600
+        /** 只读了前半截的候选，以及原样字母。 */
+        private const val PARTIAL_WEIGHT = 400
         /** Nine key signatures never get longer than the longest syllable's digit count. */
         private const val MAX_T9_SYLLABLE_LENGTH = 6
         /**

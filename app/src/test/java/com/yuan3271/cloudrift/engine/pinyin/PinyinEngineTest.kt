@@ -596,4 +596,77 @@ class PinyinEngineTest {
         println("nh bucket: " + dictionary.wordsForInitials("nh", 40).map { it.word })
         println("jt bucket: " + dictionary.wordsForInitials("jt", 20).map { it.word })
     }
+
+    /**
+     * 一个音节的单字**一颗都不许省**。字表里 `ji` 排满 100 个字，而候选条数原来卡在 48：
+     * 后一半（`髻` 就在里面）打不出来，用户点的就是这件事。
+     */
+    @Test
+    fun `every character of a syllable is offered, not just the first screenful`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val all = dictionary.charsFor("ji", 1_000)
+        assertTrue("字表里的 ji 太短，这条测试失去意义: ${all.length}", all.length >= 60)
+
+        val offered = engine.evaluate("ji", engine.candidateLimit).candidates.map { it.text }.toSet()
+        val missing = all.filterNot { offered.contains(it.toString()) }
+
+        assertTrue("这些 ji 的单字被省略了: $missing", missing.isEmpty())
+    }
+
+    /**
+     * 中文模式下的英文词。用户定下的三条：至少 5 个字母、没有拼错（是前缀）、拼到 60%（或者整词
+     * 打满）。"hello" 在中文这边只有不成词的读法，所以它排第一。
+     */
+    @Test
+    fun `an english word typed on the pinyin keyboard comes first when no chinese word reads the same`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val texts = engine.evaluate("hello", engine.candidateLimit).candidates.map { it.text }
+
+        assertEquals("hello -> $texts", "hello", texts.first())
+    }
+
+    @Test
+    fun `a chinese word that spells the same letters keeps the first slot`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val texts = engine.evaluate("women", engine.candidateLimit).candidates.map { it.text }
+
+        // 打平：整词 1000，拼满的英文词也是 1000——打平时中文在前（见 PinyinEngine.mergeEnglish）。
+        assertEquals("women -> ${texts.take(4)}", "我们", texts.first())
+        assertTrue("英文词仍要够得着: $texts", texts.contains("women"))
+    }
+
+    @Test
+    fun `an english completion needs the prefix and sixty percent`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val texts = engine.evaluate("compu", engine.candidateLimit).candidates.map { it.text }
+
+        assertTrue("compu 应该给出 computer: $texts", texts.contains("computer"))
+
+        // 5/13 ≈ 38% < 60%，`international` 不许上（`interest` 是 5/8，可以）。
+        val inter = engine.evaluate("inter", engine.candidateLimit).candidates.map { it.text }
+        assertTrue("inter 应该给出 interest: $inter", inter.contains("interest"))
+        assertTrue("inter 不该给出 international: $inter", inter.none { it == "international" })
+    }
+
+    @Test
+    fun `short buffers never guess english`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        for (code in listOf("he", "men", "can", "wo", "you")) {
+            val predictions = engine.evaluate(code, engine.candidateLimit).candidates
+                .filter { it.kind == CandidateKind.Prediction }
+            assertTrue("$code 不该猜英文: ${predictions.map { it.text }}", predictions.isEmpty())
+        }
+    }
+
+    /** 中文模式下那颗大小写键要真的管用：原样上屏保留大小写，匹配仍然一律小写。 */
+    @Test
+    fun `committing raw letters keeps the case the user typed`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("Hello", engine.literal("Hello"))
+        assertEquals("NIHAO", engine.literal("NIHAO"))
+        assertEquals("nihao", engine.literal("nihao"))
+        // 九键的缓冲区是数字，一个都不许丢。
+        assertEquals("64", PinyinEngine(dictionary, nineKey = true).literal("64"))
+    }
 }
