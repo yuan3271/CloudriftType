@@ -381,8 +381,9 @@ class PinyinEngine(
             // The rule exists to beat the *ordinary* character of the same syllable (压 for 呀, 拉
             // for 啦, 把 for 吧, 被 for 呗). It deliberately does nothing for a syllable whose own
             // first character is already a particle - 吗/嘛, 哦/噢/喔, 哟/唷 - because choosing
-            // between two particles is the pair model's business, and that is what keeps 干吗 from
-            // coming out as 干嘛.
+            // between two particles is the pair model's business. Which of 干吗 / 干嘛 wins is
+            // therefore the corpus's call, not this rule's (the everyday-word layer later gave
+            // 干嘛 the corpus evidence, see build_dict.py's TATOEBA_FLOOR_BASE).
             val particles = if (isTail) {
                 val tail = TAIL_PARTICLES[syllable].orEmpty()
                 val best = dictionary.charsFor(syllable, 1)

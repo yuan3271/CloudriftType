@@ -198,13 +198,16 @@ class PinyinEngineTest {
 
     @Test
     fun `the pair model still chooses between two particles of one syllable`() {
-        // 吗 and 嘛 are both 句末语气词 and both read "ma". 你在干吗 is the standard spelling and
-        // 干嘛 is the colloquial one, so the choice between them stays the corpus's, not the
-        // particle rule's: that rule only lifts a particle over the *ordinary* character of its
-        // syllable (呀 over 压, 啦 over 拉), never over another particle.
+        // 吗 and 嘛 are both 句末语气词 and both read "ma", and the choice between them stays the
+        // corpus's, not the particle rule's: that rule only lifts a particle over the *ordinary*
+        // character of its syllable (呀 over 压, 啦 over 拉), never over another particle.
+        //
+        // 语料后来变了：日常词库那一层（Tatoeba 8.9 万句，见 build_dict.py 的 TATOEBA_FLOOR_BASE）
+        // 把口语写法 `干嘛` 抬了上来（频次 21 对 5），所以语料的结论从标准写法 `干吗` 换成了它。
+        // 变的是语料，不是规则——这条用例钉的是"谁来做这个选择"。
         val engine = PinyinEngine(dictionary, nineKey = false)
 
-        assertEquals("你在干吗", engine.evaluate("nizaiganma").candidates.first().text)
+        assertEquals("你在干嘛", engine.evaluate("nizaiganma").candidates.first().text)
         assertEquals("好了吗", engine.evaluate("haolema").candidates.first().text)
     }
 
@@ -270,7 +273,7 @@ class PinyinEngineTest {
     fun `sentences of several words decode as a whole`() {
         val engine = PinyinEngine(dictionary, nineKey = false)
         val expected = mapOf(
-            "nizaiganma" to "你在干吗",
+            "nizaiganma" to "你在干嘛",
             "zhegeshoujizhenbucuo" to "这个手机真不错",
             "wojintianqulebeijing" to "我今天去了北京",
         )

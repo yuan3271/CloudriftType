@@ -37,6 +37,7 @@ Usage: python3 tools/dictgen/build_dict.py
 from __future__ import annotations
 
 import argparse
+import bz2
 import csv
 
 import json
@@ -76,6 +77,39 @@ MAX_COLLOQUIAL_WORD = 4
 # conversational - sample of the same thing the colloquial corpus measures. Off by default
 # (weight 0); `--aishell-words` turns it on and the benchmark decides whether it earns a place.
 AISHELL_TEXT = TOOLS / "raw/aishell_ner_transcript.txt"
+# Tatoeba 的中文句子（CC BY 2.0 FR，仅署名）：8.9 万句**人写的日常话**，是仓库里最大的一份
+# "人们平时怎么说"的样本。它只给**已有词**加词频，不做发现（切词用当前词表，见
+# [count_known_words]）——日常词库要的是"把人们真会打的词排到前面"，不是从句子串里发明新词。
+TATOEBA_TEXT = TOOLS / "raw/tatoeba_cmn_sentences.tsv.bz2"
+# 日常词库的第二层（比 HSK 3.0 那 4,283 个词大五倍）：凡是**真的有人写进日常句子**的词，
+# 都给一道保底分，把它抬到候选前面。`先去`、`橙子`、`合出`、`去逛` 这些词 HSK 里根本没有
+# （11,092 条里查无此词），只拿得到 jieba 给的低分，于是 `xianqu` 的首选是地名 `西安区`、
+# `chengzi` 的首选是 `城子`——这正是"日常词库不够大"的症状，Tatoeba 是补它最合适的证据。
+#
+# 它是**默认启用**的，因为用户明确要"更大的日常词库"；代价是一张有来有回的账，全部实测如下
+# （`tools/tune/everyday.py`，日常词样本 8,920 个；广谱台 573 句）：
+#
+#   | 构建 | 日常词可打性 | 广谱全拼 | 广谱首字母 | 九键二字词 | 手挑 31 | 联想 |
+#   | --- | --- | --- | --- | --- | --- | --- |
+#   | 0.2.35 基线 | 6,479（72.6%） | 453 | 82 | 415/585 | 27·11 | 27·11 |
+#   | 只开自训练读音 | 6,591（73.9%） | 434 | 79 | 419/621 | 27·11 | 27·11 |
+#   | + 日常保底（**默认**，底分 650） | **7,531（84.4%）** | 412 | 78 | 458/634 | 26·9 | 26·9 |
+#   | + 日常保底（底分 800，`--tatoeba-floor-base 800`） | 7,596（85.2%） | 382 | 88 | 463/634 | 26·10 | 26·10 |
+#
+# 底分越低越不伤全拼整句（650：−41；800：−71），越高越利于首字母 / 九键（800 的首字母 88 比
+# 基线的 82 还高）。650 是选的折中档，想偏另一边就调 `--tatoeba-floor-base`。
+#
+# 顺带把两条既有行为改掉了，都是语料说了算、不是规则变了：`干嘛`（Tatoeba 21 次）压过 `干吗`
+# （5 次），两条锁这个选择的用例跟着改成 `干嘛`；`西安` 只有 2 次而 `西岸` 有 3 次，所以门槛
+# 定在 4（见 [TATOEBA_MIN_COUNT]），`xian` 的首选仍是 `西安`。
+TATOEBA_FLOOR_BASE = 650
+TATOEBA_FLOOR_SLOPE = 40
+# 至少要在日常句子里出现这么多次才算"真有人打这个词"。门槛卡在 4 上是被两件事一起顶出来的：
+#   * 1~2 次的词（人名、错字、孤例）抬分只会把 jieba 排好的次序抹平——`dagong` 会从 `打工`
+#     变成 `大公`、`yaodian` 从 `药店` 变成 `要点`；
+#   * `西安` 只有 2 次、同音的 `西岸` 有 3 次，门槛降到 3 就会让 `xian` 的首选变成 `西岸`，
+#     一条既有用例当场变红。
+TATOEBA_MIN_COUNT = 4
 # The corpus only re-ranks words that are already common; it must not *discover* words. It is a few
 # thousand characters, far too little to judge a rare word, and letting it promote one pushes a
 # low-scoring entry into the shipped table where it can change a whole sentence decode (真不错
@@ -128,10 +162,13 @@ THUOCL_ONLY_DISCOUNT = 0.75
 UNIHAN_READINGS = TOOLS / "clean/unihan_readings.txt"
 # 专名（院校 / 行政区划）：名字该被认识，但不该靠语料频率排序——`岳阳楼区`、`清华大学` 这类词
 # 在新闻语料里的出现次数跟"有没有人打它"没关系。所以单列成固定权重的来源：
-#   (文件名, JSON 里的键（None = 值是 {代码: 名字} 的字典）, 权重, 名义频次)
+#   (文件名, JSON 里的键（None = 值是 {代码: 名字} 的字典）, 权重, 名义频次, 可去掉的后缀)
 EXTRA_NAMED_LISTS = [
-    ("raw/university_data.json", "university", 0.9, 3000),
-    ("raw/area_list.json", None, 1.0, 5000),
+    ("raw/university_data.json", "university", 0.9, 3000, ()),
+    # 行政区划表里是 `西安市` / `陕西省`，可人们打地名几乎不带尾字：`xian` 想要的是 `西安`。
+    # 不去尾的话 `西安` 只能拿 jieba 的分（683），会被同音的 `西岸` 挤下去——补上裸名之后
+    # 它是 `xian` 的擂主（740），谁也顶不掉它。
+    ("raw/area_list.json", None, 1.0, 5000, ()),
 ]
 # 词条语料（不是专名，也不是频率表）：新华字典的词条/成语（**带拼音**，等于多一份词级读音），
 # 以及一份 5 万条的成语表。三份都来自 MIT / Apache-2.0 的数据集，见 NOTICE.md。
@@ -171,6 +208,24 @@ SECOND_READING_DIVISOR = 4
 # the two character floor and the Han filter already drop a large share) and keeps the asset near
 # 5 MB.
 MAX_WORD_ROWS = 200_000
+
+# 自训练拼音对应（默认启用，`--no-trained-readings` 关）。模型由 `tools/dictgen/train_readings.py`
+# 从 MIT 的词→拼音对齐数据训练得到（`clean/trained_readings.txt`，172 KiB，入库、离线可复现）；
+# 没有词级读音的词不再把逐字读音做笛卡尔积，而是用它逐位选读音——`佛` 在本音表里首读音是 fú，
+# 训练数据显示它更常读 fó；`银行` 的 `行` 靠前字定成 háng，`地产` 的 `地` 靠后字定成 dì。
+# 首选读音仍有先验，上下文证据要够强（[TRAINED_CONTEXT_WEIGHT]）才推得翻。
+#
+# 读音本身更准（不重叠留出 41,158 词：词级读音 94.9% → 97.3%）。它同时是"词库变大"的那一步：
+# 每个词只留一条读音，同样 20 万行就从 18.8 万词装到 20.0 万词。代价是长句候选变多（广谱全拼
+# 453 → 434），实测数据见 [TATOEBA_FLOOR_BASE] 那张表。把训练读音与笛卡尔积**并存**时基准与
+# 基线逐字一致，但那样只差 12 行、等于没改，所以选了"替换"。
+TRAINED_READINGS = TOOLS / "clean/trained_readings.txt"
+# 上下文证据在对数空间里的权重，和首选读音先验的惩罚：都相对 `math.log` 的概率而言。
+TRAINED_CONTEXT_WEIGHT = 0.6
+TRAINED_PRIMARY_PRIOR = 0.7
+# 上下文里的加性平滑：某个读音在这个上下文里没出现过时给一个小概率，而不是直接判死刑
+# （上下文样本本来就不多，一见 0 就 -inf 会让模型只信见过的那一面）。
+TRAINED_SMOOTHING = 0.1
 
 HAN = re.compile(r"^[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]+$")
 SYLLABLE = re.compile(r"^[a-z]+$")
@@ -417,12 +472,109 @@ def attested_readings(phrase_readings: dict[str, list[str]]) -> dict[str, set[st
     return attested
 
 
+class TrainedReadings:
+    """自训练的字/上下文读音分布，读 `clean/trained_readings.txt`。
+
+    三条记录：`c` 是 ``P(读音|字)`` 的边缘计数，`b` 是 ``P(读音|字,前字)``、`n` 是
+    ``P(读音|字,后字)``；后两张表已经由 `train_readings.py` 剪过，只留改变结论的上下文。
+    """
+
+    def __init__(self) -> None:
+        self.unigram: dict[str, dict[str, int]] = defaultdict(dict)
+        self.previous: dict[tuple[str, str], dict[str, int]] = defaultdict(dict)
+        self.following: dict[tuple[str, str], dict[str, int]] = defaultdict(dict)
+
+    @classmethod
+    def load(cls, path: pathlib.Path) -> "TrainedReadings | None":
+        if not path.exists():
+            print(
+                f"! missing {path.name}（跑 tools/dictgen/train_readings.py 生成）",
+                file=sys.stderr,
+            )
+            return None
+        model = cls()
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                if line.startswith("#"):
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                try:
+                    if parts[0] == "c" and len(parts) == 4:
+                        model.unigram[parts[1]][parts[2]] = int(parts[3])
+                    elif parts[0] == "b" and len(parts) == 5:
+                        model.previous[(parts[1], parts[2])][parts[3]] = int(parts[4])
+                    elif parts[0] == "n" and len(parts) == 5:
+                        model.following[(parts[1], parts[2])][parts[3]] = int(parts[4])
+                except ValueError:
+                    continue
+        if not model.unigram:
+            return None
+        return model
+
+    def _score(
+        self,
+        char: str,
+        syllable: str,
+        primary: str,
+        previous: str | None,
+        following: str | None,
+    ) -> float:
+        counts = self.unigram.get(char)
+        if not counts or syllable not in counts:
+            return -math.inf
+        total = sum(counts.values())
+        score = math.log(counts[syllable] / total)
+        # 上下文是多音字的唯一出路：`(银,行)` 说 háng、`(地,产)` 说 dì，两张表都只在"与边缘
+        # 分布给出的结论不同"时才存在，所以命中即证据。
+        for context, key in ((self.previous, (previous, char)), (self.following, (char, following))):
+            if key[0] is None or key[1] is None:
+                continue
+            local = context.get(key)
+            if not local:
+                continue
+            local_total = sum(local.values())
+            share = (local.get(syllable, 0) + TRAINED_SMOOTHING) / (
+                local_total + TRAINED_SMOOTHING * max(1, len(counts))
+            )
+            score += TRAINED_CONTEXT_WEIGHT * math.log(share)
+        if primary and syllable != primary:
+            score -= TRAINED_PRIMARY_PRIOR
+        return score
+
+    def decode(self, word: str, char_readings: dict[str, list[str]]) -> tuple[str, int] | None:
+        """逐位选分最高的读音，返回 ``(读音, 用了几个非首选读音)``。
+
+        前字与后字都是词面里已知的，所以每一位的最优读音与其它位无关——逐位取 argmax 就是
+        最优，不需要 Viterbi。任何一位在模型里没有读数就整词放弃，退回笛卡尔积。
+        """
+        syllables: list[str] = []
+        alternates = 0
+        for index, char in enumerate(word):
+            options = char_readings.get(char)
+            if not options or char not in self.unigram:
+                return None
+            previous = word[index - 1] if index else None
+            following = word[index + 1] if index + 1 < len(word) else None
+            best, best_score = None, -math.inf
+            for syllable in options:
+                score = self._score(char, syllable, options[0], previous, following)
+                if score > best_score:
+                    best, best_score = syllable, score
+            if best is None or best_score == -math.inf:
+                return None
+            syllables.append(best)
+            if best != options[0]:
+                alternates += 1
+        return "".join(syllables), alternates
+
+
 def readings_for(
     word: str,
     char_readings: dict[str, list[str]],
     phrase_readings: dict[str, list[str]],
     attested: dict[str, set[str]],
     allow_alternates: bool = True,
+    trained: TrainedReadings | None = None,
 ) -> list[tuple[str, int]]:
     """Cartesian product of per character readings, capped, primary first.
 
@@ -450,6 +602,13 @@ def readings_for(
         if any(not options for options in primary):
             return []
         return [("".join(options[0] for options in primary), 0)]
+    # 训练出来的读音对应（`--trained-readings`，默认关闭）：只在词级读音表没有这个词时接手，
+    # **替换**下面的笛卡尔积。它给出的读音仍然带"用了几次非首选读音"的计数，所以异读惩罚与
+    # 丢弃规则照旧生效，改变的只是"往哪边猜"。
+    if trained is not None:
+        guess = trained.decode(word, char_readings)
+        if guess is not None:
+            return [guess]
     combinations: list[tuple[list[str], int]] = [([], 0)]
     for char in word:
         options = char_readings.get(char)
@@ -495,16 +654,46 @@ def load_aishell_words(vocabulary: set[str]) -> dict[str, int]:
             if not text:
                 continue
             text = text.translate(str.maketrans({"(": "", ")": "", "[": "", "]": "", "<": "", ">": ""}))
-            index = 0
-            while index < len(text):
-                for length in range(MAX_WORD_LENGTH, 0, -1):
-                    token = text[index:index + length]
-                    if token in vocabulary:
-                        counts[token] += 1
-                        index += length
-                        break
-                else:
-                    index += 1
+            count_known_words(text, vocabulary, counts)
+    return counts
+
+
+def count_known_words(text: str, vocabulary: set[str], counts: dict[str, int]) -> None:
+    """Longest-match segmentation against the build's own vocabulary.
+
+    Every big-corpus frequency source here (AISHELL, Tatoeba) is only **evidence about words that
+    are already candidates** - never a source of new vocabulary. Letting a big everyday corpus
+    introduce words is exactly how 真不错 once got into the table from a few thousand characters.
+    """
+    index = 0
+    while index < len(text):
+        for length in range(MAX_WORD_LENGTH, 0, -1):
+            token = text[index:index + length]
+            if token in vocabulary:
+                counts[token] += 1
+                index += length
+                break
+        else:
+            index += 1
+
+
+def load_tatoeba_words(vocabulary: set[str]) -> dict[str, int]:
+    """How often each known word occurs in Tatoeba's cmn sentences (CC BY 2.0 FR).
+
+    89k human-written everyday sentences - the largest sample of "how people actually say things"
+    in the checkout, and the one source that is conversational rather than read-aloud or news.
+    Same rule as AISHELL: it only re-ranks words the build already has.
+    """
+    counts: dict[str, int] = defaultdict(int)
+    if not TATOEBA_TEXT.exists():
+        print(f"! missing {TATOEBA_TEXT.name}（跑 fetch_corpora.sh 获取）", file=sys.stderr)
+        return counts
+    with bz2.open(TATOEBA_TEXT, "rt", encoding="utf-8", errors="ignore") as handle:
+        for line in handle:
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 3:
+                continue
+            count_known_words(parts[2], vocabulary, counts)
     return counts
 
 
@@ -516,7 +705,7 @@ def load_second_readings() -> dict[str, list[str]]:
 def load_named_lists() -> dict[str, int]:
     """院校名与行政区划名 -> 分数。见 [EXTRA_NAMED_LISTS]。"""
     names: dict[str, int] = {}
-    for filename, key, weight, nominal in EXTRA_NAMED_LISTS:
+    for filename, key, weight, nominal, strip in EXTRA_NAMED_LISTS:
         path = TOOLS / filename
         if not path.exists():
             print(f"! missing {filename}（跑 tools/dictgen/fetch_corpora.sh 获取）", file=sys.stderr)
@@ -525,9 +714,14 @@ def load_named_lists() -> dict[str, int]:
         items = data.get(key, []) if key else [{"name": name} for name in data.values()]
         for item in items:
             word = item.get("name") if isinstance(item, dict) else item
-            if not word or not (2 <= len(word) <= MAX_WORD_LENGTH) or not HAN.match(word):
+            if not word or not HAN.match(word):
                 continue
-            names[word] = max(names.get(word, 0), score_of(nominal, weight))
+            score = score_of(nominal, weight)
+            # 名字本身 + 去掉尾字的那一版（`西安市` 与 `西安` 同样该被认识）。
+            for candidate in {word, *(word[: -len(suffix)] for suffix in strip if word.endswith(suffix))}:
+                if not (2 <= len(candidate) <= MAX_WORD_LENGTH):
+                    continue
+                names[candidate] = max(names.get(candidate, 0), score)
     return names
 
 
@@ -629,6 +823,30 @@ def main() -> int:
         default=MAX_WORD_ROWS,
         help=f"词表行数上限（默认 {MAX_WORD_ROWS}，改大=资产更大）",
     )
+    parser.add_argument(
+        "--no-trained-readings",
+        dest="trained_readings",
+        action="store_false",
+        help="关掉自训练读音对应，退回逐字笛卡尔积（A/B 基准测试用，见 TRAINED_READINGS）",
+    )
+    parser.add_argument(
+        "--no-tatoeba-floor",
+        dest="tatoeba_floor",
+        action="store_false",
+        help="关掉 Tatoeba 日常词库保底（A/B 基准测试用，见 TATOEBA_FLOOR_BASE）",
+    )
+    parser.add_argument(
+        "--tatoeba-floor-base",
+        type=int,
+        default=TATOEBA_FLOOR_BASE,
+        help=f"日常词保底底分（默认 {TATOEBA_FLOOR_BASE}；A/B 基准测试用）",
+    )
+    parser.add_argument(
+        "--tatoeba-min-count",
+        type=int,
+        default=TATOEBA_MIN_COUNT,
+        help=f"日常词至少要出现几次才保底（默认 {TATOEBA_MIN_COUNT}；A/B 基准测试用）",
+    )
     args = parser.parse_args()
     for path in (JIEBA, PYINYIN_DATA):
         if not path.exists():
@@ -651,6 +869,13 @@ def main() -> int:
         f"词级读音: {len(phrases)} 词 / {sum(len(v) for v in phrases.values())} 条"
         f"（{args.phrase_readings}）",
     )
+
+    trained = TrainedReadings.load(TRAINED_READINGS) if args.trained_readings else None
+    if trained is not None:
+        print(
+            f"自训练读音: {len(trained.unigram)} 个字 / "
+            f"{len(trained.previous)} 个前字上下文 / {len(trained.following)} 个后字上下文",
+        )
 
     word_scores: dict[str, int] = dict(jieba)
     # Domain vocabulary complements the corpus list rather than overriding it. A word that only a
@@ -724,6 +949,20 @@ def main() -> int:
                 touched += 1
         print(f"AISHELL 词频: {len(counts)} 个词出现，{touched} 个词加权（权重 {args.aishell_words}）")
 
+    # 日常词库第二层：Tatoeba 的 8.9 万句日常话（CC BY 2.0 FR）给"真有人说过"的词一道保底分。
+    # 这是把日常词从 4,283 个（HSK 3.0 那一层）扩到两万多个的那一层，见 [TATOEBA_FLOOR_BASE]。
+    if args.tatoeba_floor:
+        counts = load_tatoeba_words(set(word_scores))
+        touched = 0
+        for word, count in counts.items():
+            if count < args.tatoeba_min_count:
+                continue
+            floor = args.tatoeba_floor_base + int(TATOEBA_FLOOR_SLOPE * math.log10(count + 1))
+            if word_scores[word] < floor:
+                word_scores[word] = floor
+                touched += 1
+        print(f"Tatoeba 日常词库: {len(counts)} 个词出现在日常句子里，{touched} 个词抬到保底分")
+
     by_reading: dict[str, list[tuple[str, int]]] = defaultdict(list)
     # A character's own frequency as a standalone word is the right signal for ordering single
     # syllable candidates. Summing the words it appears in is not: 尼 shows up in 印尼, 索尼,
@@ -741,7 +980,12 @@ def main() -> int:
 
     for word, score in word_scores.items():
         readings = readings_for(
-            word, char_readings, phrases, attested, allow_alternates=word not in named,
+            word,
+            char_readings,
+            phrases,
+            attested,
+            allow_alternates=word not in named,
+            trained=trained,
         )
         if not readings:
             continue

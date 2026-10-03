@@ -104,6 +104,10 @@ done
 python3 "$ROOT/tools/dictgen/prepare_phrase_pinyin.py" "$RAW/phrase_pinyin_large.txt" \
   "$CLEAN/phrase_pinyin_large.txt"
 
+# 自训练拼音对应（clean/trained_readings.txt，入库）：只用 pypinyin 的 47k 也能跑，并上这张
+# 41 万的大表覆盖率更好。改了训练集或阈值就重跑这一句，产物会覆盖发布用的模型表。
+python3 "$ROOT/tools/dictgen/train_readings.py"
+
 # 表情表（iamcal/emoji-data，MIT）：Unicode 标准分组，生成 assets/emoji.txt。
 EMOJI="$RAW/emoji_data.json"
 if [ ! -f "$EMOJI" ]; then

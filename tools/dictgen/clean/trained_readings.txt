@@ -1,0 +1,13046 @@
+# 自训练拼音对应（见 tools/dictgen/train_readings.py）。
+# c<TAB>字<TAB>音节<TAB>次数           P(音节|字) 的边缘计数
+# b<TAB>前字<TAB>字<TAB>音节<TAB>次数     P(音节|字,前字)，只留改变结论的
+# n<TAB>字<TAB>后字<TAB>音节<TAB>次数     P(音节|字,后字)，只留改变结论的
+c	㞎	ba	4
+c	㤽	chou	2
+c	㧑	hui	2
+c	㹴	geng	3
+c	䜣	xin	2
+c	䳭	ji	11
+c	䴓	shi	11
+c	䴕	lie	2
+c	䴗	ju	12
+c	䴘	ti	6
+c	䴙	pi	6
+c	一	yi	4860
+c	丁	ding	557
+c	七	qi	646
+c	万	wan	934
+c	万	mo	3
+c	丈	zhang	174
+c	三	san	2573
+c	上	shang	2320
+c	下	xia	2011
+c	不	bu	9183
+c	不	fou	2
+c	与	yu	327
+c	丏	mian	2
+c	丐	gai	52
+c	丑	chou	253
+c	专	zhuan	355
+c	且	qie	135
+c	且	ju	2
+c	丕	pi	63
+c	世	shi	1268
+c	丘	qiu	300
+c	丙	bing	78
+c	业	ye	965
+c	丛	cong	171
+c	东	dong	1284
+c	丝	si	631
+c	丞	cheng	53
+c	丢	diu	134
+c	两	liang	768
+c	严	yan	462
+c	丧	sang	433
+c	个	ge	357
+c	丫	ya	59
+c	中	zhong	2631
+c	丰	feng	507
+c	丱	guan	21
+c	丱	kuang	2
+c	串	chuan	153
+c	丳	chan	2
+c	临	lin	509
+c	丸	wan	184
+c	丹	dan	568
+c	为	wei	1325
+c	主	zhu	1358
+c	丽	li	543
+c	举	ju	604
+c	乂	yi	20
+c	乃	nai	88
+c	久	jiu	295
+c	乇	tuo	2
+c	么	me	116
+c	么	mo	44
+c	么	yao	2
+c	义	yi	1217
+c	之	zhi	2735
+c	乌	wu	558
+c	乍	zha	47
+c	乎	hu	213
+c	乏	fa	138
+c	乐	le	953
+c	乐	yue	251
+c	乒	ping	11
+c	乓	pang	8
+c	乔	qiao	152
+c	乖	guai	247
+c	乘	cheng	456
+c	乘	sheng	22
+c	乙	yi	124
+c	乜	nie	12
+c	乜	mie	4
+c	九	jiu	920
+c	乞	qi	170
+c	也	ye	146
+c	习	xi	383
+c	乡	xiang	824
+c	书	shu	1593
+c	乩	ji	12
+c	买	mai	322
+c	乱	luan	758
+c	乳	ru	310
+c	乾	qian	160
+c	乾	gan	1
+c	了	le	350
+c	了	liao	246
+c	予	yu	111
+c	争	zheng	500
+c	事	shi	1831
+c	二	er	1264
+c	于	yu	646
+c	亏	kui	147
+c	云	yun	1712
+c	互	hu	197
+c	五	wu	1357
+c	井	jing	487
+c	亘	gen	49
+c	亚	ya	616
+c	些	xie	95
+c	亟	ji	28
+c	亡	wang	479
+c	亢	kang	99
+c	亢	gang	2
+c	交	jiao	1151
+c	亥	hai	32
+c	亦	yi	54
+c	产	chan	596
+c	亨	heng	84
+c	亩	mu	60
+c	享	xiang	146
+c	京	jing	337
+c	亭	ting	314
+c	亮	liang	323
+c	亲	qin	814
+c	亲	qing	12
+c	亳	bo	13
+c	亵	xie	64
+c	亶	dan	18
+c	亶	chan	1
+c	亸	duo	17
+c	亹	wei	14
+c	亹	men	1
+c	人	ren	5149
+c	亿	yi	78
+c	什	shi	158
+c	什	shen	36
+c	仁	ren	379
+c	仂	le	3
+c	仃	ding	9
+c	仄	ze	54
+c	仅	jin	48
+c	仆	pu	209
+c	仇	chou	203
+c	仇	qiu	6
+c	今	jin	301
+c	介	jie	288
+c	仍	reng	44
+c	从	cong	812
+c	从	zong	4
+c	仑	lun	49
+c	仓	cang	207
+c	仔	zai	56
+c	仔	zi	50
+c	仕	shi	68
+c	他	ta	196
+c	仗	zhang	199
+c	付	fu	183
+c	仙	xian	626
+c	仞	ren	18
+c	仟	qian	8
+c	仡	yi	8
+c	仡	ge	4
+c	代	dai	668
+c	令	ling	739
+c	以	yi	936
+c	仪	yi	427
+c	仫	mu	3
+c	们	men	95
+c	仰	yang	276
+c	仲	zhong	110
+c	仳	pi	5
+c	仵	wu	7
+c	件	jian	266
+c	价	jia	521
+c	价	jie	2
+c	任	ren	620
+c	份	fen	130
+c	仿	fang	88
+c	仿	pang	3
+c	伀	zhong	3
+c	企	qi	144
+c	伄	diao	2
+c	伈	xin	4
+c	伉	kang	33
+c	伉	gang	7
+c	伊	yi	253
+c	伋	ji	4
+c	伍	wu	126
+c	伎	ji	104
+c	伏	fu	516
+c	伐	fa	194
+c	休	xiu	433
+c	众	zhong	628
+c	优	you	348
+c	伙	huo	151
+c	会	hui	1672
+c	会	kuai	18
+c	伛	yu	21
+c	伝	yun	2
+c	伞	san	93
+c	伟	wei	134
+c	传	chuan	886
+c	传	zhuan	84
+c	伢	ya	6
+c	伤	shang	515
+c	伥	chang	10
+c	伦	lun	259
+c	伧	chen	28
+c	伧	cang	3
+c	伪	wei	194
+c	伫	zhu	39
+c	伭	xian	4
+c	伯	bo	505
+c	伯	bai	7
+c	伯	ba	2
+c	估	gu	105
+c	伲	ni	2
+c	伴	ban	153
+c	伶	ling	73
+c	伸	shen	128
+c	伺	si	75
+c	伺	ci	6
+c	伻	beng	4
+c	似	si	214
+c	似	shi	75
+c	伽	jia	58
+c	伽	qie	22
+c	伽	ga	8
+c	伾	pi	6
+c	佁	yi	2
+c	佁	chi	1
+c	佃	dian	37
+c	佃	tian	4
+c	佅	mai	2
+c	但	dan	40
+c	佉	qu	12
+c	佉	qia	1
+c	佋	zhao	2
+c	佌	ci	4
+c	位	wei	568
+c	低	di	386
+c	住	zhu	342
+c	佐	zuo	136
+c	佑	you	61
+c	体	ti	1603
+c	何	he	441
+c	佖	bi	2
+c	佗	tuo	28
+c	佗	yi	1
+c	余	yu	719
+c	佚	yi	110
+c	佛	fo	458
+c	佛	fu	16
+c	佛	bi	3
+c	佛	bo	1
+c	作	zuo	1312
+c	佝	gou	8
+c	佝	kou	1
+c	佞	ning	97
+c	佟	tong	2
+c	你	ni	85
+c	佣	yong	96
+c	佤	wa	5
+c	佥	qian	39
+c	佩	pei	180
+c	佪	huai	8
+c	佬	lao	42
+c	佯	yang	53
+c	佰	bai	5
+c	佳	jia	184
+c	併	bing	2
+c	佶	ji	9
+c	佷	hen	17
+c	佹	gui	23
+c	佺	quan	3
+c	佻	tiao	41
+c	佼	jiao	26
+c	佽	ci	7
+c	佾	yi	8
+c	使	shi	701
+c	侁	shen	4
+c	侃	kan	47
+c	侄	zhi	55
+c	侈	chi	161
+c	侉	kua	8
+c	例	li	234
+c	侍	shi	193
+c	侏	zhu	21
+c	侑	you	34
+c	侒	an	2
+c	侔	mou	19
+c	侗	dong	15
+c	侗	tong	5
+c	侘	cha	2
+c	供	gong	298
+c	侜	zhou	6
+c	依	yi	298
+c	侠	xia	87
+c	侣	lv	100
+c	侥	yao	26
+c	侥	jiao	7
+c	侦	zhen	65
+c	侧	ce	246
+c	侧	zhai	3
+c	侧	ze	2
+c	侨	qiao	68
+c	侩	kuai	22
+c	侪	chai	37
+c	侬	nong	27
+c	侭	jin	4
+c	侮	wu	93
+c	侯	hou	282
+c	侰	jiong	2
+c	侲	zhen	3
+c	侵	qin	194
+c	侹	ting	2
+c	侻	tui	11
+c	侻	tuo	1
+c	便	bian	468
+c	便	pian	40
+c	促	cu	180
+c	俄	e	89
+c	俅	qiu	3
+c	俇	guang	3
+c	俉	wu	4
+c	俊	jun	200
+c	俋	yi	2
+c	俍	liang	3
+c	俎	zu	70
+c	俏	qiao	104
+c	俐	li	26
+c	俑	yong	12
+c	俔	qian	3
+c	俗	su	653
+c	俘	fu	47
+c	俙	xi	2
+c	俚	li	57
+c	俛	mian	20
+c	俛	fu	10
+c	俜	ping	5
+c	保	bao	647
+c	俞	yu	45
+c	俞	shu	1
+c	俟	si	36
+c	俟	qi	2
+c	信	xin	1056
+c	信	shen	3
+c	俣	yu	4
+c	俦	chou	59
+c	俨	yan	21
+c	俩	lia	21
+c	俩	liang	10
+c	俪	li	44
+c	俭	jian	188
+c	修	xiu	642
+c	俯	fu	122
+c	俱	ju	106
+c	俳	pai	34
+c	俴	jian	5
+c	俵	biao	19
+c	俶	chu	17
+c	俶	ti	1
+c	俸	feng	80
+c	俺	an	7
+c	俾	bi	14
+c	倅	cui	29
+c	倈	lai	17
+c	倌	guan	16
+c	倍	bei	182
+c	倏	shu	23
+c	倒	dao	937
+c	倓	tan	3
+c	倔	jue	39
+c	倕	chui	7
+c	倖	xing	4
+c	倗	peng	2
+c	倘	tang	16
+c	倘	chang	2
+c	候	hou	336
+c	倚	yi	209
+c	倛	qi	3
+c	倜	ti	12
+c	倜	zhou	2
+c	借	jie	283
+c	倠	sui	2
+c	倡	chang	134
+c	倥	kong	11
+c	倦	juan	121
+c	倨	ju	45
+c	倩	qian	51
+c	倪	ni	44
+c	倬	zhuo	6
+c	倭	wo	25
+c	倮	luo	15
+c	倰	leng	4
+c	倳	zi	3
+c	倸	cai	4
+c	债	zhai	151
+c	倻	ye	2
+c	值	zhi	244
+c	倾	qing	352
+c	偁	cheng	3
+c	偃	yan	160
+c	偆	chun	2
+c	假	jia	588
+c	偈	ji	29
+c	偈	jie	2
+c	偊	yu	3
+c	偌	ruo	3
+c	偎	wei	36
+c	偏	pian	395
+c	偓	wo	2
+c	偕	xie	26
+c	做	zuo	380
+c	停	ting	348
+c	偞	ye	2
+c	偟	huang	10
+c	偠	yao	2
+c	偢	chou	8
+c	健	jian	220
+c	偨	ci	2
+c	偪	bi	25
+c	偫	zhi	4
+c	偬	zong	9
+c	偭	mian	5
+c	偲	cai	4
+c	偲	si	2
+c	偶	ou	203
+c	偷	tou	242
+c	偻	lv	31
+c	偻	lou	9
+c	偾	fen	28
+c	偿	chang	69
+c	傀	gui	13
+c	傀	kui	12
+c	傂	zhi	2
+c	傅	fu	128
+c	傈	li	7
+c	傉	nu	4
+c	傍	bang	127
+c	傍	pang	9
+c	傎	dian	5
+c	傒	xi	13
+c	傔	qian	8
+c	傛	rong	3
+c	傜	yao	9
+c	傞	suo	4
+c	傣	dai	2
+c	傥	tang	29
+c	傧	bin	18
+c	储	chu	205
+c	傩	nuo	19
+c	傪	can	2
+c	傫	lei	5
+c	催	cui	124
+c	傮	zao	3
+c	傯	zong	2
+c	傱	song	5
+c	傲	ao	200
+c	傺	chi	4
+c	傻	sha	89
+c	傽	zhang	4
+c	僁	xie	2
+c	僄	piao	13
+c	僇	lu	37
+c	僈	man	6
+c	僊	xian	10
+c	僋	tan	2
+c	僎	zhuan	2
+c	像	xiang	289
+c	僓	tui	2
+c	僔	zun	3
+c	僖	xi	2
+c	僚	liao	100
+c	僝	chan	9
+c	僝	zhuan	2
+c	僠	bo	2
+c	僦	jiu	36
+c	僧	seng	211
+c	僩	xian	4
+c	僪	yu	5
+c	僬	jiao	6
+c	僭	jian	104
+c	僮	tong	74
+c	僮	zhuang	1
+c	僰	bo	6
+c	僳	su	6
+c	僵	jiang	64
+c	僶	min	3
+c	僻	pi	103
+c	僽	zhou	8
+c	僾	ai	2
+c	僿	sai	7
+c	儁	jun	61
+c	儅	dang	2
+c	儆	jing	42
+c	儇	xuan	7
+c	儋	dan	11
+c	儎	zai	2
+c	儒	ru	177
+c	儓	tai	2
+c	儗	ni	14
+c	儛	wu	20
+c	儜	ning	4
+c	儡	lei	15
+c	儥	yu	3
+c	儳	chan	2
+c	儿	er	2984
+c	兀	wu	91
+c	允	yun	141
+c	元	yuan	700
+c	兄	xiong	166
+c	充	chong	265
+c	兆	zhao	169
+c	先	xian	626
+c	光	guang	1335
+c	克	ke	907
+c	免	mian	254
+c	免	wen	3
+c	兑	dui	84
+c	兔	tu	207
+c	兕	si	24
+c	兖	yan	3
+c	党	dang	451
+c	兜	dou	138
+c	兟	shen	2
+c	兢	jing	59
+c	入	ru	891
+c	兦	wang	2
+c	全	quan	672
+c	八	ba	1143
+c	公	gong	1749
+c	六	liu	849
+c	六	lu	7
+c	兮	xi	17
+c	兰	lan	580
+c	共	gong	562
+c	关	guan	959
+c	兴	xing	727
+c	兵	bing	1012
+c	其	qi	696
+c	其	ji	4
+c	具	ju	405
+c	典	dian	460
+c	兹	zi	99
+c	兹	ci	5
+c	养	yang	705
+c	兼	jian	240
+c	兽	shou	247
+c	冀	ji	47
+c	冁	chan	4
+c	内	nei	1106
+c	内	na	4
+c	冈	gang	100
+c	冉	ran	26
+c	册	ce	198
+c	再	zai	249
+c	冏	jiong	9
+c	冒	mao	323
+c	冒	mo	2
+c	冓	gou	4
+c	冔	xu	2
+c	冕	mian	88
+c	冗	rong	112
+c	冘	you	2
+c	写	xie	275
+c	军	jun	1028
+c	农	nong	412
+c	冠	guan	581
+c	冢	zhong	107
+c	冤	yuan	225
+c	冥	ming	301
+c	冬	dong	250
+c	冯	feng	127
+c	冯	ping	7
+c	冰	bing	635
+c	冱	hu	16
+c	冲	chong	589
+c	决	jue	483
+c	况	kuang	103
+c	冶	ye	134
+c	冷	leng	470
+c	冻	dong	171
+c	冽	lie	33
+c	净	jing	160
+c	凄	qi	155
+c	准	zhun	325
+c	凇	song	4
+c	凈	jing	49
+c	凉	liang	300
+c	凊	qing	7
+c	凋	diao	83
+c	凌	ling	237
+c	减	jian	231
+c	凑	cou	112
+c	凓	li	3
+c	凘	si	3
+c	凛	lin	52
+c	凝	ning	250
+c	几	ji	356
+c	凡	fan	288
+c	凤	feng	798
+c	凫	fu	99
+c	凭	ping	177
+c	凮	feng	2
+c	凯	kai	85
+c	凰	huang	50
+c	凳	deng	41
+c	凶	xiong	346
+c	凸	tu	61
+c	凹	ao	69
+c	凹	wa	3
+c	出	chu	1719
+c	击	ji	529
+c	凼	dang	5
+c	函	han	261
+c	凾	han	3
+c	凿	zao	171
+c	凿	zuo	1
+c	刀	dao	674
+c	刁	diao	102
+c	刃	ren	129
+c	分	fen	2031
+c	切	qie	766
+c	刈	yi	33
+c	刊	kan	153
+c	刌	cun	3
+c	刍	chu	76
+c	刎	wen	12
+c	刑	xing	408
+c	划	hua	209
+c	刓	wan	30
+c	刔	jue	2
+c	刖	yue	11
+c	列	lie	487
+c	刘	liu	143
+c	则	ze	335
+c	刚	gang	278
+c	创	chuang	288
+c	刜	fu	2
+c	初	chu	317
+c	删	shan	76
+c	判	pan	230
+c	刦	jie	6
+c	刨	bao	31
+c	刨	pao	26
+c	利	li	1267
+c	别	bie	776
+c	刬	chan	55
+c	刭	jing	4
+c	刮	gua	152
+c	到	dao	454
+c	刲	kui	8
+c	刳	ku	42
+c	制	zhi	1013
+c	刷	shua	189
+c	券	quan	175
+c	券	xuan	3
+c	刹	sha	57
+c	刹	cha	30
+c	刺	ci	494
+c	刻	ke	495
+c	刼	jie	23
+c	刽	gui	4
+c	刿	gui	22
+c	剀	kai	15
+c	剁	duo	12
+c	剂	ji	288
+c	剃	ti	40
+c	剉	cuo	13
+c	削	xue	249
+c	削	xiao	32
+c	剋	kei	2
+c	剌	la	229
+c	前	qian	930
+c	剏	chuang	4
+c	剐	gua	8
+c	剑	jian	344
+c	剔	ti	100
+c	剕	fei	3
+c	剖	pou	133
+c	剗	chan	6
+c	剚	zi	4
+c	剜	wan	16
+c	剞	ji	4
+c	剟	duo	15
+c	剠	lve	2
+c	剡	yan	24
+c	剡	shan	9
+c	剥	bao	173
+c	剥	bo	70
+c	剧	ju	371
+c	剨	huo	5
+c	剩	sheng	88
+c	剪	jian	178
+c	剭	wu	2
+c	副	fu	209
+c	割	ge	236
+c	剳	da	2
+c	剸	tuan	25
+c	剺	li	4
+c	剽	piao	82
+c	剿	jiao	59
+c	剿	chao	5
+c	劀	gua	2
+c	劁	qiao	2
+c	劂	jue	2
+c	劄	zha	16
+c	劈	pi	141
+c	劒	jian	9
+c	劓	yi	7
+c	劖	chan	10
+c	劗	zuan	3
+c	劘	mo	20
+c	劙	li	3
+c	劚	zhu	6
+c	力	li	1423
+c	劝	quan	186
+c	办	ban	276
+c	功	gong	760
+c	加	jia	626
+c	务	wu	519
+c	劣	lie	145
+c	动	dong	1503
+c	助	zhu	340
+c	努	nu	54
+c	劫	jie	260
+c	劬	qu	28
+c	劭	shao	12
+c	励	li	97
+c	劲	jin	290
+c	劲	jing	62
+c	劳	lao	578
+c	劵	juan	2
+c	効	xiao	32
+c	劻	kuang	6
+c	劼	jie	2
+c	劾	he	47
+c	势	shi	531
+c	勀	ke	2
+c	勃	bo	141
+c	勅	chi	18
+c	勇	yong	255
+c	勉	mian	78
+c	勋	xun	113
+c	勌	juan	5
+c	勍	qing	7
+c	勐	meng	5
+c	勑	lai	42
+c	勒	le	276
+c	勒	lei	15
+c	勖	xu	17
+c	勗	xu	5
+c	勘	kan	85
+c	勚	yi	9
+c	募	mu	63
+c	勠	lu	2
+c	勤	qin	285
+c	勦	jiao	2
+c	勰	xie	3
+c	勷	rang	7
+c	勷	xiang	1
+c	勺	shao	58
+c	勾	gou	221
+c	勿	wu	90
+c	匀	yun	65
+c	匄	gai	15
+c	包	bao	584
+c	匆	cong	34
+c	匈	xiong	20
+c	匉	peng	2
+c	匊	ju	2
+c	匌	ge	3
+c	匍	pu	11
+c	匏	pao	35
+c	匐	fu	12
+c	匔	gong	2
+c	匕	bi	29
+c	化	hua	1647
+c	北	bei	852
+c	匙	chi	26
+c	匙	shi	16
+c	匜	yi	6
+c	匝	za	57
+c	匟	kang	3
+c	匠	jiang	211
+c	匡	kuang	161
+c	匣	xia	72
+c	匦	gui	18
+c	匪	fei	124
+c	匮	kui	88
+c	匮	gui	7
+c	匳	lian	5
+c	匵	du	3
+c	匶	jiu	3
+c	匹	pi	168
+c	区	qu	1578
+c	区	ou	1
+c	医	yi	285
+c	匼	ke	5
+c	匽	yan	15
+c	匾	bian	36
+c	匿	ni	143
+c	十	shi	961
+c	千	qian	934
+c	卅	sa	3
+c	升	sheng	355
+c	午	wu	156
+c	卉	hui	51
+c	半	ban	731
+c	卍	wan	3
+c	华	hua	987
+c	协	xie	256
+c	卑	bei	199
+c	卑	bi	2
+c	卒	zu	242
+c	卒	cu	12
+c	卓	zhuo	147
+c	单	dan	802
+c	单	chan	7
+c	单	shan	7
+c	卖	mai	502
+c	南	nan	1158
+c	南	na	3
+c	卙	ji	2
+c	博	bo	511
+c	卜	bu	189
+c	卜	bo	40
+c	卞	bian	22
+c	卟	bu	2
+c	占	zhan	279
+c	卡	ka	381
+c	卡	qia	24
+c	卢	lu	190
+c	卤	lu	115
+c	卦	gua	79
+c	卧	wo	232
+c	卫	wei	411
+c	卬	ang	26
+c	卭	qiong	8
+c	卮	zhi	17
+c	卯	mao	69
+c	印	yin	524
+c	危	wei	281
+c	卲	shao	5
+c	即	ji	199
+c	却	que	192
+c	卵	luan	156
+c	卷	juan	364
+c	卸	xie	65
+c	卺	jin	3
+c	卻	que	2
+c	卿	qing	140
+c	厀	xi	3
+c	厂	chang	189
+c	厂	han	1
+c	厄	e	114
+c	厅	ting	132
+c	历	li	511
+c	厈	han	3
+c	厉	li	374
+c	压	ya	518
+c	厌	yan	225
+c	厎	di	16
+c	厓	ya	20
+c	厕	ce	70
+c	厕	si	3
+c	厖	mang	26
+c	厘	li	129
+c	厚	hou	332
+c	厝	cuo	51
+c	原	yuan	674
+c	厢	xiang	69
+c	厥	jue	60
+c	厦	sha	47
+c	厦	xia	6
+c	厨	chu	104
+c	厩	jiu	20
+c	厫	ao	3
+c	厮	si	110
+c	厹	qiu	3
+c	去	qu	521
+c	县	xian	2034
+c	参	can	506
+c	参	shen	69
+c	参	cen	16
+c	叅	can	2
+c	叆	ai	6
+c	又	you	66
+c	叉	cha	181
+c	及	ji	360
+c	友	you	376
+c	双	shuang	474
+c	反	fan	871
+c	发	fa	2292
+c	叔	shu	128
+c	取	qu	696
+c	受	shou	520
+c	变	bian	862
+c	叙	xu	185
+c	叚	jia	2
+c	叛	pan	92
+c	叟	sou	83
+c	叠	die	212
+c	叡	rui	23
+c	口	kou	1836
+c	古	gu	959
+c	句	ju	460
+c	句	gou	13
+c	另	ling	67
+c	叨	dao	82
+c	叨	tao	13
+c	叩	kou	72
+c	只	zhi	248
+c	叫	jiao	228
+c	召	zhao	135
+c	召	shao	8
+c	叭	ba	40
+c	叮	ding	31
+c	可	ke	1432
+c	台	tai	1148
+c	台	yi	1
+c	叱	chi	73
+c	史	shi	460
+c	右	you	247
+c	叴	qiu	2
+c	叵	po	13
+c	叶	ye	654
+c	叶	xie	15
+c	号	hao	784
+c	司	si	620
+c	叹	tan	238
+c	叻	le	4
+c	叼	diao	5
+c	叽	ji	52
+c	叿	hong	2
+c	吁	yu	56
+c	吁	xu	30
+c	吃	chi	583
+c	各	ge	217
+c	吆	yao	14
+c	吇	zi	2
+c	合	he	1658
+c	合	ge	5
+c	吉	ji	402
+c	吊	diao	269
+c	同	tong	1452
+c	名	ming	1360
+c	后	hou	1140
+c	吏	li	323
+c	吐	tu	327
+c	向	xiang	489
+c	吒	zha	8
+c	吓	xia	61
+c	吓	he	9
+c	吕	lv	105
+c	吖	a	12
+c	吗	ma	15
+c	吚	yi	14
+c	君	jun	475
+c	吝	lin	72
+c	吞	tun	202
+c	吟	yin	251
+c	吠	fei	64
+c	吡	bi	15
+c	吣	qin	2
+c	吤	jie	2
+c	否	fou	96
+c	否	pi	46
+c	吧	ba	74
+c	吨	dun	22
+c	吩	fen	9
+c	吪	e	3
+c	含	han	385
+c	听	ting	511
+c	听	yin	1
+c	吭	keng	40
+c	吭	hang	23
+c	吮	shun	27
+c	启	qi	246
+c	吰	hong	4
+c	吱	zhi	33
+c	吱	zi	17
+c	吲	yin	3
+c	吴	wu	254
+c	吵	chao	67
+c	吷	xue	7
+c	吸	xi	213
+c	吹	chui	359
+c	吺	dou	4
+c	吻	wen	77
+c	吼	hou	56
+c	吽	hong	6
+c	吽	ou	3
+c	吾	wu	127
+c	呀	ya	59
+c	呃	e	10
+c	呆	dai	184
+c	呈	cheng	117
+c	告	gao	475
+c	告	gu	3
+c	告	ju	1
+c	呋	fu	2
+c	呐	na	24
+c	呒	wu	11
+c	呓	yi	19
+c	呕	ou	77
+c	呖	li	6
+c	呗	bai	20
+c	呗	bei	1
+c	员	yuan	618
+c	呙	guo	3
+c	呛	qiang	26
+c	呜	wu	57
+c	呞	shi	2
+c	呢	ne	26
+c	呢	ni	26
+c	呤	ling	9
+c	呥	ran	2
+c	呦	you	10
+c	周	zhou	585
+c	呪	zhou	38
+c	呫	tie	7
+c	呫	che	1
+c	呭	yi	2
+c	呰	zi	6
+c	呱	gua	42
+c	呱	gu	18
+c	呲	ci	6
+c	呲	zi	3
+c	味	wei	412
+c	呴	hou	25
+c	呴	xu	7
+c	呵	he	153
+c	呵	ke	2
+c	呵	a	1
+c	呶	nao	24
+c	呷	xia	13
+c	呷	ga	5
+c	呸	pei	5
+c	呹	yi	2
+c	呻	shen	21
+c	呼	hu	424
+c	命	ming	1031
+c	呾	da	7
+c	呿	qu	14
+c	咀	ju	29
+c	咀	zui	24
+c	咂	za	35
+c	咄	duo	48
+c	咆	pao	13
+c	咇	bi	4
+c	咈	fu	20
+c	咋	za	26
+c	咋	ze	9
+c	咋	zha	3
+c	和	he	1141
+c	和	huo	43
+c	和	hu	3
+c	咍	hai	20
+c	咎	jiu	123
+c	咏	yong	131
+c	咐	fu	9
+c	咒	zhou	58
+c	咔	ka	8
+c	咕	gu	75
+c	咖	ka	33
+c	咖	ga	4
+c	咘	bu	2
+c	咙	long	19
+c	咚	dong	16
+c	咛	ning	2
+c	咝	si	3
+c	咠	qi	2
+c	咡	er	3
+c	咢	e	10
+c	咣	guang	6
+c	咤	zha	52
+c	咥	xi	5
+c	咧	lie	43
+c	咨	zi	83
+c	咩	mie	2
+c	咪	mi	17
+c	咫	zhi	30
+c	咬	yao	106
+c	咭	ji	23
+c	咮	zhou	7
+c	咯	ge	46
+c	咯	ka	2
+c	咯	luo	1
+c	咱	zan	17
+c	咱	za	4
+c	咲	xiao	5
+c	咳	hai	30
+c	咳	ke	27
+c	咴	hui	5
+c	咶	huai	16
+c	咶	shi	2
+c	咷	tao	11
+c	咸	xian	137
+c	咺	xuan	3
+c	咻	xiu	18
+c	咽	yan	126
+c	咽	ye	21
+c	咿	yi	26
+c	哀	ai	322
+c	品	pin	666
+c	哂	shen	17
+c	哃	tong	3
+c	哄	hong	146
+c	哅	xiong	3
+c	哆	duo	36
+c	哆	chi	2
+c	哇	wa	65
+c	哈	ha	308
+c	哉	zai	43
+c	哌	pai	3
+c	响	xiang	331
+c	哎	ai	11
+c	哏	gen	12
+c	哐	kuang	5
+c	哑	ya	168
+c	哒	da	20
+c	哓	xiao	20
+c	哔	bi	16
+c	哕	yue	19
+c	哕	hui	2
+c	哗	hua	106
+c	哙	kuai	12
+c	哚	duo	5
+c	哜	ji	11
+c	哝	nong	26
+c	哞	mou	4
+c	哟	yo	9
+c	哢	long	6
+c	哤	mang	2
+c	哥	ge	217
+c	哦	o	13
+c	哦	e	3
+c	哧	chi	27
+c	哨	shao	113
+c	哩	li	60
+c	哪	na	46
+c	哪	ne	2
+c	哪	nei	2
+c	哫	zu	4
+c	哬	he	2
+c	哭	ku	175
+c	哮	xiao	23
+c	哰	lao	6
+c	哱	bo	4
+c	哲	zhe	123
+c	哳	zha	5
+c	哴	liang	2
+c	哵	ba	3
+c	哺	bu	91
+c	哼	heng	29
+c	哽	geng	24
+c	唁	yan	13
+c	唃	gu	4
+c	唅	han	7
+c	唆	suo	36
+c	唇	chun	214
+c	唈	yi	4
+c	唉	ai	8
+c	唌	yan	4
+c	唏	xi	17
+c	唐	tang	226
+c	唑	zuo	15
+c	唓	che	3
+c	唔	wu	19
+c	唛	ma	3
+c	唝	gong	4
+c	唠	lao	28
+c	唢	suo	2
+c	唣	zao	3
+c	唤	huan	73
+c	唧	ji	63
+c	唪	beng	4
+c	唫	yin	11
+c	唬	hu	32
+c	唬	xia	1
+c	售	shou	112
+c	唯	wei	106
+c	唰	shua	7
+c	唱	chang	343
+c	唲	er	4
+c	唳	li	20
+c	唵	an	9
+c	唶	jie	12
+c	唷	yo	8
+c	唼	sha	16
+c	唽	xi	2
+c	唾	tuo	85
+c	唿	hu	11
+c	啀	ai	3
+c	啁	zhou	16
+c	啁	zhao	1
+c	啃	ken	18
+c	啄	zhuo	79
+c	啅	zhuo	7
+c	商	shang	591
+c	啉	lin	9
+c	啊	a	5
+c	啌	qiang	9
+c	啍	tun	6
+c	啎	wu	3
+c	啐	cui	7
+c	啑	die	6
+c	啕	tao	18
+c	啖	dan	48
+c	啙	zi	5
+c	啛	cui	4
+c	啜	chuo	56
+c	啜	chuai	1
+c	啡	fei	34
+c	啤	pi	25
+c	啥	sha	12
+c	啦	la	81
+c	啧	ze	23
+c	啪	pa	35
+c	啫	zhe	2
+c	啬	se	56
+c	啭	zhuan	16
+c	啮	nie	88
+c	啰	luo	55
+c	啴	tan	5
+c	啴	chan	3
+c	啵	bo	6
+c	啶	ding	13
+c	啷	lang	21
+c	啸	xiao	104
+c	啻	chi	8
+c	啼	ti	88
+c	啾	jiu	29
+c	喀	ka	65
+c	喁	yong	11
+c	喁	yu	1
+c	喂	wei	23
+c	喃	nan	25
+c	善	shan	671
+c	喆	zhe	11
+c	喇	la	114
+c	喈	jie	8
+c	喉	hou	156
+c	喊	han	59
+c	喋	die	16
+c	喋	zha	1
+c	喏	nuo	20
+c	喏	re	3
+c	喑	yin	8
+c	喒	zan	3
+c	喓	yao	4
+c	喔	wo	8
+c	喔	o	3
+c	喘	chuan	63
+c	喙	hui	62
+c	喜	xi	336
+c	喝	he	155
+c	喟	kui	12
+c	喣	xu	18
+c	喤	huang	7
+c	喧	xuan	125
+c	喨	liang	2
+c	喭	yan	3
+c	喱	li	4
+c	喳	zha	43
+c	喳	cha	8
+c	喵	miao	3
+c	喷	pen	170
+c	喹	kui	5
+c	喻	yu	110
+c	喽	lou	23
+c	喾	ku	3
+c	嗁	ti	2
+c	嗃	he	2
+c	嗄	a	4
+c	嗅	xiu	13
+c	嗉	su	6
+c	嗌	ai	3
+c	嗑	ke	11
+c	嗒	da	32
+c	嗒	ta	8
+c	嗓	sang	42
+c	嗔	chen	40
+c	嗖	sou	10
+c	嗙	pang	2
+c	嗛	qian	5
+c	嗜	shi	41
+c	嗝	ge	10
+c	嗟	jie	114
+c	嗡	weng	18
+c	嗢	wa	3
+c	嗣	si	78
+c	嗤	chi	15
+c	嗥	hao	8
+c	嗦	suo	17
+c	嗨	hai	7
+c	嗪	qin	7
+c	嗫	nie	10
+c	嗬	he	3
+c	嗲	dia	2
+c	嗳	ai	12
+c	嗵	tong	2
+c	嗷	ao	15
+c	嗸	ao	3
+c	嗹	lian	3
+c	嗻	zhe	3
+c	嗽	sou	18
+c	嗽	shu	2
+c	嗾	sou	6
+c	嘀	di	5
+c	嘁	qi	11
+c	嘅	kai	8
+c	嘈	cao	28
+c	嘉	jia	125
+c	嘌	piao	7
+c	嘎	ga	61
+c	嘏	gu	11
+c	嘑	hu	8
+c	嘘	xu	39
+c	嘛	ma	15
+c	嘟	du	23
+c	嘣	beng	4
+c	嘤	ying	15
+c	嘧	mi	4
+c	嘬	zuo	8
+c	嘱	zhu	31
+c	嘲	chao	64
+c	嘲	zhao	2
+c	嘴	zui	594
+c	嘶	si	30
+c	嘷	hao	6
+c	嘹	liao	5
+c	嘻	xi	30
+c	嘿	hei	36
+c	噀	xun	7
+c	噉	dan	6
+c	噌	ceng	3
+c	噍	jiao	9
+c	噎	ye	44
+c	噏	xi	5
+c	噔	deng	10
+c	噗	pu	6
+c	噙	qin	4
+c	噜	lu	34
+c	噢	o	3
+c	噣	zhou	4
+c	噤	jin	23
+c	器	qi	912
+c	噩	e	18
+c	噪	zao	108
+c	噫	yi	10
+c	噬	shi	52
+c	噭	jiao	3
+c	噱	jue	17
+c	噱	xue	3
+c	噶	ga	32
+c	噷	hen	5
+c	噻	sai	5
+c	噼	pi	3
+c	嚄	huo	2
+c	嚅	ru	11
+c	嚎	hao	27
+c	嚏	ti	15
+c	嚓	cha	13
+c	嚓	ca	5
+c	嚘	you	5
+c	嚚	yin	8
+c	嚜	me	2
+c	嚣	xiao	42
+c	嚣	ao	4
+c	嚬	pin	10
+c	嚯	huo	2
+c	嚱	xi	4
+c	嚵	chan	3
+c	嚷	rang	42
+c	嚼	jiao	78
+c	嚼	jue	21
+c	囊	nang	356
+c	囏	jian	3
+c	囒	lan	2
+c	囓	nie	2
+c	囔	nang	7
+c	囚	qiu	115
+c	四	si	1059
+c	囝	jian	4
+c	回	hui	952
+c	囟	xin	5
+c	因	yin	312
+c	囡	nan	7
+c	团	tuan	466
+c	囤	dun	13
+c	囤	tun	7
+c	囫	hu	8
+c	园	yuan	327
+c	囮	e	8
+c	困	kun	271
+c	囱	cong	7
+c	围	wei	217
+c	囵	lun	9
+c	囷	qun	26
+c	囹	ling	8
+c	固	gu	336
+c	国	guo	2033
+c	图	tu	705
+c	囿	you	44
+c	圂	hun	2
+c	圃	pu	66
+c	圄	yu	17
+c	圆	yuan	443
+c	圈	quan	231
+c	圈	juan	23
+c	圉	yu	33
+c	圊	qing	6
+c	圌	chui	3
+c	圜	huan	53
+c	圜	yuan	6
+c	圞	luan	6
+c	土	tu	1115
+c	圢	ting	2
+c	圣	sheng	532
+c	在	zai	653
+c	圩	xu	16
+c	圩	wei	8
+c	圩	yu	1
+c	圪	ge	26
+c	圬	wu	5
+c	圭	gui	117
+c	圮	pi	36
+c	圯	yi	9
+c	地	de	6848
+c	地	di	3114
+c	圳	zhen	6
+c	圹	kuang	23
+c	场	chang	890
+c	圻	qi	36
+c	圾	ji	28
+c	址	zhi	72
+c	坂	ban	46
+c	均	jun	173
+c	坊	fang	175
+c	坋	ben	2
+c	坋	fen	1
+c	坌	ben	25
+c	坍	tan	13
+c	坎	kan	127
+c	坏	huai	251
+c	坏	pi	5
+c	坐	zuo	703
+c	坑	keng	168
+c	块	kuai	183
+c	坚	jian	272
+c	坛	tan	198
+c	坜	li	2
+c	坝	ba	67
+c	坞	wu	37
+c	坟	fen	114
+c	坠	zhui	147
+c	坡	po	129
+c	坤	kun	81
+c	坦	tan	155
+c	坨	tuo	15
+c	坩	gan	4
+c	坪	ping	38
+c	坫	dian	4
+c	坭	ni	2
+c	坯	pi	43
+c	坰	jiong	18
+c	坱	yang	8
+c	坲	fo	2
+c	坳	ao	20
+c	坵	qiu	4
+c	坶	mu	2
+c	坷	ke	15
+c	坻	di	22
+c	坻	chi	1
+c	坼	che	40
+c	坿	fu	5
+c	垂	chui	342
+c	垃	la	32
+c	垄	long	58
+c	垅	long	8
+c	垆	lu	26
+c	型	xing	278
+c	垌	dong	2
+c	垒	lei	145
+c	垓	gai	28
+c	垛	duo	58
+c	垜	duo	9
+c	垝	gui	3
+c	垠	yin	35
+c	垡	fa	8
+c	垢	gou	151
+c	垣	yuan	115
+c	垤	die	12
+c	垦	ken	50
+c	垩	e	28
+c	垫	dian	130
+c	垮	kua	24
+c	垯	da	2
+c	垲	kai	9
+c	垸	yuan	7
+c	垽	yin	2
+c	埂	geng	7
+c	埃	ai	127
+c	埆	que	8
+c	埇	yong	2
+c	埊	di	2
+c	埋	mai	132
+c	埋	man	8
+c	城	cheng	1008
+c	埏	shan	19
+c	埏	yan	2
+c	埒	lie	33
+c	埔	pu	30
+c	埔	bu	3
+c	埕	cheng	2
+c	埘	shi	2
+c	埙	xun	10
+c	埚	guo	9
+c	埛	jiong	2
+c	埜	ye	7
+c	埝	nian	3
+c	域	yu	187
+c	埠	bu	24
+c	埤	pi	17
+c	埭	dai	10
+c	埯	an	2
+c	埲	beng	2
+c	埳	kan	15
+c	埴	zhi	24
+c	埵	duo	7
+c	埶	yi	21
+c	埶	shi	6
+c	埸	yi	4
+c	培	pei	73
+c	基	ji	494
+c	埻	zhun	4
+c	埽	sao	37
+c	堀	ku	10
+c	堁	ke	6
+c	堂	tang	680
+c	堄	ni	3
+c	堆	dui	171
+c	堇	jin	17
+c	堋	peng	3
+c	堍	tu	2
+c	堑	qian	48
+c	堕	duo	148
+c	堕	hui	2
+c	堙	yin	38
+c	堛	bi	2
+c	堞	die	20
+c	堠	hou	31
+c	堡	bao	74
+c	堡	pu	36
+c	堡	bu	9
+c	堣	yu	2
+c	堤	di	107
+c	堤	ti	1
+c	堥	mao	2
+c	堦	jie	2
+c	堧	ruan	2
+c	堨	ai	7
+c	堪	kan	95
+c	堮	e	5
+c	堰	yan	36
+c	堲	ji	4
+c	堵	du	80
+c	堶	tuo	3
+c	塄	leng	3
+c	塈	xi	3
+c	塉	ji	12
+c	塌	ta	109
+c	塍	cheng	24
+c	塑	su	67
+c	塔	ta	337
+c	塕	weng	4
+c	塘	tang	116
+c	塙	que	4
+c	塝	bang	2
+c	塞	sai	466
+c	塞	se	128
+c	塟	zang	3
+c	塠	dui	5
+c	填	tian	199
+c	塬	yuan	3
+c	塸	ou	2
+c	塺	mei	3
+c	塾	shu	29
+c	墀	chi	30
+c	墁	man	7
+c	境	jing	290
+c	墅	shu	29
+c	墆	di	7
+c	墈	kan	2
+c	墉	yong	27
+c	墋	chen	2
+c	墌	zhi	2
+c	墐	jin	5
+c	墒	shang	21
+c	墓	mu	152
+c	墔	cui	2
+c	墖	ta	4
+c	墙	qiang	308
+c	墚	liang	2
+c	增	zeng	214
+c	墟	xu	77
+c	墦	fan	3
+c	墨	mo	473
+c	墩	dun	64
+c	墪	dun	2
+c	墫	zun	2
+c	墬	di	4
+c	墯	duo	8
+c	墱	deng	2
+c	墺	ao	2
+c	墼	ji	4
+c	壁	bi	337
+c	壃	jiang	3
+c	壄	ye	8
+c	壅	yong	65
+c	壍	qian	14
+c	壎	xun	2
+c	壏	lan	2
+c	壑	he	107
+c	壒	ai	8
+c	壕	hao	20
+c	壖	ruan	10
+c	壝	wei	8
+c	壤	rang	188
+c	士	shi	980
+c	壬	ren	24
+c	壮	zhuang	309
+c	声	sheng	1270
+c	壳	ke	106
+c	壳	qiao	25
+c	壶	hu	200
+c	壸	kun	18
+c	壹	yi	69
+c	壻	xu	44
+c	处	chu	797
+c	备	bei	406
+c	夊	sui	2
+c	复	fu	649
+c	夏	xia	355
+c	夏	jia	2
+c	夐	xuan	17
+c	夐	xiong	1
+c	夔	kui	43
+c	夕	xi	241
+c	外	wai	1222
+c	夙	su	89
+c	多	duo	1047
+c	夜	ye	692
+c	够	gou	63
+c	夤	yin	7
+c	夥	huo	8
+c	大	da	5214
+c	大	dai	51
+c	大	tai	7
+c	天	tian	3273
+c	太	tai	602
+c	夫	fu	993
+c	夬	guai	4
+c	夭	yao	114
+c	央	yang	111
+c	夯	hang	29
+c	夯	ben	4
+c	失	shi	841
+c	失	yi	1
+c	头	tou	3797
+c	夷	yi	383
+c	夸	kua	196
+c	夹	jia	271
+c	夹	ga	1
+c	夺	duo	327
+c	夼	kuang	6
+c	奁	lian	46
+c	奂	huan	13
+c	奄	yan	62
+c	奇	qi	658
+c	奇	ji	22
+c	奈	nai	118
+c	奉	feng	342
+c	奊	xie	3
+c	奋	fen	212
+c	奎	kui	33
+c	奏	zou	278
+c	契	qi	254
+c	奓	zha	12
+c	奔	ben	282
+c	奕	yi	46
+c	奖	jiang	149
+c	套	tao	278
+c	奘	zang	2
+c	奚	xi	64
+c	奠	dian	91
+c	奡	ao	7
+c	奢	she	104
+c	奤	ha	3
+c	奥	ao	330
+c	奥	yu	1
+c	奧	ao	3
+c	奫	yun	6
+c	奬	jiang	117
+c	奭	shi	3
+c	奰	bi	8
+c	女	nv	1149
+c	奴	nu	267
+c	奶	nai	168
+c	奸	jian	348
+c	她	ta	9
+c	好	hao	1354
+c	妁	shuo	4
+c	如	ru	1329
+c	妃	fei	98
+c	妄	wang	161
+c	妆	zhuang	209
+c	妇	fu	417
+c	妈	ma	81
+c	妊	ren	7
+c	妍	yan	119
+c	妐	zhong	2
+c	妒	du	83
+c	妓	ji	78
+c	妖	yao	172
+c	妗	jin	6
+c	妙	miao	367
+c	妞	niu	14
+c	妣	bi	15
+c	妤	yu	2
+c	妥	tuo	88
+c	妨	fang	29
+c	妩	wu	8
+c	妪	yu	36
+c	妫	gui	4
+c	妬	du	15
+c	妮	ni	17
+c	妯	zhou	3
+c	妲	da	6
+c	妳	nai	7
+c	妷	zhi	3
+c	妸	e	2
+c	妹	mei	110
+c	妺	mo	2
+c	妻	qi	223
+c	妾	qie	78
+c	姁	xu	9
+c	姆	mu	109
+c	姊	zi	44
+c	始	shi	241
+c	姌	ran	3
+c	姏	man	3
+c	姐	jie	79
+c	姑	gu	238
+c	姒	si	13
+c	姓	xing	186
+c	委	wei	464
+c	姕	zi	2
+c	姗	shan	20
+c	姘	pin	10
+c	姙	ren	3
+c	姚	yao	36
+c	姜	jiang	82
+c	姝	shu	34
+c	姞	ji	2
+c	姣	jiao	36
+c	姤	gou	3
+c	姥	lao	33
+c	姥	mu	5
+c	姧	jian	3
+c	姨	yi	65
+c	姫	ji	1
+c	姫	zhen	1
+c	姬	ji	117
+c	姱	kua	26
+c	姹	cha	15
+c	姻	yin	104
+c	姼	shi	2
+c	姽	gui	2
+c	姿	zi	207
+c	娀	song	3
+c	威	wei	488
+c	娃	wa	98
+c	娄	lou	59
+c	娅	ya	20
+c	娆	rao	17
+c	娇	jiao	201
+c	娈	luan	6
+c	娉	ping	29
+c	娌	li	4
+c	娑	suo	26
+c	娒	wu	2
+c	娓	wei	12
+c	娖	chuo	7
+c	娘	niang	278
+c	娙	xing	4
+c	娜	na	36
+c	娜	nuo	19
+c	娟	juan	28
+c	娠	shen	7
+c	娣	di	12
+c	娥	e	93
+c	娩	mian	16
+c	娩	wan	1
+c	娭	xi	8
+c	娭	ai	2
+c	娱	yu	104
+c	娲	wa	16
+c	娴	xian	23
+c	娵	ju	8
+c	娶	qu	37
+c	娸	qi	2
+c	娼	chang	28
+c	娽	lu	3
+c	婀	e	10
+c	婆	po	260
+c	婉	wan	113
+c	婊	biao	5
+c	婐	wo	2
+c	婑	wo	6
+c	婓	fei	3
+c	婕	jie	3
+c	婗	ni	2
+c	婘	quan	5
+c	婚	hun	240
+c	婞	xing	8
+c	婢	bi	68
+c	婣	yin	8
+c	婥	nao	3
+c	婧	jing	2
+c	婪	lan	30
+c	婬	yin	13
+c	婳	hua	3
+c	婴	ying	97
+c	婵	chan	10
+c	婶	shen	18
+c	婷	ting	21
+c	婹	yao	3
+c	婺	wu	10
+c	婿	xu	55
+c	媄	mei	2
+c	媆	ruan	2
+c	媌	miao	4
+c	媍	fu	2
+c	媒	mei	155
+c	媕	an	9
+c	媖	ying	2
+c	媚	mei	187
+c	媛	yuan	29
+c	媞	ti	2
+c	媟	xie	28
+c	媠	duo	11
+c	媠	tuo	2
+c	媢	mao	17
+c	媦	wei	2
+c	媪	ao	27
+c	媮	yu	5
+c	媮	tou	3
+c	媰	chu	2
+c	媱	yao	2
+c	媲	pi	11
+c	媳	xi	44
+c	媵	ying	28
+c	媸	chi	2
+c	媺	mei	5
+c	媻	pan	5
+c	媾	gou	15
+c	媿	kui	25
+c	嫁	jia	88
+c	嫂	sao	49
+c	嫇	ming	3
+c	嫈	ying	2
+c	嫉	ji	66
+c	嫋	niao	3
+c	嫌	xian	124
+c	嫏	lang	3
+c	嫒	ai	2
+c	嫔	pin	31
+c	嫕	yi	5
+c	嫖	piao	17
+c	嫘	lei	2
+c	嫚	man	54
+c	嫜	zhang	2
+c	嫟	ni	2
+c	嫠	li	25
+c	嫡	di	51
+c	嫢	gui	3
+c	嫣	yan	18
+c	嫥	zhuan	2
+c	嫦	chang	4
+c	嫩	nen	87
+c	嫪	lao	5
+c	嫫	mo	5
+c	嫭	hu	2
+c	嫮	hu	15
+c	嫱	qiang	6
+c	嫶	qiao	2
+c	嫺	xian	14
+c	嫽	liao	4
+c	嬃	xu	2
+c	嬉	xi	75
+c	嬖	bi	46
+c	嬗	shan	22
+c	嬛	qiong	7
+c	嬛	huan	6
+c	嬛	xuan	3
+c	嬥	tiao	5
+c	嬬	ru	2
+c	嬲	niao	7
+c	嬴	ying	33
+c	嬷	mo	8
+c	嬷	ma	1
+c	嬿	yan	6
+c	孀	shuang	22
+c	孃	rang	9
+c	孄	lan	2
+c	孅	qian	11
+c	孊	mi	2
+c	孋	li	4
+c	子	zi	6043
+c	孑	jie	43
+c	孔	kong	311
+c	孕	yun	72
+c	孖	ma	5
+c	字	zi	989
+c	存	cun	418
+c	孙	sun	340
+c	孚	fu	52
+c	孛	bo	17
+c	孛	bei	2
+c	孜	zi	84
+c	孝	xiao	201
+c	孟	meng	122
+c	孢	bao	12
+c	季	ji	193
+c	孤	gu	561
+c	孥	nu	15
+c	学	xue	2075
+c	孩	hai	118
+c	孪	luan	6
+c	孬	nao	6
+c	孰	shu	55
+c	孱	chan	49
+c	孱	can	1
+c	孲	ya	3
+c	孳	zi	38
+c	孴	ni	3
+c	孵	fu	12
+c	孷	li	2
+c	學	xue	2
+c	孺	ru	39
+c	孼	nie	7
+c	孽	nie	154
+c	孾	ying	4
+c	宁	ning	474
+c	宁	zhu	1
+c	宂	rong	88
+c	它	ta	39
+c	宄	gui	6
+c	宅	zhai	203
+c	宇	yu	245
+c	守	shou	616
+c	安	an	1369
+c	宋	song	128
+c	完	wan	275
+c	宏	hong	171
+c	宓	mi	6
+c	宓	fu	5
+c	宕	dang	78
+c	宗	zong	469
+c	官	guan	1263
+c	宙	zhou	37
+c	定	ding	1033
+c	宛	wan	92
+c	宛	yuan	2
+c	宜	yi	235
+c	宝	bao	664
+c	实	shi	938
+c	宠	chong	248
+c	审	shen	327
+c	客	ke	910
+c	宣	xuan	354
+c	室	shi	665
+c	宥	you	70
+c	宦	huan	102
+c	宧	yi	2
+c	宪	xian	195
+c	宫	gong	754
+c	宬	cheng	5
+c	宰	zai	172
+c	害	hai	399
+c	宴	yan	243
+c	宵	xiao	159
+c	家	jia	2436
+c	家	jie	5
+c	家	gu	2
+c	宸	chen	84
+c	容	rong	700
+c	宼	kou	3
+c	宽	kuan	308
+c	宾	bin	343
+c	宿	su	471
+c	宿	xiu	60
+c	寀	cai	10
+c	寂	ji	113
+c	寃	yuan	33
+c	寄	ji	320
+c	寅	yin	62
+c	密	mi	650
+c	寇	kou	143
+c	寋	jian	3
+c	富	fu	446
+c	寐	mei	51
+c	寒	han	791
+c	寓	yu	133
+c	寔	shi	3
+c	寖	jin	55
+c	寘	zhi	11
+c	寛	kuan	4
+c	寝	qin	259
+c	寞	mo	21
+c	察	cha	428
+c	寠	lou	10
+c	寡	gua	323
+c	寤	wu	42
+c	寥	liao	73
+c	寨	zhai	73
+c	寮	liao	91
+c	寰	huan	36
+c	寱	yi	5
+c	寳	bao	43
+c	寸	cun	323
+c	对	dui	869
+c	寺	si	204
+c	寻	xun	269
+c	寻	xin	3
+c	导	dao	379
+c	寿	shou	338
+c	尀	po	2
+c	封	feng	582
+c	射	she	604
+c	射	ye	7
+c	射	yi	2
+c	将	jiang	697
+c	将	qiang	15
+c	尉	wei	105
+c	尉	yu	9
+c	尊	zun	368
+c	小	xiao	2210
+c	少	shao	589
+c	尔	er	1036
+c	尕	ga	7
+c	尖	jian	232
+c	尗	shu	2
+c	尘	chen	536
+c	尚	shang	242
+c	尜	ga	3
+c	尝	chang	100
+c	尠	xian	5
+c	尤	you	115
+c	尥	liao	3
+c	尧	yao	48
+c	尨	meng	13
+c	尨	mang	2
+c	尩	wang	3
+c	尪	wang	30
+c	尬	ga	13
+c	尰	zhong	2
+c	就	jiu	438
+c	尴	gan	9
+c	尸	shi	230
+c	尹	yin	65
+c	尺	chi	453
+c	尺	che	5
+c	尻	kao	14
+c	尼	ni	427
+c	尽	jin	631
+c	尾	wei	713
+c	尾	yi	12
+c	尿	niao	115
+c	尿	sui	10
+c	局	ju	552
+c	屁	pi	84
+c	层	ceng	362
+c	屃	xi	5
+c	屄	bi	9
+c	居	ju	658
+c	屈	qu	357
+c	屉	ti	16
+c	届	jie	34
+c	屋	wu	382
+c	屌	diao	3
+c	屎	shi	63
+c	屎	xi	1
+c	屏	ping	246
+c	屏	bing	49
+c	屐	ji	49
+c	屑	xie	138
+c	展	zhan	315
+c	屖	xi	2
+c	屙	e	8
+c	屝	fei	4
+c	属	shu	449
+c	属	zhu	52
+c	屟	xie	2
+c	屠	tu	155
+c	屡	lv	47
+c	屣	xi	33
+c	履	lv	360
+c	屦	ju	73
+c	屧	xie	13
+c	屩	jue	13
+c	屮	che	7
+c	屯	tun	277
+c	屯	zhun	9
+c	山	shan	2866
+c	屴	li	3
+c	屹	yi	24
+c	屺	qi	5
+c	屼	wu	15
+c	屿	yu	30
+c	岁	sui	455
+c	岂	qi	59
+c	岂	kai	3
+c	岈	ya	4
+c	岊	jie	2
+c	岋	e	2
+c	岌	ji	20
+c	岏	wan	7
+c	岐	qi	73
+c	岑	cen	80
+c	岔	cha	48
+c	岕	jie	4
+c	岖	qu	11
+c	岗	gang	98
+c	岘	xian	11
+c	岚	lan	44
+c	岛	dao	321
+c	岝	zuo	3
+c	岟	yang	2
+c	岠	ju	6
+c	岢	ke	4
+c	岣	gou	3
+c	岧	tiao	8
+c	岨	qu	12
+c	岩	yan	341
+c	岪	fu	5
+c	岫	xiu	42
+c	岬	jia	8
+c	岭	ling	193
+c	岱	dai	24
+c	岳	yue	179
+c	岵	hu	5
+c	岷	min	17
+c	岸	an	170
+c	岿	kui	10
+c	峄	yi	8
+c	峇	ba	6
+c	峉	e	3
+c	峋	xun	9
+c	峍	lu	8
+c	峒	dong	13
+c	峒	tong	7
+c	峗	wei	5
+c	峙	zhi	79
+c	峙	shi	2
+c	峞	wei	2
+c	峡	xia	95
+c	峣	yao	25
+c	峤	qiao	35
+c	峥	zheng	15
+c	峦	luan	52
+c	峨	e	55
+c	峩	e	6
+c	峪	yu	6
+c	峭	qiao	127
+c	峯	feng	81
+c	峰	feng	195
+c	峳	you	2
+c	峻	jun	213
+c	峿	yu	3
+c	崁	kan	4
+c	崂	lao	2
+c	崃	lai	8
+c	崄	xian	56
+c	崅	que	2
+c	崆	kong	11
+c	崇	chong	240
+c	崎	qi	50
+c	崒	zu	24
+c	崔	cui	33
+c	崕	ya	2
+c	崖	ya	137
+c	崚	ling	7
+c	崛	jue	28
+c	崝	zheng	3
+c	崟	yin	20
+c	崤	xiao	18
+c	崥	pi	3
+c	崦	yan	7
+c	崧	song	8
+c	崩	beng	200
+c	崪	zu	8
+c	崫	jue	4
+c	崭	zhan	32
+c	崮	gu	3
+c	崯	yin	2
+c	崱	ze	6
+c	崴	wai	4
+c	崴	wei	4
+c	崷	qiu	3
+c	崹	ti	2
+c	崽	zai	19
+c	崿	e	23
+c	嵁	kan	5
+c	嵂	lv	8
+c	嵃	yan	2
+c	嵇	ji	11
+c	嵊	sheng	6
+c	嵋	mei	5
+c	嵌	qian	43
+c	嵌	kan	1
+c	嵎	yu	17
+c	嵑	ke	2
+c	嵒	yan	3
+c	嵓	yan	11
+c	嵖	cha	2
+c	嵘	rong	7
+c	嵚	qin	30
+c	嵝	lou	4
+c	嵞	tu	2
+c	嵠	xi	3
+c	嵥	jie	2
+c	嵩	song	41
+c	嵫	zi	4
+c	嵬	wei	36
+c	嵯	cuo	7
+c	嵰	qian	3
+c	嵲	nie	6
+c	嵴	ji	2
+c	嵷	song	2
+c	嵸	zong	5
+c	嵺	liao	4
+c	嵼	chan	3
+c	嵽	di	3
+c	嵾	cen	6
+c	嶂	zhang	43
+c	嶃	zhan	2
+c	嶈	qiang	2
+c	嶊	zui	3
+c	嶐	long	5
+c	嶒	ceng	15
+c	嶓	bo	3
+c	嶕	jiao	3
+c	嶘	zhan	2
+c	嶙	lin	26
+c	嶚	liao	5
+c	嶜	jin	2
+c	嶝	deng	6
+c	嶞	duo	3
+c	嶟	zun	3
+c	嶪	ye	12
+c	嶫	ye	2
+c	嶬	yi	3
+c	嶭	nie	7
+c	嶰	xie	6
+c	嶱	ke	2
+c	嶷	ni	22
+c	嶷	yi	2
+c	嶻	jie	11
+c	巃	long	3
+c	巅	dian	19
+c	巆	ying	2
+c	巇	xi	17
+c	巉	chan	30
+c	巍	wei	57
+c	巑	cuan	5
+c	巗	yan	4
+c	巘	yan	28
+c	川	chuan	358
+c	州	zhou	628
+c	巡	xun	205
+c	巢	chao	167
+c	工	gong	1182
+c	左	zuo	335
+c	巧	qiao	362
+c	巨	ju	280
+c	巩	gong	23
+c	巫	wu	96
+c	差	cha	470
+c	差	chai	92
+c	差	ci	14
+c	己	ji	337
+c	已	yi	194
+c	巳	si	17
+c	巴	ba	789
+c	巵	zhi	26
+c	巷	xiang	197
+c	巷	hang	4
+c	巽	xun	32
+c	巾	jin	256
+c	帀	za	9
+c	币	bi	199
+c	市	shi	1541
+c	布	bu	896
+c	帅	shuai	137
+c	帆	fan	123
+c	师	shi	782
+c	帉	fen	3
+c	帊	pa	3
+c	希	xi	207
+c	帏	wei	74
+c	帐	zhang	319
+c	帑	tang	45
+c	帒	dai	3
+c	帓	mo	2
+c	帔	pei	23
+c	帕	pa	99
+c	帖	tie	297
+c	帘	lian	125
+c	帙	zhi	48
+c	帚	zhou	69
+c	帛	bo	112
+c	帜	zhi	44
+c	帝	di	402
+c	帟	yi	13
+c	帡	ping	6
+c	帢	qia	9
+c	帣	juan	2
+c	帤	ru	2
+c	带	dai	769
+c	帧	zhen	10
+c	帨	shui	16
+c	帬	qun	10
+c	席	xi	472
+c	帮	bang	153
+c	帱	chou	17
+c	帱	dao	3
+c	帷	wei	125
+c	常	chang	696
+c	帻	ze	27
+c	帼	guo	10
+c	帽	mao	246
+c	幂	mi	27
+c	幄	wo	62
+c	幅	fu	115
+c	幈	ping	4
+c	幌	huang	44
+c	幍	tao	2
+c	幎	mi	2
+c	幐	teng	5
+c	幓	shan	2
+c	幔	man	47
+c	幕	mu	258
+c	幖	biao	2
+c	幙	mu	17
+c	幛	zhang	16
+c	幝	chan	2
+c	幞	fu	7
+c	幡	fan	93
+c	幢	zhuang	51
+c	幢	chuang	11
+c	幦	mi	3
+c	幨	chan	11
+c	幪	meng	11
+c	幭	mie	2
+c	幮	chu	2
+c	幰	xian	24
+c	干	gan	1235
+c	平	ping	1407
+c	年	nian	1269
+c	年	ning	1
+c	并	bing	394
+c	幸	xing	258
+c	幺	yao	58
+c	幻	huan	148
+c	幼	you	132
+c	幽	you	520
+c	幾	ji	4
+c	广	guang	536
+c	广	yan	1
+c	庀	pi	6
+c	庂	ze	2
+c	庄	zhuang	240
+c	庆	qing	284
+c	庇	bi	73
+c	庉	dun	4
+c	床	chuang	413
+c	庋	gui	12
+c	庌	ya	3
+c	序	xu	348
+c	庐	lu	136
+c	庑	wu	33
+c	库	ku	295
+c	应	ying	825
+c	底	di	598
+c	底	de	1
+c	庖	pao	54
+c	店	dian	219
+c	庙	miao	218
+c	庚	geng	75
+c	庛	ci	2
+c	府	fu	419
+c	庞	pang	69
+c	废	fei	329
+c	庠	xiang	28
+c	庥	xiu	16
+c	度	du	990
+c	度	duo	57
+c	座	zuo	365
+c	庨	xiao	4
+c	庪	gui	2
+c	庬	mang	5
+c	庭	ting	348
+c	庯	bu	3
+c	庰	bing	2
+c	庳	bi	19
+c	庵	an	40
+c	庶	shu	160
+c	康	kang	230
+c	庸	yong	252
+c	庾	yu	50
+c	廇	liu	2
+c	廉	lian	252
+c	廊	lang	83
+c	廋	sou	16
+c	廌	zhi	4
+c	廏	jiu	6
+c	廐	jiu	19
+c	廑	jin	5
+c	廑	qin	1
+c	廒	ao	5
+c	廓	kuo	76
+c	廔	lou	2
+c	廕	yin	24
+c	廖	liao	8
+c	廗	dai	2
+c	廙	yi	3
+c	廛	chan	35
+c	廞	xin	7
+c	廥	kuai	10
+c	廧	qiang	5
+c	廨	xie	17
+c	廪	lin	90
+c	廱	yong	10
+c	廵	xun	3
+c	延	yan	351
+c	廷	ting	126
+c	建	jian	358
+c	廼	nai	2
+c	廿	nian	8
+c	开	kai	1297
+c	弁	bian	65
+c	异	yi	663
+c	弃	qi	415
+c	弄	nong	537
+c	弄	long	10
+c	弆	ju	3
+c	弇	yan	13
+c	弈	yi	24
+c	弊	bi	238
+c	弋	yi	51
+c	式	shi	568
+c	弑	shi	13
+c	弓	gong	297
+c	引	yin	684
+c	弗	fu	101
+c	弘	hong	102
+c	弚	tui	2
+c	弛	chi	110
+c	弟	di	307
+c	弟	ti	6
+c	张	zhang	602
+c	弢	tao	15
+c	弥	mi	174
+c	弦	xian	311
+c	弧	hu	74
+c	弩	nu	97
+c	弭	mi	55
+c	弮	quan	2
+c	弯	wan	123
+c	弰	shao	2
+c	弱	ruo	380
+c	強	jiang	2
+c	弸	peng	5
+c	弹	dan	425
+c	弹	tan	163
+c	强	qiang	893
+c	强	jiang	20
+c	弼	bi	43
+c	彀	gou	26
+c	彄	kou	4
+c	彈	dan	2
+c	彊	jiang	2
+c	彊	qiang	2
+c	归	gui	671
+c	当	dang	1191
+c	彔	lu	2
+c	录	lu	176
+c	彖	tuan	6
+c	彗	hui	25
+c	彘	zhi	39
+c	彝	yi	108
+c	彡	shan	2
+c	彡	xian	1
+c	形	xing	850
+c	彣	wen	3
+c	彤	tong	47
+c	彦	yan	58
+c	彧	yu	8
+c	彩	cai	419
+c	彪	biao	50
+c	彫	diao	8
+c	彬	bin	33
+c	彭	peng	65
+c	彭	bang	2
+c	彯	piao	11
+c	彰	zhang	72
+c	影	ying	714
+c	彴	zhuo	11
+c	彷	pang	13
+c	彷	fang	1
+c	役	yi	289
+c	彻	che	199
+c	彼	bi	85
+c	往	wang	314
+c	征	zheng	499
+c	徂	cu	38
+c	径	jing	240
+c	待	dai	505
+c	徇	xun	83
+c	很	hen	200
+c	徉	yang	12
+c	徊	huai	23
+c	徊	hui	2
+c	律	lv	452
+c	徐	xu	124
+c	徒	tu	377
+c	徕	lai	20
+c	得	de	1319
+c	得	dei	20
+c	徘	pai	11
+c	徙	xi	97
+c	徜	chang	6
+c	御	yu	392
+c	徤	jian	3
+c	徦	jia	3
+c	徧	bian	65
+c	徨	huang	15
+c	循	xun	187
+c	徭	yao	33
+c	微	wei	696
+c	徯	xi	11
+c	徵	zhi	11
+c	徵	zheng	6
+c	德	de	1247
+c	徻	hui	2
+c	徼	jiao	91
+c	徼	yao	2
+c	徽	hui	160
+c	徾	mei	2
+c	心	xin	3525
+c	必	bi	276
+c	忆	yi	75
+c	忉	dao	8
+c	忌	ji	214
+c	忍	ren	227
+c	忏	chan	31
+c	忐	tan	12
+c	忑	te	12
+c	忒	tui	33
+c	忒	te	9
+c	忔	yi	7
+c	忕	tai	2
+c	忖	cun	23
+c	志	zhi	716
+c	忘	wang	299
+c	忙	mang	177
+c	忚	xi	2
+c	忝	tian	26
+c	忞	min	2
+c	忞	wen	2
+c	忠	zhong	265
+c	忡	chong	16
+c	忣	ji	2
+c	忤	wu	54
+c	忧	you	365
+c	忩	cong	4
+c	忪	song	14
+c	忪	zhong	2
+c	快	kuai	479
+c	忬	yu	2
+c	忭	bian	14
+c	忮	zhi	37
+c	忱	chen	29
+c	忲	tai	4
+c	忳	tun	8
+c	念	nian	396
+c	忷	xiong	4
+c	忸	niu	12
+c	忺	xian	3
+c	忻	xin	40
+c	忼	kang	9
+c	忽	hu	251
+c	忾	kai	24
+c	忿	fen	131
+c	怀	huai	592
+c	态	tai	318
+c	怂	song	7
+c	怃	wu	4
+c	怄	ou	2
+c	怅	chang	56
+c	怆	chuang	56
+c	怊	chao	4
+c	怍	zuo	22
+c	怎	zen	55
+c	怏	yang	21
+c	怐	kou	2
+c	怒	nu	303
+c	怓	nao	3
+c	怔	zheng	31
+c	怕	pa	132
+c	怖	bu	64
+c	怗	tie	11
+c	怙	hu	31
+c	怛	da	48
+c	怜	lian	140
+c	思	si	945
+c	思	sai	3
+c	怞	you	2
+c	怠	dai	104
+c	怡	yi	82
+c	怢	tu	2
+c	急	ji	646
+c	怦	peng	7
+c	性	xing	1431
+c	怨	yuan	390
+c	怩	ni	8
+c	怪	guai	377
+c	怫	fu	16
+c	怫	fei	1
+c	怭	bi	2
+c	怮	you	3
+c	怯	qie	153
+c	怱	cong	17
+c	怲	bing	2
+c	怳	huang	24
+c	怵	chu	34
+c	怸	xi	3
+c	总	zong	419
+c	怼	dui	19
+c	怿	yi	22
+c	恁	nen	22
+c	恁	ren	2
+c	恂	xun	11
+c	恃	shi	48
+c	恅	lao	2
+c	恇	kuang	20
+c	恈	mou	2
+c	恉	zhi	12
+c	恋	lian	184
+c	恌	tiao	5
+c	恍	huang	53
+c	恐	kong	162
+c	恒	heng	145
+c	恓	xi	13
+c	恓	qi	2
+c	恕	shu	65
+c	恙	yang	25
+c	恚	hui	47
+c	恛	hui	3
+c	恜	chi	2
+c	恝	jia	4
+c	恟	xiong	6
+c	恠	guai	13
+c	恡	lin	21
+c	恢	hui	86
+c	恣	zi	98
+c	恤	xu	149
+c	恧	nv	20
+c	恨	hen	269
+c	恩	en	463
+c	恪	ke	49
+c	恫	dong	24
+c	恫	tong	10
+c	恬	tian	91
+c	恭	gong	159
+c	息	xi	566
+c	恰	qia	70
+c	恲	peng	4
+c	恳	ken	90
+c	恶	e	846
+c	恶	wu	83
+c	恸	tong	32
+c	恹	yan	16
+c	恺	kai	27
+c	恻	ce	68
+c	恼	nao	101
+c	恿	yong	3
+c	悁	yuan	15
+c	悂	pi	2
+c	悃	kun	36
+c	悄	qiao	100
+c	悆	yu	3
+c	悇	tu	3
+c	悉	xi	97
+c	悊	zhe	2
+c	悋	lin	3
+c	悌	ti	22
+c	悍	han	150
+c	悐	ti	4
+c	悒	yi	46
+c	悔	hui	187
+c	悕	xi	2
+c	悖	bei	94
+c	悗	man	3
+c	悚	song	75
+c	悛	quan	38
+c	悟	wu	179
+c	悠	you	152
+c	悢	liang	9
+c	患	huan	206
+c	悤	cong	2
+c	悦	yue	162
+c	悧	li	4
+c	您	nin	4
+c	悫	que	40
+c	悬	xuan	467
+c	悭	qian	31
+c	悮	wu	20
+c	悯	min	48
+c	悰	cong	19
+c	悱	fei	17
+c	悲	bei	310
+c	悴	cui	71
+c	悷	li	5
+c	悸	ji	50
+c	悹	guan	2
+c	悻	xing	12
+c	悼	dao	75
+c	悾	kong	3
+c	惄	ni	3
+c	情	qing	1346
+c	惆	chou	8
+c	惇	dun	28
+c	惉	zhan	2
+c	惊	jing	636
+c	惋	wan	46
+c	惎	ji	7
+c	惏	lan	5
+c	惏	lin	3
+c	惑	huo	213
+c	惓	quan	8
+c	惓	juan	2
+c	惔	dan	5
+c	惕	ti	72
+c	惘	wang	18
+c	惙	chuo	13
+c	惚	hu	19
+c	惛	hun	34
+c	惜	xi	148
+c	惝	chang	13
+c	惟	wei	98
+c	惠	hui	265
+c	惥	yong	3
+c	惦	dian	6
+c	惧	ju	122
+c	惨	can	231
+c	惩	cheng	79
+c	惪	de	2
+c	惫	bei	47
+c	惬	qie	35
+c	惭	can	106
+c	惮	dan	71
+c	惯	guan	102
+c	惰	duo	86
+c	想	xiang	461
+c	惴	zhui	24
+c	惵	die	7
+c	惶	huang	108
+c	惷	chun	9
+c	惸	qiong	15
+c	惹	re	102
+c	惺	xing	46
+c	惼	bian	4
+c	惽	hun	2
+c	愀	qiao	17
+c	愁	chou	332
+c	愆	qian	108
+c	愈	yu	63
+c	愉	yu	69
+c	愊	bi	12
+c	愍	min	40
+c	愎	bi	43
+c	意	yi	1459
+c	愒	kai	22
+c	愓	dang	6
+c	愔	yin	5
+c	愕	e	40
+c	愗	mao	2
+c	愚	yu	265
+c	愞	nuo	13
+c	感	gan	569
+c	愠	yun	23
+c	愢	sai	2
+c	愣	leng	58
+c	愤	fen	210
+c	愦	kui	26
+c	愧	kui	150
+c	愫	su	9
+c	愬	su	2
+c	愯	song	2
+c	愰	huang	2
+c	愲	gu	2
+c	愶	xie	4
+c	愺	cao	2
+c	愻	xun	3
+c	愿	yuan	247
+c	慁	hun	4
+c	慅	cao	2
+c	慅	sao	2
+c	慆	tao	9
+c	慇	yin	5
+c	慈	ci	185
+c	慉	xu	2
+c	慊	qie	19
+c	慌	huang	114
+c	慎	shen	190
+c	慑	she	70
+c	慓	piao	14
+c	慕	mu	180
+c	慜	min	6
+c	慝	te	75
+c	慞	zhang	2
+c	慠	ao	28
+c	慢	man	407
+c	慥	zao	3
+c	慧	hui	169
+c	慨	kai	83
+c	慭	yin	8
+c	慰	wei	119
+c	慱	tuan	3
+c	慲	man	2
+c	慴	she	23
+c	慵	yong	35
+c	慷	kang	31
+c	慸	di	4
+c	慺	lou	4
+c	慽	qi	5
+c	憀	liao	13
+c	憁	cong	3
+c	憃	chong	8
+c	憇	qi	5
+c	憋	bie	31
+c	憍	jiao	11
+c	憎	zeng	63
+c	憓	hui	2
+c	憔	qiao	10
+c	憘	xi	3
+c	憙	xi	4
+c	憛	tan	4
+c	憝	dui	10
+c	憞	dui	2
+c	憢	xiao	2
+c	憣	fan	2
+c	憧	chong	12
+c	憨	han	57
+c	憩	qi	34
+c	憬	jing	13
+c	憭	liao	3
+c	憯	can	22
+c	憴	sheng	2
+c	憷	chu	8
+c	憸	xian	28
+c	憹	nao	4
+c	憺	dan	10
+c	憽	song	2
+c	憾	han	42
+c	憿	ji	2
+c	懀	wei	2
+c	懁	xuan	2
+c	懂	dong	59
+c	懃	qin	20
+c	懅	ju	5
+c	懆	cao	13
+c	懈	xie	59
+c	懊	ao	43
+c	懋	mao	51
+c	懑	men	30
+c	懒	lan	121
+c	懔	lin	19
+c	懕	yan	3
+c	懘	chi	4
+c	懚	yin	2
+c	懜	meng	4
+c	懞	meng	2
+c	懤	chou	2
+c	懦	nuo	77
+c	懩	yang	4
+c	懫	zhi	3
+c	懬	kuang	2
+c	懮	you	6
+c	懱	mie	2
+c	懵	meng	35
+c	懹	rang	4
+c	懻	ji	3
+c	懽	guan	7
+c	懿	yi	71
+c	戁	nan	2
+c	戃	tang	3
+c	戄	jue	2
+c	戆	gang	46
+c	戆	zhuang	2
+c	戈	ge	231
+c	戊	wu	32
+c	戋	jian	8
+c	戌	xu	17
+c	戌	qu	1
+c	戍	shu	94
+c	戎	rong	236
+c	戏	xi	681
+c	戏	hu	1
+c	成	cheng	1566
+c	我	wo	256
+c	戒	jie	267
+c	戕	qiang	19
+c	或	huo	82
+c	戗	qiang	27
+c	战	zhan	856
+c	戚	qi	173
+c	戛	jia	41
+c	戞	jia	4
+c	戟	ji	121
+c	戡	kan	11
+c	戢	ji	72
+c	戤	gai	5
+c	戥	deng	4
+c	截	jie	195
+c	戬	jian	3
+c	戮	lu	99
+c	戳	chuo	47
+c	戴	dai	217
+c	户	hu	716
+c	戹	e	18
+c	戺	shi	7
+c	戽	hu	9
+c	戾	li	179
+c	房	fang	656
+c	房	pang	5
+c	所	suo	744
+c	扁	bian	105
+c	扁	pian	11
+c	扃	jiong	69
+c	扅	yi	3
+c	扆	yi	26
+c	扇	shan	349
+c	扈	hu	68
+c	扉	fei	49
+c	扊	yan	3
+c	手	shou	1751
+c	才	cai	744
+c	扎	zha	192
+c	扎	za	31
+c	扐	le	2
+c	扑	pu	279
+c	扒	ba	50
+c	扒	pa	32
+c	打	da	1618
+c	扔	reng	12
+c	托	tuo	492
+c	扛	kang	26
+c	扛	gang	11
+c	扜	yu	4
+c	扞	gan	38
+c	扞	han	3
+c	扠	cha	7
+c	扢	gu	30
+c	扢	jie	2
+c	扣	kou	201
+c	扤	wu	2
+c	扦	qian	11
+c	执	zhi	415
+c	扩	kuo	73
+c	扪	men	37
+c	扫	sao	283
+c	扬	yang	510
+c	扭	niu	97
+c	扮	ban	56
+c	扯	che	159
+c	扰	rao	199
+c	扱	xi	5
+c	扳	ban	78
+c	扳	pan	2
+c	扶	fu	260
+c	扸	xi	2
+c	批	pi	215
+c	扺	zhi	6
+c	扼	e	58
+c	找	zhao	90
+c	承	cheng	401
+c	承	zheng	1
+c	技	ji	288
+c	抂	kuang	2
+c	抃	bian	45
+c	抄	chao	124
+c	抅	ju	3
+c	抆	wen	5
+c	抉	jue	56
+c	把	ba	387
+c	抍	zheng	2
+c	抎	yun	6
+c	抏	wan	5
+c	抑	yi	182
+c	抒	shu	29
+c	抓	zhua	139
+c	抔	pou	10
+c	投	tou	542
+c	抖	dou	86
+c	抗	kang	273
+c	折	zhe	392
+c	折	she	372
+c	抚	fu	233
+c	抛	pao	100
+c	抝	ao	3
+c	抟	tuan	60
+c	抠	kou	32
+c	抡	lun	17
+c	抢	qiang	170
+c	护	hu	454
+c	报	bao	740
+c	抨	peng	13
+c	抪	bu	4
+c	披	pi	311
+c	抬	tai	73
+c	抰	yang	3
+c	抱	bao	346
+c	抵	di	242
+c	抵	zhi	2
+c	抶	chi	10
+c	抹	mo	200
+c	抹	ma	9
+c	抻	chen	2
+c	押	ya	163
+c	抽	chou	261
+c	抿	min	10
+c	拂	fu	149
+c	拂	bi	4
+c	拃	zha	2
+c	拄	zhu	25
+c	担	dan	213
+c	担	jie	1
+c	拆	chai	129
+c	拆	ca	1
+c	拇	mu	28
+c	拈	nian	48
+c	拉	la	1123
+c	拊	fu	74
+c	拌	ban	45
+c	拍	pai	229
+c	拎	lin	4
+c	拏	na	72
+c	拐	guai	110
+c	拑	qian	7
+c	拒	ju	122
+c	拓	tuo	108
+c	拓	ta	13
+c	拔	ba	423
+c	拕	tuo	3
+c	拖	tuo	187
+c	拗	niu	62
+c	拗	ao	17
+c	拘	ju	259
+c	拙	zhuo	180
+c	拚	pan	12
+c	拚	pin	12
+c	招	zhao	403
+c	拜	bai	410
+c	拟	ni	179
+c	拢	long	64
+c	拣	jian	54
+c	拥	yong	165
+c	拦	lan	74
+c	拧	ning	27
+c	拨	bo	255
+c	择	ze	184
+c	择	zhai	8
+c	拫	hen	4
+c	括	kuo	168
+c	括	gua	3
+c	拭	shi	32
+c	拮	jie	10
+c	拯	zheng	35
+c	拱	gong	139
+c	拲	gong	3
+c	拳	quan	259
+c	拴	shuan	13
+c	拶	za	19
+c	拶	zan	5
+c	拷	kao	41
+c	拼	pin	99
+c	拽	zhuai	61
+c	拽	ye	3
+c	拾	shi	166
+c	拾	she	4
+c	拿	na	236
+c	持	chi	392
+c	挂	gua	329
+c	挃	zhi	2
+c	指	zhi	808
+c	挈	qie	58
+c	按	an	233
+c	挍	jiao	5
+c	挎	kua	7
+c	挏	dong	6
+c	挐	na	17
+c	挑	tiao	263
+c	挓	zha	2
+c	挖	wa	61
+c	挚	zhi	57
+c	挛	luan	50
+c	挜	ya	7
+c	挝	wo	20
+c	挝	zhua	7
+c	挞	ta	54
+c	挟	jia	40
+c	挟	xie	37
+c	挠	nao	140
+c	挡	dang	105
+c	挢	jiao	28
+c	挣	zheng	71
+c	挤	ji	90
+c	挥	hui	155
+c	挦	xian	17
+c	挨	ai	147
+c	挪	nuo	32
+c	挫	cuo	72
+c	振	zhen	273
+c	挱	suo	4
+c	挲	suo	5
+c	挲	sa	3
+c	挲	sha	1
+c	挹	yi	48
+c	挺	ting	136
+c	挻	shan	4
+c	挼	ruo	14
+c	挽	wan	121
+c	捂	wu	12
+c	捃	jun	9
+c	捄	ju	8
+c	捅	tong	9
+c	捆	kun	21
+c	捉	zhuo	146
+c	捊	pou	2
+c	捋	luo	12
+c	捋	lv	12
+c	捌	ba	2
+c	捍	han	50
+c	捎	shao	31
+c	捏	nie	82
+c	捐	juan	158
+c	捔	jue	4
+c	捕	bu	185
+c	捖	wan	2
+c	捗	bu	2
+c	捘	zun	3
+c	捞	lao	66
+c	损	sun	247
+c	捡	jian	36
+c	换	huan	351
+c	捣	dao	88
+c	捥	wan	3
+c	捧	peng	59
+c	捩	lie	21
+c	捬	fu	4
+c	捭	bai	10
+c	据	ju	312
+c	捯	dao	5
+c	捰	luo	4
+c	捱	ai	32
+c	捲	juan	2
+c	捵	chen	3
+c	捶	chui	66
+c	捷	jie	200
+c	捺	na	24
+c	捻	nian	90
+c	捻	nie	3
+c	捼	ruo	2
+c	捽	zuo	25
+c	掀	xian	48
+c	掁	cheng	2
+c	掂	dian	23
+c	掆	gang	2
+c	掇	duo	75
+c	授	shou	213
+c	掉	diao	190
+c	掊	pou	17
+c	掌	zhang	299
+c	掍	hun	3
+c	掎	ji	28
+c	掏	tao	25
+c	掐	qia	31
+c	排	pai	502
+c	掖	ye	91
+c	掘	jue	66
+c	掝	huo	2
+c	掞	yan	8
+c	掞	shan	2
+c	掠	lve	123
+c	採	cai	2
+c	探	tan	301
+c	掣	che	66
+c	掤	bing	6
+c	接	jie	548
+c	控	kong	193
+c	推	tui	513
+c	掩	yan	229
+c	措	cuo	124
+c	掫	zou	4
+c	掬	ju	20
+c	掮	qian	2
+c	掯	ken	11
+c	掰	bai	21
+c	掱	pa	2
+c	掳	lu	23
+c	掴	guo	12
+c	掴	guai	4
+c	掷	zhi	104
+c	掸	dan	15
+c	掸	shan	2
+c	掺	chan	14
+c	掺	can	3
+c	掺	shan	2
+c	掼	guan	4
+c	掾	yuan	36
+c	掿	nuo	6
+c	揃	jian	7
+c	揄	yu	22
+c	揅	yan	4
+c	揆	kui	69
+c	揉	rou	56
+c	揍	zou	9
+c	揎	xuan	22
+c	描	miao	60
+c	提	ti	529
+c	提	di	10
+c	揑	nie	11
+c	插	cha	174
+c	揖	yi	66
+c	揘	huang	1
+c	揘	yong	1
+c	揙	bian	2
+c	揜	yan	35
+c	揞	an	3
+c	揠	ya	4
+c	握	wo	141
+c	揢	ke	3
+c	揣	chuai	92
+c	揥	di	3
+c	揩	kai	19
+c	揪	jiu	39
+c	揫	jiu	7
+c	揭	jie	148
+c	揭	qi	4
+c	揲	die	9
+c	援	yuan	175
+c	揵	jian	6
+c	揶	ye	6
+c	揸	zha	5
+c	揽	lan	122
+c	揾	wen	3
+c	揿	qin	2
+c	搀	chan	52
+c	搁	ge	45
+c	搂	lou	31
+c	搅	jiao	89
+c	搉	que	21
+c	搊	chou	18
+c	搋	chuai	5
+c	搏	bo	80
+c	搐	chu	18
+c	搒	peng	15
+c	搓	cuo	27
+c	搔	sao	56
+c	搕	ke	6
+c	搘	zhi	11
+c	搜	sou	171
+c	搞	gao	54
+c	搠	shuo	14
+c	搡	sang	7
+c	搢	jin	15
+c	搣	mie	3
+c	搤	e	11
+c	搥	chui	9
+c	搥	dui	3
+c	搦	nuo	18
+c	搧	shan	11
+c	搨	ta	24
+c	搪	tang	21
+c	搬	ban	64
+c	搭	da	302
+c	搯	tao	7
+c	搰	hu	6
+c	搳	hua	2
+c	搴	qian	17
+c	搶	qiang	2
+c	携	xie	51
+c	搽	cha	9
+c	搿	ge	4
+c	摁	en	3
+c	摄	she	166
+c	摅	shu	7
+c	摆	bai	197
+c	摇	yao	225
+c	摈	bin	37
+c	摊	tan	98
+c	摋	sha	4
+c	摋	sa	2
+c	摎	jiu	2
+c	摐	chuang	7
+c	摒	bing	4
+c	摓	feng	3
+c	摔	shuai	35
+c	摘	zhai	96
+c	摛	chi	16
+c	摝	lu	3
+c	摞	luo	3
+c	摧	cui	90
+c	摩	mo	345
+c	摩	ma	3
+c	摭	zhi	11
+c	摵	she	2
+c	摸	mo	139
+c	摹	mo	58
+c	摺	zhe	3
+c	摽	biao	6
+c	撂	liao	7
+c	撄	ying	4
+c	撅	jue	27
+c	撆	pie	5
+c	撇	pie	52
+c	撑	cheng	60
+c	撒	sa	217
+c	撕	si	24
+c	撘	da	3
+c	撙	zun	6
+c	撚	nian	2
+c	撝	hui	6
+c	撞	zhuang	126
+c	撢	dan	2
+c	撤	che	48
+c	撦	che	7
+c	撧	jue	2
+c	撩	liao	49
+c	撬	qiao	13
+c	播	bo	190
+c	撮	cuo	61
+c	撮	zuo	2
+c	撰	zhuan	45
+c	撵	nian	2
+c	撷	xie	14
+c	撸	lu	2
+c	撺	cuan	12
+c	撼	han	31
+c	擀	gan	2
+c	擂	lei	36
+c	擅	shan	38
+c	操	cao	305
+c	擎	qing	34
+c	擐	huan	3
+c	擒	qin	45
+c	擖	ye	2
+c	擗	pi	13
+c	擘	bo	41
+c	擘	bai	2
+c	擞	sou	9
+c	擢	zhuo	59
+c	擥	lan	5
+c	擦	ca	106
+c	擩	ru	2
+c	擪	ye	4
+c	擫	ye	3
+c	擭	huo	3
+c	擸	la	2
+c	擿	ti	36
+c	擿	zhai	6
+c	擿	zhi	2
+c	攀	pan	181
+c	攉	huo	4
+c	攎	lu	3
+c	攒	cuan	60
+c	攒	zan	43
+c	攘	rang	102
+c	攞	luo	7
+c	攟	jun	2
+c	攥	zuan	3
+c	攦	li	2
+c	攧	dian	4
+c	攫	jue	27
+c	攮	nang	2
+c	支	zhi	554
+c	攲	ji	4
+c	攲	qi	1
+c	收	shou	659
+c	攸	you	31
+c	改	gai	491
+c	攻	gong	274
+c	放	fang	874
+c	政	zheng	723
+c	敂	kou	2
+c	故	gu	523
+c	效	xiao	324
+c	敉	mi	6
+c	敌	di	346
+c	敏	min	196
+c	救	jiu	343
+c	敔	yu	3
+c	敕	chi	110
+c	敖	ao	69
+c	教	jiao	916
+c	敚	duo	10
+c	敛	lian	273
+c	敝	bi	149
+c	敞	chang	65
+c	敠	duo	3
+c	敢	gan	157
+c	散	san	832
+c	敦	dun	239
+c	敦	dui	4
+c	敦	tuan	2
+c	敦	diao	1
+c	敧	qi	10
+c	敩	xiao	2
+c	敬	jing	316
+c	敭	yang	4
+c	数	shu	1143
+c	数	shuo	8
+c	敲	qiao	142
+c	整	zheng	327
+c	敷	fu	141
+c	敹	liao	3
+c	敻	xiong	6
+c	斁	yi	21
+c	斅	xiao	3
+c	斆	xiao	5
+c	文	wen	2201
+c	斋	zhai	238
+c	斌	bin	13
+c	斐	fei	38
+c	斑	ban	293
+c	斒	ban	6
+c	斓	lan	8
+c	斗	dou	969
+c	料	liao	488
+c	斛	hu	39
+c	斜	xie	210
+c	斝	jia	24
+c	斟	zhen	39
+c	斠	jiao	9
+c	斡	wo	40
+c	斤	jin	133
+c	斥	chi	172
+c	斧	fu	143
+c	斨	qiang	3
+c	斩	zhan	154
+c	斫	zhuo	69
+c	断	duan	982
+c	斮	zhuo	8
+c	斯	si	1025
+c	新	xin	1110
+c	斲	zhuo	51
+c	斵	zhuo	11
+c	斸	zhu	7
+c	方	fang	1420
+c	於	wu	3
+c	施	shi	384
+c	斾	pei	29
+c	斿	you	12
+c	旁	pang	346
+c	旁	bang	1
+c	旃	zhan	50
+c	旄	mao	59
+c	旅	lv	300
+c	旆	pei	48
+c	旉	fu	3
+c	旊	fang	2
+c	旋	xuan	352
+c	旌	jing	169
+c	旍	jing	14
+c	旎	ni	9
+c	族	zu	628
+c	旐	zhao	16
+c	旒	liu	35
+c	旓	shao	2
+c	旖	yi	8
+c	旗	qi	446
+c	旛	fan	45
+c	旝	kuai	6
+c	旟	yu	16
+c	无	wu	3334
+c	无	mo	3
+c	既	ji	70
+c	旤	huo	4
+c	日	ri	1893
+c	旦	dan	225
+c	旧	jiu	441
+c	旨	zhi	200
+c	早	zao	267
+c	旬	xun	73
+c	旭	xu	34
+c	旮	ga	16
+c	旯	la	16
+c	旰	gan	40
+c	旱	han	130
+c	旳	di	3
+c	时	shi	1569
+c	旷	kuang	244
+c	旸	yang	19
+c	旺	wang	72
+c	旻	min	19
+c	旼	min	2
+c	旽	tun	2
+c	昂	ang	103
+c	昃	ze	29
+c	昄	ban	2
+c	昆	kun	144
+c	昇	sheng	2
+c	昈	hu	6
+c	昉	fang	3
+c	昊	hao	34
+c	昌	chang	281
+c	明	ming	1574
+c	昏	hun	395
+c	昒	hu	9
+c	易	yi	631
+c	昔	xi	74
+c	昕	xin	13
+c	昙	tan	22
+c	昝	zan	4
+c	昞	bing	3
+c	星	xing	1048
+c	映	ying	153
+c	昡	xuan	2
+c	昢	po	2
+c	昤	ling	2
+c	春	chun	884
+c	昧	mei	209
+c	昨	zuo	30
+c	昫	xu	5
+c	昬	hun	14
+c	昭	zhao	244
+c	是	shi	595
+c	昱	yu	10
+c	昳	yi	3
+c	昳	die	1
+c	昴	mao	14
+c	昵	ni	72
+c	昶	chang	5
+c	昺	bing	2
+c	昼	zhou	129
+c	昽	long	9
+c	显	xian	392
+c	晁	chao	4
+c	晃	huang	90
+c	晈	jiao	6
+c	晋	jin	102
+c	晌	shang	37
+c	晎	hong	2
+c	晏	yan	89
+c	晐	gai	3
+c	晒	shai	62
+c	晓	xiao	202
+c	晔	ye	17
+c	晕	yun	180
+c	晖	hui	90
+c	晚	wan	308
+c	晛	xian	2
+c	晜	kun	5
+c	晞	xi	26
+c	晟	sheng	3
+c	晡	bu	14
+c	晢	zhe	7
+c	晤	wu	47
+c	晦	hui	156
+c	晧	hao	7
+c	晨	chen	164
+c	晩	wan	130
+c	晫	zhuo	3
+c	晬	zui	17
+c	普	pu	314
+c	景	jing	618
+c	景	ying	11
+c	晰	xi	39
+c	晱	shan	3
+c	晳	xi	12
+c	晴	qing	107
+c	晶	jing	163
+c	晷	gui	65
+c	智	zhi	411
+c	晻	an	26
+c	晼	wan	4
+c	晽	lin	2
+c	晾	liang	16
+c	暀	wang	3
+c	暂	zan	47
+c	暄	xuan	29
+c	暇	xia	92
+c	暋	min	2
+c	暌	kui	21
+c	暍	ye	22
+c	暎	ying	7
+c	暐	wei	6
+c	暑	shu	129
+c	暖	nuan	239
+c	暗	an	428
+c	暝	ming	34
+c	暠	hao	3
+c	暡	weng	2
+c	暧	ai	27
+c	暨	ji	16
+c	暮	mu	263
+c	暴	bao	576
+c	暴	pu	18
+c	暵	han	12
+c	暹	xian	6
+c	暾	tun	14
+c	曀	yi	16
+c	曈	tong	7
+c	曏	xiang	5
+c	曒	jiao	6
+c	曙	shu	51
+c	曚	meng	13
+c	曛	xun	20
+c	曜	yao	112
+c	曝	pu	47
+c	曝	bao	6
+c	曦	xi	33
+c	曩	nang	22
+c	曭	tang	3
+c	曰	yue	13
+c	曲	qu	1136
+c	曳	ye	101
+c	更	geng	500
+c	曶	hu	16
+c	曷	he	10
+c	曹	cao	217
+c	曼	man	189
+c	曾	zeng	107
+c	曾	ceng	26
+c	替	ti	158
+c	最	zui	163
+c	朅	qie	5
+c	月	yue	1343
+c	有	you	2277
+c	朊	ruan	4
+c	朋	peng	169
+c	服	fu	1019
+c	朏	fei	9
+c	朐	qu	3
+c	朒	nv	8
+c	朓	tiao	6
+c	朔	shuo	120
+c	朕	zhen	12
+c	朗	lang	269
+c	朘	juan	17
+c	望	wang	837
+c	朝	chao	677
+c	朝	zhao	263
+c	朞	ji	10
+c	期	qi	737
+c	期	ji	3
+c	朣	tong	6
+c	朦	meng	37
+c	木	mu	1297
+c	未	wei	361
+c	末	mo	521
+c	末	me	2
+c	本	ben	1188
+c	札	zha	169
+c	朮	zhu	2
+c	术	shu	581
+c	术	zhu	4
+c	朱	zhu	576
+c	朳	ba	2
+c	朴	piao	179
+c	朴	pu	91
+c	朴	po	9
+c	朵	duo	81
+c	朶	duo	10
+c	朹	gui	2
+c	机	ji	1472
+c	朽	xiu	192
+c	杀	sha	563
+c	杂	za	508
+c	权	quan	631
+c	杅	yu	12
+c	杆	gan	177
+c	杇	wu	6
+c	杈	cha	27
+c	杉	shan	47
+c	杉	sha	3
+c	杌	wu	20
+c	李	li	396
+c	杏	xing	109
+c	材	cai	401
+c	村	cun	381
+c	杓	shao	48
+c	杕	di	3
+c	杕	duo	2
+c	杖	zhang	278
+c	杘	chi	2
+c	杙	yi	9
+c	杜	du	258
+c	杝	yi	4
+c	杞	qi	35
+c	束	shu	325
+c	杠	gang	99
+c	条	tiao	760
+c	来	lai	1106
+c	杨	yang	231
+c	杩	ma	5
+c	杪	miao	35
+c	杬	yuan	3
+c	杭	hang	46
+c	杮	bei	7
+c	杯	bei	277
+c	杰	jie	152
+c	杲	gao	4
+c	杳	yao	67
+c	杴	xian	3
+c	杵	chu	55
+c	杷	pa	17
+c	杷	ba	4
+c	杻	niu	9
+c	杻	chou	1
+c	杼	zhu	41
+c	松	song	606
+c	板	ban	705
+c	极	ji	759
+c	构	gou	284
+c	枅	ji	2
+c	枇	pi	11
+c	枉	wang	209
+c	枊	ang	2
+c	枋	fang	25
+c	枌	fen	11
+c	枍	yi	3
+c	枎	fu	2
+c	析	xi	244
+c	枑	hu	6
+c	枒	ya	6
+c	枓	dou	4
+c	枕	zhen	335
+c	枕	chen	1
+c	枖	yao	2
+c	林	lin	926
+c	枘	rui	17
+c	枙	e	3
+c	枚	mei	49
+c	果	guo	539
+c	枝	zhi	551
+c	枞	cong	8
+c	枞	zong	4
+c	枢	shu	135
+c	枣	zao	146
+c	枥	li	10
+c	枨	cheng	8
+c	枪	qiang	353
+c	枫	feng	43
+c	枭	xiao	123
+c	枯	ku	375
+c	枰	ping	9
+c	枱	tai	15
+c	枲	xi	17
+c	枳	zhi	30
+c	枵	xiao	21
+c	架	jia	328
+c	枷	jia	45
+c	枸	gou	22
+c	枸	ju	3
+c	枹	bao	10
+c	枻	yi	9
+c	枿	nie	19
+c	柁	tuo	14
+c	柁	duo	2
+c	柂	yi	8
+c	柄	bing	117
+c	柅	ni	11
+c	柈	pan	12
+c	柈	ban	1
+c	柊	zhong	3
+c	柍	yang	2
+c	柎	fu	7
+c	柏	bai	166
+c	柏	bo	35
+c	某	mou	33
+c	柑	gan	36
+c	染	ran	320
+c	柔	rou	358
+c	柘	zhe	49
+c	柙	xia	17
+c	柚	you	7
+c	柚	zhou	6
+c	柜	gui	130
+c	柜	ju	1
+c	柝	tuo	37
+c	柞	zha	17
+c	柞	zuo	12
+c	柟	nan	2
+c	柠	ning	13
+c	柢	di	18
+c	查	cha	270
+c	查	zha	133
+c	柩	jiu	21
+c	柬	jian	26
+c	柭	ba	2
+c	柮	duo	4
+c	柯	ke	115
+c	柰	nai	24
+c	柱	zhu	267
+c	柲	bi	2
+c	柳	liu	513
+c	柴	chai	201
+c	柴	zhai	6
+c	柶	si	2
+c	柷	zhu	4
+c	柸	bei	8
+c	柹	shi	10
+c	柽	cheng	4
+c	柿	shi	28
+c	栀	zhi	9
+c	栅	shan	46
+c	栅	zha	16
+c	标	biao	512
+c	栈	zhan	97
+c	栉	zhi	71
+c	栊	long	16
+c	栋	dong	89
+c	栌	lu	10
+c	栎	li	28
+c	栎	yue	1
+c	栏	lan	128
+c	树	shu	708
+c	栒	xun	2
+c	栓	shuan	42
+c	栖	qi	224
+c	栖	xi	9
+c	栗	li	226
+c	栘	yi	10
+c	栝	gua	13
+c	栝	kuo	1
+c	栞	kan	2
+c	栟	bing	3
+c	校	xiao	408
+c	校	jiao	63
+c	栢	bai	4
+c	栧	yi	6
+c	栩	xu	11
+c	株	zhu	90
+c	栭	er	5
+c	栯	you	2
+c	栰	fa	5
+c	栱	gong	10
+c	栲	kao	17
+c	栳	lao	4
+c	样	yang	392
+c	核	he	463
+c	核	hu	6
+c	根	gen	683
+c	栺	yi	1
+c	栺	zhi	1
+c	格	ge	827
+c	栽	zai	63
+c	栾	luan	27
+c	桀	jie	97
+c	桁	heng	19
+c	桁	hang	2
+c	桂	gui	250
+c	桃	tao	422
+c	桄	guang	15
+c	桅	wei	14
+c	框	kuang	41
+c	案	an	475
+c	桉	an	13
+c	桊	juan	4
+c	桋	yi	2
+c	桌	zhuo	105
+c	桎	zhi	10
+c	桐	tong	117
+c	桑	sang	345
+c	桓	huan	56
+c	桔	ju	11
+c	桔	jie	5
+c	桕	jiu	4
+c	桠	ya	12
+c	桡	rao	76
+c	桢	zhen	15
+c	档	dang	98
+c	桤	qi	3
+c	桥	qiao	355
+c	桦	hua	17
+c	桧	gui	17
+c	桨	jiang	21
+c	桩	zhuang	58
+c	桫	suo	2
+c	桮	bei	8
+c	桯	ting	3
+c	桲	bo	2
+c	桲	po	1
+c	桴	fu	30
+c	桶	tong	83
+c	桷	jue	17
+c	桹	lang	4
+c	桼	qi	3
+c	梁	liang	389
+c	梂	qiu	3
+c	梃	ting	11
+c	梅	mei	399
+c	梆	bang	31
+c	梏	gu	12
+c	梐	bi	2
+c	梓	zi	68
+c	梗	geng	158
+c	梜	jia	3
+c	梠	lv	2
+c	梡	kuan	2
+c	梢	shao	140
+c	梦	meng	389
+c	梧	wu	61
+c	梨	li	166
+c	梪	dou	3
+c	梭	suo	77
+c	梯	ti	174
+c	械	xie	96
+c	梳	shu	79
+c	梴	chan	3
+c	梵	fan	138
+c	梼	tao	9
+c	梿	lian	3
+c	检	jian	376
+c	棁	tuo	4
+c	棁	zhuo	2
+c	棂	ling	14
+c	棃	li	9
+c	棉	mian	137
+c	棊	qi	20
+c	棋	qi	167
+c	棍	gun	140
+c	棐	fei	10
+c	棒	bang	195
+c	棓	bang	9
+c	棕	zong	101
+c	棘	ji	176
+c	棙	li	2
+c	棚	peng	109
+c	棠	tang	77
+c	棡	gang	3
+c	棣	di	21
+c	棣	dai	2
+c	棨	qi	13
+c	棬	quan	7
+c	棬	juan	2
+c	森	sen	225
+c	棰	chui	37
+c	棱	leng	151
+c	棱	ling	2
+c	棵	ke	11
+c	棷	zou	2
+c	棹	zhao	79
+c	棺	guan	76
+c	棻	fen	4
+c	棼	fen	36
+c	棽	chen	6
+c	椀	wan	20
+c	椁	guo	16
+c	椅	yi	96
+c	椆	chou	1
+c	椆	diao	1
+c	椆	zhou	1
+c	椇	ju	2
+c	椋	liang	16
+c	椌	qiang	4
+c	植	zhi	230
+c	椎	zhui	120
+c	椎	chui	49
+c	椑	bei	10
+c	椒	jiao	183
+c	椓	zhuo	18
+c	椗	ding	5
+c	椟	du	45
+c	椠	qian	30
+c	椤	luo	2
+c	椪	peng	2
+c	椭	tuo	15
+c	椰	ye	51
+c	椴	duan	4
+c	椷	han	4
+c	椹	shen	6
+c	椽	chuan	34
+c	椿	chun	19
+c	楂	zha	18
+c	楔	xie	28
+c	楖	ji	3
+c	楗	jian	16
+c	楙	mao	3
+c	楚	chu	266
+c	楛	ku	19
+c	楛	hu	2
+c	楝	lian	3
+c	楞	leng	96
+c	楠	nan	15
+c	楣	mei	13
+c	楦	xuan	9
+c	楫	ji	41
+c	楬	jie	3
+c	楮	chu	73
+c	楯	dun	23
+c	楯	shun	1
+c	極	ji	2
+c	楶	jie	3
+c	楷	kai	44
+c	楸	qiu	13
+c	楹	ying	34
+c	楺	rou	3
+c	楼	lou	462
+c	概	gai	125
+c	榄	lan	26
+c	榆	yu	88
+c	榇	chen	19
+c	榈	lv	10
+c	榉	ju	2
+c	榔	lang	26
+c	榕	rong	4
+c	榖	gu	2
+c	榘	ju	4
+c	榛	zhen	30
+c	榜	bang	159
+c	榥	huang	3
+c	榦	gan	9
+c	榧	fei	5
+c	榨	zha	22
+c	榫	sun	13
+c	榭	xie	41
+c	榱	cui	18
+c	榴	liu	42
+c	榷	que	23
+c	榻	ta	84
+c	榼	ke	10
+c	榾	gu	5
+c	槀	gao	7
+c	槁	gao	39
+c	槃	pan	18
+c	槅	ge	14
+c	槊	shuo	24
+c	構	gou	2
+c	槌	chui	39
+c	槍	qiang	2
+c	槎	cha	47
+c	槐	huai	51
+c	槔	gao	3
+c	槖	tuo	12
+c	様	yang	3
+c	槚	jia	4
+c	槛	kan	64
+c	槛	jian	11
+c	槟	bin	9
+c	槟	bing	7
+c	槢	xi	2
+c	槥	hui	7
+c	槭	qi	6
+c	槮	sen	7
+c	槲	hu	4
+c	槵	huan	3
+c	槽	cao	91
+c	槿	jin	15
+c	樊	fan	29
+c	樏	lei	2
+c	樗	chu	9
+c	樝	zha	3
+c	樟	zhang	11
+c	模	mo	233
+c	模	mu	50
+c	樨	xi	3
+c	横	heng	541
+c	樯	qiang	17
+c	樱	ying	24
+c	樴	zhi	3
+c	樵	qiao	20
+c	樽	zun	67
+c	樾	yue	9
+c	橄	gan	20
+c	橇	qiao	10
+c	橐	tuo	49
+c	橑	lao	10
+c	橘	ju	66
+c	橙	cheng	40
+c	橛	jue	25
+c	橜	jue	4
+c	橡	xiang	41
+c	橥	zhu	2
+c	橦	tong	4
+c	橱	chu	27
+c	橹	lu	20
+c	橼	yuan	4
+c	橿	jiang	2
+c	檀	tan	44
+c	檄	xi	42
+c	檎	qin	3
+c	檐	yan	68
+c	檐	dan	1
+c	檖	sui	2
+c	檗	bo	11
+c	檛	zhua	5
+c	檝	ji	26
+c	檠	qing	16
+c	檩	lin	5
+c	檬	meng	11
+c	檵	ji	3
+c	檽	nou	2
+c	櫂	zhao	8
+c	櫈	deng	3
+c	櫌	you	2
+c	櫐	lei	2
+c	櫑	lei	2
+c	櫜	gao	12
+c	櫩	yan	4
+c	欐	li	2
+c	欘	zhu	4
+c	欛	ba	4
+c	欝	yu	3
+c	欠	qian	109
+c	次	ci	532
+c	欢	huan	372
+c	欣	xin	107
+c	欤	yu	3
+c	欧	ou	189
+c	欨	xu	4
+c	欬	kai	13
+c	欬	ai	1
+c	欯	xi	2
+c	欱	he	3
+c	欲	yu	298
+c	欵	kuan	18
+c	欷	xi	13
+c	欸	ai	8
+c	欹	qi	29
+c	欺	qi	176
+c	欻	chua	12
+c	欻	xu	5
+c	款	kuan	431
+c	欿	kan	9
+c	歁	kan	2
+c	歃	sha	12
+c	歆	xin	30
+c	歇	xie	151
+c	歈	yu	8
+c	歉	qian	48
+c	歊	xiao	23
+c	歌	ge	661
+c	歍	wu	7
+c	歔	xu	10
+c	歕	pen	4
+c	歗	xiao	5
+c	歘	xu	6
+c	歙	xi	14
+c	歙	she	5
+c	歜	chu	6
+c	歠	chuo	13
+c	止	zhi	405
+c	正	zheng	1590
+c	此	ci	260
+c	步	bu	767
+c	武	wu	727
+c	歧	qi	65
+c	歪	wai	129
+c	歰	se	3
+c	歳	sui	5
+c	歴	li	3
+c	歹	dai	52
+c	死	si	1091
+c	歼	jian	41
+c	殀	yao	4
+c	殁	mo	29
+c	殂	cu	20
+c	殃	yang	71
+c	殄	tian	55
+c	殆	dai	38
+c	殇	shang	22
+c	殈	xu	2
+c	殉	xun	39
+c	殊	shu	244
+c	残	can	408
+c	殍	piao	14
+c	殑	qing	3
+c	殒	yun	48
+c	殓	lian	16
+c	殕	fou	2
+c	殖	zhi	118
+c	殖	shi	3
+c	殗	ye	4
+c	殚	dan	65
+c	殛	ji	10
+c	殜	die	3
+c	殟	wen	2
+c	殠	chou	2
+c	殡	bin	35
+c	殢	ti	21
+c	殣	jin	11
+c	殪	yi	6
+c	殭	jiang	4
+c	殰	du	2
+c	殳	shu	10
+c	殴	ou	41
+c	段	duan	145
+c	殷	yin	181
+c	殷	yan	3
+c	殻	qiao	2
+c	殽	yao	28
+c	殿	dian	282
+c	毁	hui	304
+c	毂	gu	88
+c	毅	yi	71
+c	毋	wu	61
+c	母	mu	575
+c	每	mei	76
+c	毑	jie	2
+c	毒	du	674
+c	毓	yu	26
+c	比	bi	737
+c	毕	bi	165
+c	毖	bi	19
+c	毗	pi	53
+c	毙	bi	59
+c	毚	chan	6
+c	毛	mao	842
+c	毡	zhan	89
+c	毣	mao	2
+c	毦	er	9
+c	毧	rong	3
+c	毨	xian	3
+c	毫	hao	279
+c	毬	qiu	52
+c	毯	tan	28
+c	毰	pei	2
+c	毱	ju	3
+c	毳	cui	58
+c	毵	san	11
+c	毸	sai	2
+c	毹	shu	3
+c	毼	he	7
+c	毽	jian	3
+c	氀	lv	2
+c	氁	mu	2
+c	氃	tong	2
+c	氄	rong	7
+c	氅	chang	18
+c	氉	sao	2
+c	氊	zhan	2
+c	氋	meng	2
+c	氍	qu	4
+c	氏	shi	368
+c	氏	zhi	5
+c	氐	di	21
+c	民	min	1180
+c	氓	meng	54
+c	氓	mang	13
+c	气	qi	2148
+c	氛	fen	97
+c	氟	fu	22
+c	氢	qing	49
+c	氤	yin	8
+c	氦	hai	3
+c	氧	yang	131
+c	氨	an	53
+c	氪	ke	4
+c	氮	dan	15
+c	氯	lv	60
+c	氰	qing	23
+c	氲	yun	19
+c	水	shui	2818
+c	氷	bing	3
+c	永	yong	263
+c	氹	dang	3
+c	氽	tun	3
+c	氿	gui	2
+c	汀	ting	37
+c	汁	zhi	95
+c	求	qiu	585
+c	汃	bin	3
+c	汆	cuan	2
+c	汇	hui	171
+c	汉	han	548
+c	汊	cha	13
+c	汋	yue	6
+c	汍	wan	5
+c	汏	da	2
+c	汐	xi	9
+c	汒	mang	2
+c	汔	qi	4
+c	汕	shan	13
+c	汗	han	311
+c	汚	wu	3
+c	汛	xun	44
+c	汜	si	9
+c	汝	ru	45
+c	汞	gong	35
+c	江	jiang	809
+c	池	chi	371
+c	污	wu	283
+c	汤	tang	382
+c	汤	shang	20
+c	汦	zhi	3
+c	汧	qian	5
+c	汨	mi	9
+c	汩	gu	54
+c	汩	yu	4
+c	汪	wang	69
+c	汫	jing	2
+c	汭	rui	6
+c	汯	hong	2
+c	汰	tai	76
+c	汲	ji	67
+c	汴	bian	4
+c	汶	wen	18
+c	汶	men	5
+c	汹	xiong	53
+c	汽	qi	104
+c	汾	fen	46
+c	沁	qin	54
+c	沂	yi	28
+c	沃	wo	109
+c	沄	yun	11
+c	沅	yuan	14
+c	沆	hang	16
+c	沇	yan	3
+c	沈	shen	489
+c	沈	chen	5
+c	沉	chen	352
+c	沋	you	2
+c	沌	dun	19
+c	沏	qi	4
+c	沐	mu	121
+c	沓	ta	109
+c	沓	da	5
+c	沔	mian	4
+c	沕	mi	11
+c	沙	sha	849
+c	沚	zhi	12
+c	沛	pei	42
+c	沟	gou	187
+c	没	mei	695
+c	没	mo	136
+c	沣	feng	2
+c	沤	ou	48
+c	沥	li	90
+c	沦	lun	146
+c	沧	cang	75
+c	沨	feng	3
+c	沩	wei	5
+c	沪	hu	17
+c	沫	mo	85
+c	沬	mei	6
+c	沭	shu	6
+c	沮	ju	153
+c	沱	tuo	20
+c	沲	tuo	2
+c	河	he	925
+c	沴	li	38
+c	沵	mi	5
+c	沸	fei	136
+c	油	you	728
+c	沺	tian	4
+c	治	zhi	795
+c	沼	zhao	45
+c	沽	gu	68
+c	沾	zhan	138
+c	沿	yan	107
+c	泂	jiong	3
+c	泃	ju	3
+c	泄	xie	164
+c	泄	yi	2
+c	泅	qiu	7
+c	泆	yi	16
+c	泉	quan	372
+c	泊	bo	126
+c	泊	po	15
+c	泌	mi	26
+c	泌	bi	3
+c	泐	le	22
+c	泓	hong	31
+c	泔	gan	8
+c	法	fa	1567
+c	泖	mao	3
+c	泗	si	43
+c	泙	peng	5
+c	泚	ci	11
+c	泛	fan	206
+c	泛	feng	1
+c	泝	su	31
+c	泞	ning	13
+c	泠	ling	33
+c	泡	pao	176
+c	波	bo	670
+c	泣	qi	168
+c	泥	ni	478
+c	泥	nie	2
+c	注	zhu	359
+c	泪	lei	213
+c	泫	xuan	12
+c	泬	jue	6
+c	泮	pan	30
+c	泯	min	41
+c	泰	tai	325
+c	泱	yang	29
+c	泳	yong	54
+c	泵	beng	18
+c	泷	long	17
+c	泷	shuang	3
+c	泸	lu	14
+c	泺	luo	6
+c	泻	xie	87
+c	泼	po	168
+c	泽	ze	400
+c	泾	jing	30
+c	洁	jie	250
+c	洄	hui	35
+c	洇	yin	2
+c	洊	jian	19
+c	洋	yang	528
+c	洌	lie	12
+c	洎	ji	2
+c	洏	er	6
+c	洑	fu	11
+c	洒	sa	157
+c	洗	xi	452
+c	洗	xian	1
+c	洙	zhu	3
+c	洚	jiang	2
+c	洛	luo	243
+c	洞	dong	363
+c	洞	tong	2
+c	洟	ti	5
+c	津	jin	266
+c	洦	po	2
+c	洧	wei	6
+c	洩	xie	2
+c	洪	hong	246
+c	洫	xu	8
+c	洬	shuo	2
+c	洮	tao	18
+c	洱	er	11
+c	洲	zhou	229
+c	洳	ru	11
+c	洴	ping	5
+c	洵	xun	4
+c	洸	guang	9
+c	洹	huan	10
+c	活	huo	644
+c	洼	wa	44
+c	洽	qia	173
+c	派	pai	344
+c	派	pa	2
+c	洿	wu	30
+c	流	liu	1582
+c	浃	jia	59
+c	浄	jing	146
+c	浅	qian	311
+c	浅	jian	1
+c	浆	jiang	218
+c	浇	jiao	123
+c	浈	zhen	2
+c	浉	shi	4
+c	浊	zhuo	147
+c	测	ce	276
+c	浍	hui	8
+c	浍	kuai	2
+c	济	ji	562
+c	浏	liu	23
+c	浐	chan	3
+c	浑	hun	223
+c	浒	hu	15
+c	浒	xu	2
+c	浓	nong	119
+c	浔	xun	19
+c	浕	jin	2
+c	浘	wei	2
+c	浙	zhe	21
+c	浚	jun	61
+c	浚	xun	1
+c	浜	bang	5
+c	浞	zhuo	5
+c	浟	you	4
+c	浠	xi	2
+c	浡	bo	9
+c	浣	huan	49
+c	浤	hong	2
+c	浥	yi	12
+c	浦	pu	120
+c	浩	hao	128
+c	浪	lang	430
+c	浮	fu	542
+c	浯	wu	4
+c	浰	lian	3
+c	浴	yu	132
+c	海	hai	1582
+c	浸	jin	117
+c	浼	mei	14
+c	涀	xian	3
+c	涂	tu	370
+c	涅	nie	53
+c	涆	han	3
+c	消	xiao	440
+c	涉	she	158
+c	涊	nian	3
+c	涌	yong	128
+c	涌	chong	3
+c	涎	xian	70
+c	涏	ting	2
+c	涑	su	2
+c	涒	tun	4
+c	涓	juan	55
+c	涔	cen	24
+c	涕	ti	99
+c	涘	si	7
+c	涚	shui	3
+c	涛	tao	67
+c	涝	lao	36
+c	涞	lai	4
+c	涟	lian	38
+c	涡	wo	46
+c	涡	guo	4
+c	涣	huan	53
+c	涤	di	87
+c	润	run	244
+c	涧	jian	66
+c	涨	zhang	89
+c	涩	se	119
+c	涪	fu	9
+c	涫	guan	6
+c	涬	xing	3
+c	涮	shuan	14
+c	涯	ya	75
+c	液	ye	214
+c	涴	wo	7
+c	涴	wan	1
+c	涵	han	93
+c	涷	dong	5
+c	涸	he	59
+c	涹	wo	2
+c	涽	hun	2
+c	涿	zhuo	7
+c	淀	dian	33
+c	淃	juan	3
+c	淄	zi	19
+c	淅	xi	37
+c	淆	xiao	30
+c	淇	qi	17
+c	淈	gu	6
+c	淋	lin	132
+c	淌	tang	22
+c	淑	shu	119
+c	淖	nao	28
+c	淘	tao	104
+c	淙	cong	18
+c	淜	peng	10
+c	淞	song	5
+c	淟	tian	8
+c	淠	pi	2
+c	淡	dan	289
+c	淢	yu	4
+c	淤	yu	51
+c	淫	yin	376
+c	淬	cui	38
+c	淮	huai	72
+c	淰	nian	5
+c	深	shen	841
+c	淲	biao	2
+c	淳	chun	141
+c	淴	hu	3
+c	混	hun	326
+c	混	gun	2
+c	淹	yan	178
+c	添	tian	117
+c	淼	miao	11
+c	渀	ben	4
+c	清	qing	1484
+c	渊	yuan	320
+c	渌	lu	36
+c	渍	zi	53
+c	渎	du	90
+c	渐	jian	167
+c	渑	mian	11
+c	渔	yu	192
+c	渖	shen	11
+c	渗	shen	52
+c	渚	zhu	72
+c	渝	yu	53
+c	渟	ting	20
+c	渠	qu	158
+c	渡	du	131
+c	渣	zha	48
+c	渤	bo	10
+c	渥	wo	68
+c	温	wen	457
+c	渫	xie	10
+c	渭	wei	50
+c	港	gang	237
+c	渰	yan	6
+c	渲	xuan	10
+c	渴	ke	100
+c	游	you	582
+c	渺	miao	57
+c	湃	pai	15
+c	湄	mei	13
+c	湅	lian	2
+c	湉	tian	3
+c	湋	wei	3
+c	湌	can	2
+c	湍	tuan	29
+c	湎	mian	14
+c	湑	xu	3
+c	湔	jian	8
+c	湖	hu	314
+c	湘	xiang	50
+c	湛	zhan	30
+c	湟	huang	9
+c	湢	bi	2
+c	湣	min	2
+c	湩	dong	4
+c	湫	qiu	12
+c	湫	jiao	2
+c	湮	yan	51
+c	湱	huo	2
+c	湲	yuan	6
+c	湴	ban	2
+c	湼	nie	3
+c	湾	wan	126
+c	湿	shi	142
+c	溃	kui	156
+c	溃	hui	2
+c	溅	jian	33
+c	溆	xu	9
+c	溇	lou	3
+c	溉	gai	23
+c	溏	tang	5
+c	源	yuan	433
+c	溓	lian	4
+c	溔	yao	3
+c	溘	ke	9
+c	溜	liu	401
+c	溞	sao	2
+c	溟	ming	39
+c	溢	yi	117
+c	溥	pu	12
+c	溧	li	5
+c	溪	xi	216
+c	溯	su	38
+c	溲	sou	40
+c	溴	xiu	8
+c	溵	yin	2
+c	溶	rong	76
+c	溷	hun	39
+c	溺	ni	101
+c	溺	niao	4
+c	溽	ru	11
+c	滀	chu	2
+c	滁	chu	2
+c	滂	pang	15
+c	滃	weng	3
+c	滇	dian	10
+c	滋	zi	99
+c	滑	hua	221
+c	滓	zi	26
+c	滔	tao	49
+c	滕	teng	20
+c	滚	gun	128
+c	滞	zhi	152
+c	滟	yan	5
+c	满	man	492
+c	滢	ying	2
+c	滤	lv	42
+c	滥	lan	124
+c	滦	luan	8
+c	滨	bin	79
+c	滩	tan	85
+c	滴	di	151
+c	漂	piao	113
+c	漆	qi	112
+c	漈	ji	2
+c	漉	lu	24
+c	漏	lou	274
+c	漐	zhi	3
+c	漓	li	40
+c	演	yan	227
+c	漕	cao	24
+c	漘	chun	3
+c	漠	mo	101
+c	漢	han	2
+c	漦	chi	5
+c	漩	xuan	9
+c	漪	yi	16
+c	漫	man	184
+c	漭	mang	15
+c	漯	ta	2
+c	漯	luo	1
+c	漱	shu	29
+c	漳	zhang	17
+c	漶	huan	6
+c	漻	liao	3
+c	漾	yang	21
+c	潄	shu	2
+c	潇	xiao	24
+c	潋	lian	5
+c	潍	wei	5
+c	潏	jue	7
+c	潒	dang	2
+c	潘	pan	38
+c	潜	qian	202
+c	潝	xi	2
+c	潞	lu	6
+c	潟	xi	4
+c	潠	sun	2
+c	潠	xun	2
+c	潢	huang	31
+c	潦	liao	45
+c	潦	lao	4
+c	潨	cong	2
+c	潬	tan	2
+c	潭	tan	90
+c	潮	chao	194
+c	潴	zhu	10
+c	潸	shan	8
+c	潺	chan	3
+c	潼	tong	13
+c	澁	se	6
+c	澄	cheng	68
+c	澄	deng	14
+c	澈	che	36
+c	澌	si	16
+c	澍	shu	6
+c	澎	peng	9
+c	澒	hong	10
+c	澓	fu	3
+c	澜	lan	40
+c	澡	zao	24
+c	澣	han	10
+c	澥	xie	4
+c	澧	li	7
+c	澨	shi	8
+c	澭	yong	2
+c	澳	ao	61
+c	澳	yu	1
+c	澹	dan	54
+c	澹	tan	2
+c	澼	pi	2
+c	激	ji	244
+c	濆	pen	8
+c	濇	se	3
+c	濉	sui	2
+c	濊	wei	7
+c	濊	hui	3
+c	濑	lai	35
+c	濒	bin	13
+c	濙	ying	3
+c	濛	meng	6
+c	濞	bi	8
+c	濠	hao	11
+c	濡	ru	50
+c	濩	hu	13
+c	濬	jun	4
+c	濭	ai	2
+c	濮	pu	12
+c	濯	zhuo	54
+c	瀁	yang	12
+c	瀍	chan	6
+c	瀑	pu	13
+c	瀑	bao	7
+c	瀚	han	3
+c	瀛	ying	22
+c	瀜	rong	2
+c	瀣	xie	6
+c	瀯	ying	3
+c	瀹	yue	5
+c	瀼	rang	5
+c	瀼	nang	1
+c	灂	zhuo	3
+c	灋	fa	16
+c	灌	guan	115
+c	灏	hao	3
+c	灞	ba	4
+c	灟	zhu	2
+c	灢	nang	2
+c	火	huo	1623
+c	灭	mie	321
+c	灯	deng	553
+c	灰	hui	452
+c	灵	ling	873
+c	灶	zao	186
+c	灸	jiu	38
+c	灺	xie	7
+c	灼	zhuo	118
+c	灾	zai	279
+c	灿	can	49
+c	炀	yang	18
+c	炁	qi	12
+c	炅	jiong	3
+c	炉	lu	238
+c	炊	chui	87
+c	炎	yan	367
+c	炒	chao	80
+c	炔	que	7
+c	炕	kang	43
+c	炖	dun	11
+c	炘	xin	3
+c	炙	zhi	94
+c	炜	wei	19
+c	炟	da	2
+c	炤	zhao	23
+c	炧	xie	3
+c	炫	xuan	69
+c	炬	ju	54
+c	炭	tan	144
+c	炮	pao	295
+c	炮	bao	1
+c	炯	jiong	28
+c	炰	pao	16
+c	炰	fou	2
+c	炱	tai	4
+c	炲	tai	2
+c	炳	bing	76
+c	炷	zhu	12
+c	炸	zha	188
+c	点	dian	954
+c	炼	lian	170
+c	炽	chi	62
+c	烁	shuo	64
+c	烂	lan	305
+c	烃	ting	19
+c	烈	lie	331
+c	烊	yang	3
+c	烋	xiao	5
+c	烔	tong	4
+c	烖	zai	7
+c	烘	hong	94
+c	烙	lao	17
+c	烙	luo	2
+c	烛	zhu	236
+c	烜	hui	12
+c	烜	xuan	2
+c	烝	zheng	58
+c	烞	po	4
+c	烟	yan	741
+c	烤	kao	46
+c	烦	fan	336
+c	烧	shao	269
+c	烨	ye	18
+c	烩	hui	11
+c	烫	tang	47
+c	烬	jin	37
+c	热	re	707
+c	烯	xi	36
+c	烰	fu	4
+c	烷	wan	26
+c	烹	peng	94
+c	烺	lang	6
+c	烻	yan	2
+c	烽	feng	64
+c	烿	rong	2
+c	焄	hun	3
+c	焄	xun	1
+c	焅	ku	2
+c	焉	yan	64
+c	焊	han	47
+c	焌	jun	4
+c	焌	qu	1
+c	焓	han	3
+c	焕	huan	70
+c	焖	men	3
+c	焗	ju	4
+c	焘	tao	12
+c	焘	dao	1
+c	焙	bei	27
+c	焚	fen	181
+c	焜	kun	14
+c	焞	tun	4
+c	焠	cui	4
+c	焥	wo	2
+c	焦	jiao	280
+c	焫	ruo	5
+c	焭	qiong	5
+c	焮	xin	10
+c	焯	chao	9
+c	焯	zhuo	2
+c	焰	yan	122
+c	焱	yan	25
+c	然	ran	1446
+c	煅	duan	9
+c	煊	xuan	4
+c	煌	huang	44
+c	煎	jian	120
+c	煑	zhu	2
+c	煔	qian	4
+c	煖	xuan	6
+c	煗	nuan	7
+c	煜	yu	20
+c	煞	sha	148
+c	煟	wei	5
+c	煠	ye	2
+c	煤	mei	141
+c	煦	xu	57
+c	照	zhao	523
+c	煨	wei	19
+c	煮	zhu	66
+c	煲	bao	7
+c	煳	hu	5
+c	煴	yun	9
+c	煸	bian	6
+c	煻	tang	2
+c	煽	shan	43
+c	煿	bo	2
+c	熀	huang	7
+c	熂	xi	4
+c	熄	xi	13
+c	熇	he	12
+c	熊	xiong	172
+c	熌	shan	5
+c	熏	xun	175
+c	熔	rong	38
+c	熙	xi	110
+c	熚	bi	8
+c	熛	biao	19
+c	熟	shu	368
+c	熟	shou	2
+c	熠	yi	16
+c	熢	feng	2
+c	熨	yun	22
+c	熨	yu	4
+c	熬	ao	88
+c	熯	han	13
+c	熳	man	4
+c	熵	shang	3
+c	熸	jian	10
+c	熹	xi	14
+c	熻	xi	2
+c	燀	chan	9
+c	燂	qian	2
+c	燃	ran	108
+c	燋	jiao	47
+c	燋	zhuo	2
+c	燌	ben	2
+c	燎	liao	113
+c	燐	lin	3
+c	燑	tong	2
+c	燔	fan	52
+c	燕	yan	678
+c	燖	xun	7
+c	燠	yu	36
+c	燥	zao	83
+c	燥	sao	1
+c	燧	sui	47
+c	燮	xie	20
+c	燹	xian	3
+c	爀	he	3
+c	爁	lan	2
+c	爆	bao	161
+c	爇	ruo	17
+c	爊	ao	2
+c	爌	kuang	5
+c	爓	yan	10
+c	爕	xie	2
+c	爚	yue	13
+c	爝	jue	5
+c	爞	chong	3
+c	爟	guan	4
+c	爡	che	3
+c	爢	mi	2
+c	爣	tang	4
+c	爥	zhu	4
+c	爨	cuan	85
+c	爪	zhao	161
+c	爪	zhua	33
+c	爬	pa	77
+c	爰	yuan	11
+c	爱	ai	622
+c	爵	jue	224
+c	父	fu	400
+c	爷	ye	152
+c	爸	ba	17
+c	爹	die	26
+c	爻	yao	27
+c	爽	shuang	238
+c	爿	pan	5
+c	牂	zang	12
+c	牄	qiang	2
+c	片	pian	643
+c	版	ban	274
+c	牉	pan	2
+c	牋	jian	17
+c	牌	pai	363
+c	牍	du	94
+c	牎	chuang	2
+c	牏	yu	4
+c	牐	zha	5
+c	牒	die	113
+c	牓	bang	52
+c	牕	chuang	18
+c	牖	you	57
+c	牙	ya	670
+c	牚	cheng	3
+c	牛	niu	847
+c	牝	pin	35
+c	牟	mu	43
+c	牟	mou	15
+c	牡	mu	64
+c	牢	lao	233
+c	牣	ren	6
+c	牤	mang	2
+c	牦	mao	18
+c	牧	mu	208
+c	物	wu	1486
+c	牯	gu	9
+c	牲	sheng	110
+c	牴	di	3
+c	牵	qian	273
+c	牷	quan	7
+c	牸	zi	8
+c	特	te	791
+c	牺	xi	53
+c	牾	wu	9
+c	牿	gu	5
+c	犀	xi	185
+c	犁	li	68
+c	犂	li	66
+c	犄	ji	6
+c	犆	te	3
+c	犇	ben	37
+c	犊	du	87
+c	犋	ju	4
+c	犍	jian	13
+c	犍	qian	3
+c	犒	kao	28
+c	犓	chu	3
+c	犗	jie	4
+c	犘	ma	2
+c	犟	jiang	8
+c	犦	bo	4
+c	犨	chou	4
+c	犪	kui	2
+c	犬	quan	242
+c	犮	ba	2
+c	犯	fan	402
+c	犲	chai	2
+c	犴	an	19
+c	犵	ge	5
+c	状	zhuang	434
+c	犷	guang	45
+c	犸	ma	2
+c	犹	you	121
+c	犾	yin	2
+c	狁	yun	2
+c	狂	kuang	419
+c	狃	niu	10
+c	狄	di	65
+c	狆	zhong	2
+c	狈	bei	14
+c	狉	pi	9
+c	狋	yi	4
+c	狌	xing	4
+c	狍	pao	4
+c	狎	xia	103
+c	狐	hu	246
+c	狑	ling	2
+c	狒	fei	4
+c	狓	pi	4
+c	狖	you	10
+c	狗	gou	506
+c	狙	ju	40
+c	狝	xian	15
+c	狞	ning	35
+c	狟	huan	5
+c	狠	hen	151
+c	狡	jiao	122
+c	狢	he	4
+c	狥	xun	37
+c	狧	shi	2
+c	狧	ta	2
+c	狨	rong	8
+c	狩	shou	29
+c	狪	tong	3
+c	狫	lao	3
+c	独	du	564
+c	狭	xia	113
+c	狮	shi	94
+c	狯	kuai	14
+c	狰	zheng	5
+c	狱	yu	235
+c	狲	sun	14
+c	狴	bi	13
+c	狶	xi	11
+c	狷	juan	37
+c	狸	li	65
+c	狺	yin	6
+c	狻	suan	3
+c	狼	lang	327
+c	狿	yan	2
+c	猁	li	2
+c	猃	xian	4
+c	猇	xiao	3
+c	猊	ni	13
+c	猋	biao	22
+c	猎	lie	161
+c	猒	yan	15
+c	猓	guo	6
+c	猕	mi	8
+c	猖	chang	24
+c	猗	yi	28
+c	猘	zhi	6
+c	猛	meng	231
+c	猜	cai	151
+c	猝	cu	21
+c	猞	she	2
+c	猡	luo	6
+c	猢	hu	14
+c	猥	wei	102
+c	猧	wo	4
+c	猨	yuan	7
+c	猩	xing	40
+c	猪	zhu	214
+c	猫	mao	175
+c	猬	wei	22
+c	献	xian	272
+c	猰	ya	3
+c	猱	nao	23
+c	猲	he	4
+c	猲	ge	2
+c	猲	xie	1
+c	猳	jia	7
+c	猴	hou	146
+c	猵	bian	2
+c	猵	pian	1
+c	猷	you	63
+c	猺	yao	4
+c	猼	bo	2
+c	猾	hua	74
+c	猿	yuan	92
+c	獉	zhen	4
+c	獊	cang	2
+c	獌	man	2
+c	獍	jing	6
+c	獐	zhang	24
+c	獑	chan	2
+c	獒	ao	7
+c	獗	jue	6
+c	獘	bi	15
+c	獙	bi	2
+c	獜	lin	2
+c	獝	yu	6
+c	獟	yao	2
+c	獠	liao	28
+c	獠	lao	1
+c	獢	xiao	2
+c	獦	ge	7
+c	獧	juan	13
+c	獬	xie	4
+c	獭	ta	30
+c	獯	xun	6
+c	獴	meng	6
+c	獶	nao	3
+c	獹	lu	2
+c	獾	huan	10
+c	玃	jue	13
+c	玄	xuan	574
+c	玅	yao	6
+c	率	lv	450
+c	率	shuai	111
+c	玈	lu	2
+c	玉	yu	1667
+c	王	wang	1065
+c	玎	ding	10
+c	玑	ji	34
+c	玕	gan	5
+c	玖	jiu	4
+c	玗	yu	2
+c	玙	yu	3
+c	玛	ma	105
+c	玟	min	2
+c	玟	wen	1
+c	玠	jie	4
+c	玢	bin	3
+c	玢	fen	2
+c	玦	jue	11
+c	玩	wan	310
+c	玫	mei	26
+c	玭	pin	4
+c	玮	wei	19
+c	环	huan	526
+c	现	xian	348
+c	玱	qiang	2
+c	玲	ling	27
+c	玳	dai	26
+c	玷	dian	33
+c	玺	xi	57
+c	玻	bo	80
+c	玼	ci	6
+c	珀	po	17
+c	珂	ke	30
+c	珇	zu	2
+c	珈	jia	5
+c	珉	min	26
+c	珊	shan	42
+c	珌	bi	4
+c	珍	zhen	292
+c	珎	zhen	2
+c	珐	fa	2
+c	珑	long	26
+c	珓	jiao	9
+c	珙	gong	4
+c	珞	luo	9
+c	珠	zhu	682
+c	珣	xun	3
+c	珤	bao	3
+c	珥	er	46
+c	珧	yao	11
+c	珩	hang	8
+c	珪	gui	55
+c	珫	chong	3
+c	班	ban	554
+c	珮	pei	2
+c	珰	dang	54
+c	珲	hun	3
+c	珲	hui	2
+c	珽	ting	3
+c	琁	xuan	3
+c	球	qiu	528
+c	琄	xuan	2
+c	琅	lang	90
+c	理	li	1412
+c	琇	xiu	4
+c	琉	liu	26
+c	琊	ya	4
+c	琏	lian	5
+c	琐	suo	158
+c	琕	bing	2
+c	琖	zhan	9
+c	琚	ju	6
+c	琛	chen	30
+c	琢	zhuo	70
+c	琢	zuo	2
+c	琤	cheng	11
+c	琥	hu	7
+c	琦	qi	14
+c	琨	kun	10
+c	琪	qi	24
+c	琫	beng	8
+c	琬	wan	7
+c	琭	lu	7
+c	琮	cong	12
+c	琯	guan	6
+c	琰	yan	11
+c	琱	diao	33
+c	琲	bei	6
+c	琳	lin	44
+c	琴	qin	286
+c	琵	pi	30
+c	琶	pa	34
+c	琼	qiong	228
+c	瑀	yu	4
+c	瑁	mao	17
+c	瑄	xuan	2
+c	瑉	min	2
+c	瑊	jian	2
+c	瑑	zhuan	11
+c	瑕	xia	150
+c	瑗	yuan	3
+c	瑙	nao	15
+c	瑚	hu	23
+c	瑛	ying	14
+c	瑜	yu	53
+c	瑞	rui	219
+c	瑟	se	127
+c	瑠	liu	3
+c	瑰	gui	101
+c	瑱	tian	13
+c	瑳	cuo	9
+c	瑵	zhao	2
+c	瑶	yao	232
+c	瑸	bin	2
+c	瑽	cong	6
+c	瑾	jin	9
+c	瑿	yi	2
+c	璀	cui	11
+c	璁	cong	6
+c	璃	li	81
+c	璅	zao	7
+c	璆	qiu	6
+c	璇	xuan	54
+c	璈	ao	5
+c	璋	zhang	16
+c	璎	ying	7
+c	璐	lu	6
+c	璘	lin	13
+c	璚	jue	2
+c	璜	huang	26
+c	璞	pu	47
+c	璠	fan	7
+c	璧	bi	213
+c	璨	can	10
+c	璱	se	2
+c	璲	sui	2
+c	璸	bin	2
+c	璺	wen	10
+c	瓈	li	6
+c	瓌	gui	5
+c	瓒	zan	7
+c	瓓	lan	2
+c	瓜	gua	354
+c	瓝	bo	2
+c	瓞	die	5
+c	瓟	bo	3
+c	瓠	hu	43
+c	瓢	piao	81
+c	瓣	ban	45
+c	瓤	rang	19
+c	瓦	wa	513
+c	瓬	fang	2
+c	瓮	weng	110
+c	瓯	ou	40
+c	瓴	ling	11
+c	瓶	ping	158
+c	瓷	ci	55
+c	瓻	chi	2
+c	瓿	bu	8
+c	甀	zhui	2
+c	甂	bian	3
+c	甃	zhou	22
+c	甄	zhen	82
+c	甆	ci	2
+c	甍	meng	26
+c	甎	zhuan	3
+c	甏	beng	2
+c	甑	zeng	32
+c	甒	wu	4
+c	甓	pi	18
+c	甔	dan	6
+c	甕	weng	5
+c	甗	yan	4
+c	甘	gan	377
+c	甚	shen	173
+c	甜	tian	152
+c	生	sheng	2866
+c	甡	shen	3
+c	甤	rui	3
+c	甥	sheng	29
+c	用	yong	977
+c	甩	shuai	31
+c	甪	lu	4
+c	甫	fu	58
+c	甬	yong	11
+c	甭	beng	2
+c	甯	ning	2
+c	田	tian	815
+c	由	you	329
+c	甲	jia	660
+c	申	shen	246
+c	电	dian	1288
+c	男	nan	335
+c	甸	dian	112
+c	甹	ping	2
+c	町	ting	14
+c	町	ding	3
+c	画	hua	764
+c	甽	quan	3
+c	甾	zai	4
+c	甿	meng	38
+c	畀	bi	12
+c	畅	chang	195
+c	畆	mu	2
+c	畇	yun	3
+c	畈	fan	4
+c	畊	geng	5
+c	畋	tian	17
+c	界	jie	486
+c	畎	quan	23
+c	畏	wei	213
+c	畑	tian	2
+c	畔	pan	86
+c	留	liu	496
+c	畚	ben	17
+c	畛	zhen	27
+c	畜	chu	178
+c	畜	xu	21
+c	畟	ji	5
+c	畡	gai	2
+c	畤	zhi	17
+c	略	lve	388
+c	畦	qi	47
+c	畧	lve	10
+c	番	fan	238
+c	番	pan	5
+c	畬	she	17
+c	畬	yu	1
+c	畮	mu	8
+c	畯	jun	14
+c	畲	she	19
+c	畴	chou	75
+c	畷	zhui	2
+c	畸	ji	49
+c	畹	wan	13
+c	畺	jiang	2
+c	畼	chang	6
+c	畽	tuan	2
+c	畾	lei	2
+c	畿	ji	66
+c	疃	tuan	4
+c	疆	jiang	159
+c	疈	pi	4
+c	疋	pi	32
+c	疍	dan	2
+c	疎	shu	58
+c	疏	shu	478
+c	疐	zhi	10
+c	疐	di	6
+c	疑	yi	440
+c	疔	ding	11
+c	疕	bi	2
+c	疖	jie	4
+c	疗	liao	133
+c	疙	ge	43
+c	疚	jiu	48
+c	疝	shan	9
+c	疟	nve	29
+c	疟	yao	6
+c	疠	li	35
+c	疡	yang	19
+c	疢	chen	14
+c	疣	you	28
+c	疤	ba	24
+c	疥	jie	23
+c	疫	yi	82
+c	疬	li	5
+c	疮	chuang	118
+c	疯	feng	70
+c	疰	zhu	4
+c	疱	pao	14
+c	疲	pi	130
+c	疳	gan	9
+c	疴	ke	30
+c	疵	ci	89
+c	疸	dan	12
+c	疸	da	1
+c	疹	zhen	48
+c	疻	zhi	8
+c	疼	teng	58
+c	疽	ju	36
+c	疾	ji	550
+c	痀	ju	3
+c	痁	shan	7
+c	痂	jia	15
+c	痄	zha	2
+c	病	bing	920
+c	痆	ni	2
+c	症	zheng	305
+c	痈	yong	24
+c	痉	jing	17
+c	痊	quan	22
+c	痌	tong	11
+c	痍	yi	15
+c	痎	jie	4
+c	痏	wei	7
+c	痑	tan	3
+c	痒	yang	114
+c	痔	zhi	18
+c	痕	hen	111
+c	痖	ya	2
+c	痗	mei	8
+c	痘	dou	27
+c	痛	tong	403
+c	痝	mang	6
+c	痞	pi	32
+c	痟	xiao	8
+c	痠	suan	4
+c	痡	pu	10
+c	痢	li	20
+c	痣	zhi	6
+c	痤	cuo	11
+c	痧	sha	11
+c	痨	lao	27
+c	痪	huan	7
+c	痫	xian	16
+c	痯	guan	2
+c	痰	tan	32
+c	痱	fei	10
+c	痲	ma	8
+c	痴	chi	210
+c	痷	an	2
+c	痹	bi	40
+c	痺	bi	2
+c	痼	gu	25
+c	痾	ke	31
+c	痿	wei	29
+c	瘀	yu	14
+c	瘁	cui	66
+c	瘃	zhu	11
+c	瘄	cu	3
+c	瘅	dan	17
+c	瘆	shen	5
+c	瘇	zhong	2
+c	瘈	zhi	3
+c	瘈	chi	1
+c	瘊	hou	4
+c	瘌	la	7
+c	瘏	tu	6
+c	瘐	yu	6
+c	瘑	guo	2
+c	瘕	jia	25
+c	瘖	yin	21
+c	瘗	yi	41
+c	瘘	lou	6
+c	瘙	sao	9
+c	瘛	chi	6
+c	瘜	xi	2
+c	瘝	guan	10
+c	瘟	wen	38
+c	瘠	ji	87
+c	瘢	ban	34
+c	瘣	lei	4
+c	瘤	liu	63
+c	瘥	chai	10
+c	瘦	shou	191
+c	瘨	dian	2
+c	瘩	da	32
+c	瘪	bie	26
+c	瘫	tan	30
+c	瘭	biao	2
+c	瘯	cu	4
+c	瘰	luo	4
+c	瘲	zong	3
+c	瘳	chou	11
+c	瘴	zhang	54
+c	瘵	zhai	23
+c	瘸	que	7
+c	瘼	mo	13
+c	瘾	yin	31
+c	瘿	ying	16
+c	癃	long	20
+c	癈	fei	2
+c	癌	ai	32
+c	癎	xian	3
+c	癏	guan	6
+c	癐	gui	2
+c	癕	yong	5
+c	癖	pi	85
+c	癜	dian	3
+c	癞	lai	43
+c	癣	xuan	25
+c	癫	dian	25
+c	癯	qu	19
+c	癳	luo	2
+c	癶	bo	2
+c	癸	gui	24
+c	登	deng	507
+c	白	bai	2394
+c	百	bai	1188
+c	百	bo	1
+c	皁	zao	26
+c	皂	zao	143
+c	皃	mao	7
+c	的	de	482
+c	的	di	102
+c	皆	jie	75
+c	皇	huang	522
+c	皈	gui	9
+c	皋	gao	93
+c	皎	jiao	35
+c	皐	gao	5
+c	皑	ai	8
+c	皒	e	2
+c	皓	hao	93
+c	皖	wan	11
+c	皙	xi	5
+c	皛	jiao	17
+c	皜	hao	3
+c	皞	hao	5
+c	皟	ze	2
+c	皠	cui	2
+c	皡	hao	5
+c	皤	po	14
+c	皥	hao	5
+c	皦	jiao	21
+c	皧	ai	2
+c	皪	li	4
+c	皭	jiao	4
+c	皮	pi	849
+c	皯	gan	2
+c	皱	zhou	61
+c	皲	jun	7
+c	皴	cun	22
+c	皵	que	2
+c	皶	zha	2
+c	皷	gu	17
+c	皿	min	10
+c	盂	yu	44
+c	盅	zhong	7
+c	盆	pen	178
+c	盈	ying	223
+c	盉	he	2
+c	益	yi	255
+c	盋	bo	2
+c	盌	wan	14
+c	盍	he	14
+c	盎	ang	42
+c	盏	zhan	66
+c	盐	yan	431
+c	监	jian	381
+c	盒	he	80
+c	盔	kui	19
+c	盖	gai	437
+c	盖	ge	4
+c	盗	dao	320
+c	盘	pan	750
+c	盛	sheng	336
+c	盛	cheng	13
+c	盝	lu	4
+c	盟	meng	230
+c	盥	guan	35
+c	盦	an	4
+c	盩	zhou	6
+c	盬	gu	5
+c	盭	li	21
+c	目	mu	1159
+c	盯	ding	17
+c	盱	xu	18
+c	盲	mang	163
+c	直	zhi	1005
+c	相	xiang	2248
+c	盹	dun	22
+c	盻	xi	9
+c	盼	pan	96
+c	盾	dun	69
+c	盿	min	2
+c	眀	ming	4
+c	省	sheng	481
+c	省	xing	77
+c	眂	shi	2
+c	眄	mian	38
+c	眇	miao	90
+c	眈	dan	21
+c	眉	mei	557
+c	眊	mao	37
+c	看	kan	604
+c	眍	kou	3
+c	眎	shi	5
+c	眐	zheng	3
+c	眑	yao	4
+c	眒	shen	3
+c	眕	zhen	4
+c	眘	shen	2
+c	眙	yi	22
+c	眚	sheng	37
+c	真	zhen	762
+c	眠	mian	130
+c	眡	shi	5
+c	眢	yuan	8
+c	眤	ni	3
+c	眦	zi	48
+c	眨	zha	22
+c	眩	xuan	112
+c	眬	long	7
+c	眮	tong	2
+c	眯	mi	32
+c	眳	ming	2
+c	眴	xuan	14
+c	眴	shun	3
+c	眵	chi	9
+c	眶	kuang	15
+c	眷	juan	170
+c	眸	mou	46
+c	眹	zhen	4
+c	眺	tiao	42
+c	眼	yan	1406
+c	眽	mo	2
+c	着	zhe	546
+c	着	zhuo	168
+c	着	zhao	163
+c	睁	zheng	45
+c	睃	suo	12
+c	睄	qiao	2
+c	睆	huan	7
+c	睇	di	36
+c	睈	cheng	2
+c	睊	juan	3
+c	睍	xian	6
+c	睎	xi	5
+c	睐	lai	11
+c	睑	jian	11
+c	睒	shan	16
+c	睔	gun	2
+c	睕	wan	3
+c	睖	leng	7
+c	睗	shi	2
+c	睚	ya	13
+c	睛	jing	66
+c	睟	sui	8
+c	睠	juan	9
+c	睡	shui	184
+c	睢	sui	27
+c	睢	hui	3
+c	督	du	152
+c	睥	pi	6
+c	睦	mu	56
+c	睨	ni	57
+c	睩	lu	7
+c	睪	yi	9
+c	睪	gao	1
+c	睫	jie	48
+c	睬	cai	17
+c	睭	zhou	3
+c	睮	yu	2
+c	睹	du	76
+c	睺	hou	3
+c	睽	kui	36
+c	睾	gao	18
+c	睿	rui	85
+c	瞀	mao	43
+c	瞁	xu	2
+c	瞄	miao	7
+c	瞅	chou	16
+c	瞋	chen	28
+c	瞋	tian	3
+c	瞌	ke	14
+c	瞎	xia	99
+c	瞑	ming	50
+c	瞒	man	95
+c	瞓	fen	2
+c	瞙	mo	2
+c	瞚	shun	9
+c	瞜	lou	2
+c	瞟	piao	7
+c	瞠	cheng	25
+c	瞡	gui	2
+c	瞢	meng	22
+c	瞤	shun	4
+c	瞥	pie	33
+c	瞧	qiao	30
+c	瞩	zhu	50
+c	瞪	deng	69
+c	瞬	shun	54
+c	瞭	liao	21
+c	瞯	jian	4
+c	瞰	kan	26
+c	瞲	xu	2
+c	瞳	tong	24
+c	瞵	lin	11
+c	瞶	gui	11
+c	瞷	jian	6
+c	瞹	ai	2
+c	瞻	zhan	143
+c	瞽	gu	53
+c	瞿	qu	33
+c	瞿	ju	2
+c	矃	ning	2
+c	矉	pin	4
+c	矊	mian	2
+c	矍	jue	11
+c	矎	xuan	2
+c	矐	huo	2
+c	矑	lu	5
+c	矒	meng	2
+c	矖	xi	2
+c	矗	chu	16
+c	矘	tang	2
+c	矙	kan	2
+c	矛	mao	73
+c	矜	jin	239
+c	矜	guan	3
+c	矜	qin	1
+c	矞	yu	13
+c	矟	shuo	15
+c	矢	shi	215
+c	矣	yi	31
+c	知	zhi	1229
+c	矦	hou	2
+c	矩	ju	139
+c	矫	jiao	190
+c	矬	cuo	10
+c	短	duan	653
+c	矮	ai	74
+c	矰	zeng	11
+c	矱	yue	3
+c	矲	ba	3
+c	石	shi	1963
+c	石	dan	22
+c	矴	ding	4
+c	矶	ji	30
+c	矸	gan	7
+c	矹	wu	5
+c	矻	ku	13
+c	矼	gang	1
+c	矼	qiang	1
+c	矽	xi	12
+c	矾	fan	35
+c	矿	kuang	157
+c	砀	dang	12
+c	码	ma	192
+c	砂	sha	157
+c	砆	fu	6
+c	砉	hua	11
+c	砌	qi	83
+c	砌	qie	1
+c	砍	kan	31
+c	砎	jie	2
+c	砏	pin	2
+c	砑	ya	21
+c	砒	pi	4
+c	研	yan	298
+c	砖	zhuan	103
+c	砘	dun	2
+c	砚	yan	113
+c	砝	fa	2
+c	砟	zha	5
+c	砠	ju	2
+c	砢	luo	11
+c	砢	ke	2
+c	砣	tuo	8
+c	砥	di	86
+c	砦	zhai	19
+c	砧	zhen	43
+c	砬	la	3
+c	砭	bian	28
+c	砮	nu	5
+c	砯	ping	4
+c	砰	peng	47
+c	砲	pao	3
+c	破	po	748
+c	砷	shen	8
+c	砸	za	40
+c	砺	li	71
+c	砻	long	41
+c	砾	li	46
+c	础	chu	42
+c	硁	keng	6
+c	硃	zhu	11
+c	硅	gui	33
+c	硇	nao	3
+c	硉	lu	6
+c	硊	wei	3
+c	硋	ai	6
+c	硌	ge	11
+c	硎	xing	15
+c	硐	dong	7
+c	硕	shuo	108
+c	硖	xia	3
+c	硗	qiao	19
+c	硙	wei	10
+c	硚	qiao	3
+c	硝	xiao	43
+c	硞	que	2
+c	硠	lang	9
+c	硡	hong	2
+c	硩	che	5
+c	硪	wo	7
+c	硫	liu	43
+c	硬	ying	311
+c	确	que	219
+c	硱	kun	4
+c	硷	jian	11
+c	硼	peng	9
+c	硾	zhui	3
+c	硿	kong	4
+c	碁	qi	36
+c	碄	lin	2
+c	碅	jun	2
+c	碆	bo	2
+c	碇	ding	12
+c	碉	diao	7
+c	碌	lu	140
+c	碌	liu	3
+c	碍	ai	114
+c	碎	sui	261
+c	碏	que	2
+c	碑	bei	181
+c	碓	dui	36
+c	碔	wu	5
+c	碕	qi	11
+c	碗	wan	79
+c	碘	dian	15
+c	碚	bei	4
+c	碛	qi	29
+c	碜	chen	27
+c	碝	ruan	3
+c	碞	yan	2
+c	碟	die	37
+c	碡	zhou	5
+c	碣	jie	29
+c	碧	bi	363
+c	碨	wei	8
+c	碪	zhen	7
+c	碫	duan	2
+c	碰	peng	82
+c	碱	jian	78
+c	碳	tan	64
+c	碴	cha	27
+c	碶	qi	2
+c	碻	qiao	8
+c	碾	nian	35
+c	磁	ci	138
+c	磅	bang	21
+c	磅	pang	12
+c	磈	wei	13
+c	磈	kui	1
+c	磉	sang	4
+c	磊	lei	70
+c	磋	cuo	21
+c	磍	xia	3
+c	磎	qi	4
+c	磏	lian	2
+c	磐	pan	34
+c	磔	zhe	41
+c	磕	ke	99
+c	磙	gun	6
+c	磝	ao	7
+c	磞	peng	5
+c	磟	liu	2
+c	磡	kan	3
+c	磢	chuang	4
+c	磤	yin	4
+c	磥	lei	3
+c	磨	mo	533
+c	磬	qing	75
+c	磲	qu	3
+c	磳	zeng	9
+c	磴	deng	33
+c	磵	jian	12
+c	磶	xi	2
+c	磷	lin	64
+c	磺	huang	8
+c	磻	bo	5
+c	磻	pan	2
+c	磿	li	2
+c	礁	jiao	25
+c	礉	he	3
+c	礋	ze	2
+c	礐	que	3
+c	礓	jiang	4
+c	礔	pi	2
+c	礘	e	3
+c	礚	ke	10
+c	礛	jian	2
+c	礜	yu	4
+c	礞	meng	2
+c	礤	ca	2
+c	礥	xian	2
+c	礧	lei	19
+c	礨	lei	9
+c	礩	zhi	2
+c	礰	li	6
+c	礲	long	11
+c	礴	bo	21
+c	礶	guan	3
+c	示	shi	228
+c	礼	li	721
+c	礽	reng	3
+c	社	she	499
+c	礿	yue	6
+c	祀	si	149
+c	祁	qi	40
+c	祃	ma	8
+c	祅	yao	34
+c	祆	xian	13
+c	祇	qi	54
+c	祈	qi	84
+c	祉	zhi	49
+c	祊	beng	4
+c	祎	yi	3
+c	祏	shi	7
+c	祐	you	2
+c	祓	fu	25
+c	祔	fu	22
+c	祕	bi	2
+c	祖	zu	434
+c	祗	zhi	71
+c	祚	zuo	67
+c	祛	qu	39
+c	祜	hu	15
+c	祝	zhu	212
+c	祝	zhou	1
+c	神	shen	1681
+c	祟	sui	29
+c	祠	ci	148
+c	祡	chai	2
+c	祢	mi	10
+c	祥	xiang	210
+c	祧	tiao	25
+c	票	piao	398
+c	祫	xia	13
+c	祭	ji	256
+c	祭	zhai	1
+c	祯	zhen	18
+c	祲	jin	36
+c	祴	gai	3
+c	祷	dao	80
+c	祸	huo	394
+c	祺	qi	7
+c	祻	gu	3
+c	祼	guan	15
+c	禀	bing	142
+c	禁	jin	639
+c	禂	dao	2
+c	禄	lu	244
+c	禅	chan	224
+c	禅	shan	19
+c	禊	xi	27
+c	禋	yin	26
+c	福	fu	518
+c	禔	zhi	4
+c	禖	mei	7
+c	禗	si	2
+c	禘	di	14
+c	禜	yong	8
+c	禠	si	4
+c	禡	ma	8
+c	禧	xi	15
+c	禨	ji	4
+c	禩	si	3
+c	禫	dan	8
+c	禬	gui	8
+c	禳	rang	34
+c	禹	yu	57
+c	禺	yu	30
+c	离	li	848
+c	离	chi	1
+c	禼	xie	2
+c	禽	qin	198
+c	禾	he	116
+c	禿	tu	2
+c	秀	xiu	424
+c	私	si	721
+c	秃	tu	100
+c	秆	gan	18
+c	秈	xian	2
+c	秉	bing	122
+c	秋	qiu	659
+c	种	zhong	587
+c	秏	hao	12
+c	科	ke	825
+c	秒	miao	32
+c	秔	jing	8
+c	秕	bi	26
+c	秘	mi	249
+c	秘	bi	3
+c	秞	you	2
+c	租	zu	189
+c	秣	mo	32
+c	秤	cheng	86
+c	秦	qin	266
+c	秧	yang	57
+c	秩	zhi	148
+c	秪	zhi	5
+c	秫	shu	22
+c	秬	ju	6
+c	秭	zi	5
+c	积	ji	751
+c	称	cheng	534
+c	称	chen	72
+c	秸	jie	15
+c	秸	ji	3
+c	移	yi	498
+c	秽	hui	196
+c	秾	nong	27
+c	稀	xi	157
+c	稂	lang	13
+c	稃	fu	4
+c	稆	lv	4
+c	稉	jing	3
+c	稊	ti	10
+c	程	cheng	518
+c	稌	tu	6
+c	稍	shao	111
+c	税	shui	325
+c	稑	lu	3
+c	稔	ren	70
+c	稗	bai	41
+c	稘	ji	2
+c	稙	zhi	3
+c	稚	zhi	104
+c	稛	kun	2
+c	稞	ke	5
+c	稠	chou	64
+c	稡	zu	2
+c	稣	su	17
+c	稧	xi	3
+c	稭	jie	3
+c	稯	zong	2
+c	稳	wen	190
+c	稷	ji	59
+c	稸	xu	5
+c	稺	zhi	6
+c	稻	dao	119
+c	稼	jia	64
+c	稽	ji	167
+c	稽	qi	5
+c	稾	gao	32
+c	稿	gao	120
+c	穀	gu	2
+c	穄	ji	3
+c	穅	kang	12
+c	穆	mu	130
+c	穇	shan	4
+c	穇	can	1
+c	穉	zhi	15
+c	穊	ji	2
+c	穑	se	30
+c	穗	sui	58
+c	穜	tong	2
+c	穟	sui	11
+c	穣	rang	54
+c	穪	bie	2
+c	穪	cheng	2
+c	穬	kuang	2
+c	穰	rang	58
+c	穴	xue	255
+c	穵	ya	6
+c	究	jiu	226
+c	穷	qiong	732
+c	穸	xi	7
+c	穹	qiong	93
+c	空	kong	1344
+c	穽	jing	18
+c	穾	yao	9
+c	穿	chuan	295
+c	窀	zhun	5
+c	突	tu	305
+c	窂	lao	2
+c	窃	qie	167
+c	窄	zhai	63
+c	窅	yao	41
+c	窆	bian	25
+c	窈	yao	44
+c	窊	wa	13
+c	窋	ku	2
+c	窌	jiao	7
+c	窍	qiao	109
+c	窐	wa	5
+c	窑	yao	85
+c	窒	zhi	39
+c	窓	chuang	7
+c	窔	yao	2
+c	窕	tiao	26
+c	窖	jiao	34
+c	窗	chuang	210
+c	窘	jiong	79
+c	窙	xiao	3
+c	窜	cuan	159
+c	窝	wo	265
+c	窞	dan	6
+c	窟	ku	124
+c	窠	ke	79
+c	窡	zhuo	2
+c	窣	su	20
+c	窥	kui	165
+c	窦	dou	71
+c	窨	xun	10
+c	窨	yin	9
+c	窬	yu	12
+c	窭	ju	40
+c	窱	tiao	5
+c	窳	yu	58
+c	窴	tian	5
+c	窵	diao	3
+c	窸	xi	2
+c	窹	wu	2
+c	窻	chuang	2
+c	窾	kuan	29
+c	窿	long	12
+c	竁	cui	8
+c	立	li	828
+c	竖	shu	175
+c	竘	qu	2
+c	站	zhan	237
+c	竚	zhu	8
+c	竛	ling	2
+c	竞	jing	166
+c	竟	jing	77
+c	章	zhang	583
+c	竢	si	5
+c	竣	jun	10
+c	童	tong	333
+c	竦	song	87
+c	竫	jing	3
+c	竭	jie	156
+c	竮	ping	2
+c	端	duan	488
+c	竱	zhuan	2
+c	竳	deng	2
+c	竷	kan	2
+c	竹	zhu	778
+c	竺	zhu	37
+c	竻	le	3
+c	竽	yu	16
+c	竿	gan	172
+c	笃	du	210
+c	笄	ji	45
+c	笆	ba	20
+c	笇	suan	5
+c	笈	ji	18
+c	笊	zhao	3
+c	笋	sun	111
+c	笏	hu	50
+c	笑	xiao	688
+c	笓	bi	4
+c	笔	bi	794
+c	笕	jian	4
+c	笘	shan	3
+c	笙	sheng	69
+c	笛	di	94
+c	笞	chi	50
+c	笠	li	67
+c	笤	tiao	9
+c	笥	si	40
+c	符	fu	383
+c	笨	ben	63
+c	笪	da	5
+c	笫	zi	5
+c	第	di	316
+c	笭	ling	5
+c	笮	ze	19
+c	笮	zuo	1
+c	笯	nu	3
+c	笱	gou	9
+c	笳	jia	32
+c	笴	gan	5
+c	笵	fan	4
+c	笸	po	3
+c	笺	jian	138
+c	笻	qiong	5
+c	笼	long	289
+c	笾	bian	9
+c	筀	gui	2
+c	筅	xian	5
+c	筇	qiong	12
+c	筈	kuo	3
+c	等	deng	455
+c	筊	jiao	10
+c	筋	jin	197
+c	筌	quan	27
+c	筏	fa	24
+c	筐	kuang	58
+c	筑	zhu	148
+c	筒	tong	150
+c	答	da	310
+c	筕	hang	2
+c	策	ce	409
+c	筚	bi	19
+c	筛	shai	48
+c	筜	dang	8
+c	筝	zheng	33
+c	筞	ce	4
+c	筠	yun	47
+c	筠	jun	1
+c	筢	pa	2
+c	筤	lang	7
+c	筥	ju	5
+c	筦	guan	14
+c	筩	yong	33
+c	筭	suan	45
+c	筮	shi	34
+c	筯	zhu	21
+c	筰	zuo	5
+c	筱	xiao	24
+c	筲	shao	22
+c	筳	ting	7
+c	筴	jia	31
+c	筴	ce	1
+c	筵	yan	119
+c	筷	kuai	18
+c	筹	chou	210
+c	筼	yun	2
+c	签	qian	190
+c	简	jian	636
+c	箄	bi	7
+c	箅	bi	4
+c	箇	ge	9
+c	箊	yu	2
+c	箍	gu	47
+c	箎	chi	3
+c	箐	jing	8
+c	箐	qing	5
+c	箑	sha	12
+c	箒	zhou	24
+c	箓	lu	50
+c	箔	bo	50
+c	箕	ji	116
+c	算	suan	422
+c	箘	jun	7
+c	箙	fu	6
+c	箛	gu	4
+c	箜	kong	5
+c	箝	qian	25
+c	管	guan	867
+c	箢	yuan	3
+c	箥	bo	2
+c	箦	ze	7
+c	箧	qie	77
+c	箨	tuo	19
+c	箩	luo	25
+c	箪	dan	35
+c	箫	xiao	74
+c	箬	ruo	17
+c	箭	jian	290
+c	箯	bian	4
+c	箱	xiang	214
+c	箴	zhen	51
+c	箵	xing	2
+c	箸	zhu	49
+c	箾	xiao	7
+c	篁	huang	29
+c	篆	zhuan	118
+c	篇	pian	191
+c	篌	hou	4
+c	篑	kui	12
+c	篓	lou	23
+c	篔	yun	6
+c	篘	chou	3
+c	篙	gao	20
+c	篚	fei	10
+c	篛	ruo	8
+c	篝	gou	21
+c	篡	cuan	45
+c	篣	pang	4
+c	篥	li	3
+c	篦	bi	23
+c	篨	chu	2
+c	篪	chi	16
+c	篬	qiang	2
+c	篮	lan	77
+c	篰	bu	7
+c	篱	li	96
+c	篲	hui	10
+c	篴	di	4
+c	篷	peng	78
+c	篸	zan	9
+c	篹	zhuan	3
+c	篹	suan	1
+c	篼	dou	9
+c	篾	mie	33
+c	篿	tuan	2
+c	簁	shai	4
+c	簂	guo	3
+c	簇	cu	84
+c	簉	zao	8
+c	簋	gui	22
+c	簌	su	27
+c	簏	lu	11
+c	簑	suo	6
+c	簔	suo	2
+c	簖	duan	3
+c	簛	shai	2
+c	簜	dang	4
+c	簟	dian	42
+c	簠	fu	8
+c	簦	deng	10
+c	簧	huang	64
+c	簨	sun	4
+c	簪	zan	121
+c	簬	lu	3
+c	簭	shi	5
+c	簰	pai	6
+c	簳	gan	7
+c	簴	ju	8
+c	簵	lu	3
+c	簸	bo	66
+c	簺	sai	3
+c	簿	bu	165
+c	籀	zhou	19
+c	籁	lai	49
+c	籉	tai	2
+c	籊	ti	2
+c	籋	mi	5
+c	籍	ji	364
+c	籍	jie	2
+c	籓	fan	7
+c	籔	sou	4
+c	籛	jian	4
+c	籝	ying	2
+c	籞	yu	18
+c	籥	yue	37
+c	籦	zhong	2
+c	籧	ju	4
+c	籯	ying	8
+c	籰	yue	2
+c	米	mi	541
+c	籴	di	26
+c	籸	shen	4
+c	类	lei	500
+c	籼	xian	5
+c	籽	zi	31
+c	粃	bi	17
+c	粅	wu	2
+c	粉	fen	444
+c	粑	ba	12
+c	粒	li	111
+c	粕	po	3
+c	粗	cu	252
+c	粘	zhan	44
+c	粘	nian	39
+c	粜	tiao	17
+c	粝	li	33
+c	粞	xi	4
+c	粟	su	159
+c	粢	zi	10
+c	粤	yue	32
+c	粥	zhou	107
+c	粥	yu	5
+c	粪	fen	94
+c	粮	liang	236
+c	粱	liang	54
+c	粲	can	43
+c	粳	jing	9
+c	粹	cui	86
+c	粺	bai	2
+c	粻	zhang	5
+c	粼	lin	10
+c	粽	zong	12
+c	精	jing	844
+c	糁	shen	14
+c	糁	san	1
+c	糅	rou	19
+c	糇	hou	7
+c	糈	xu	11
+c	糉	zong	3
+c	糊	hu	184
+c	糌	zan	2
+c	糍	ci	5
+c	糒	bei	9
+c	糕	gao	78
+c	糖	tang	245
+c	糗	qiu	19
+c	糙	cao	13
+c	糚	zhuang	7
+c	糜	mi	88
+c	糜	mei	4
+c	糟	zao	106
+c	糠	kang	56
+c	糨	jiang	5
+c	糯	nuo	13
+c	糱	nie	3
+c	糵	nie	6
+c	糺	jiu	8
+c	系	xi	620
+c	系	ji	24
+c	紃	xun	4
+c	紊	wen	41
+c	紒	ji	7
+c	紞	dan	9
+c	素	su	870
+c	索	suo	568
+c	紥	zha	4
+c	紧	jin	297
+c	紩	zhi	4
+c	紫	zi	399
+c	紬	chou	9
+c	累	lei	539
+c	紾	tian	4
+c	絁	shi	10
+c	絇	qu	8
+c	絍	ren	2
+c	結	jie	2
+c	絓	gua	18
+c	絖	kuang	2
+c	絙	geng	12
+c	絜	jie	67
+c	絜	xie	9
+c	絣	bing	8
+c	絪	yin	8
+c	絫	lei	18
+c	絮	xu	106
+c	絷	zhi	18
+c	絸	jian	2
+c	絺	chi	26
+c	絻	wen	6
+c	絿	qiu	5
+c	綀	shu	6
+c	綈	ti	2
+c	綍	fu	10
+c	綖	yan	6
+c	綟	li	3
+c	綦	qi	29
+c	綪	qian	4
+c	綮	qing	6
+c	綮	qi	4
+c	綷	cui	7
+c	緆	xi	4
+c	緌	rui	12
+c	緑	lv	294
+c	緑	lu	49
+c	緖	xu	13
+c	緛	ruan	2
+c	緜	mian	6
+c	緟	zhong	2
+c	緪	geng	4
+c	緵	zong	3
+c	緷	yun	2
+c	緸	yin	2
+c	緺	gua	4
+c	縆	geng	2
+c	縏	pan	2
+c	縒	ci	2
+c	縓	quan	2
+c	縠	hu	32
+c	縢	teng	17
+c	縩	cai	2
+c	縰	xi	6
+c	縴	qian	3
+c	縺	lian	2
+c	縻	mi	26
+c	縿	shan	3
+c	繁	fan	338
+c	繁	pan	2
+c	繁	po	2
+c	繂	lv	3
+c	繄	yi	3
+c	繇	yao	53
+c	繇	you	3
+c	繇	zhou	1
+c	繐	sui	9
+c	繖	san	6
+c	繜	zun	2
+c	繠	rui	2
+c	繣	hua	2
+c	繨	da	2
+c	繶	yi	3
+c	繻	xu	15
+c	繿	lan	2
+c	纁	xun	14
+c	纂	zuan	72
+c	纆	mo	8
+c	纑	lu	4
+c	纔	shan	17
+c	纕	rang	4
+c	纕	xiang	1
+c	纚	li	27
+c	纚	sa	4
+c	纛	dao	30
+c	纠	jiu	136
+c	纡	yu	68
+c	红	hong	1336
+c	红	gong	2
+c	纣	zhou	11
+c	纤	xian	273
+c	纤	qian	16
+c	纥	he	19
+c	纥	ge	4
+c	约	yue	626
+c	约	yao	4
+c	级	ji	333
+c	纨	wan	49
+c	纩	kuang	28
+c	纪	ji	356
+c	纫	ren	14
+c	纬	wei	102
+c	纭	yun	13
+c	纮	hong	17
+c	纯	chun	186
+c	纰	pi	26
+c	纱	sha	141
+c	纲	gang	176
+c	纳	na	542
+c	纴	ren	7
+c	纵	zong	325
+c	纶	lun	102
+c	纶	guan	6
+c	纷	fen	180
+c	纸	zhi	527
+c	纹	wen	184
+c	纺	fang	47
+c	纻	zhu	22
+c	纼	zhen	3
+c	纽	niu	85
+c	纾	shu	20
+c	线	xian	770
+c	绀	gan	18
+c	绁	xie	21
+c	绂	fu	30
+c	练	lian	305
+c	组	zu	324
+c	绅	shen	55
+c	细	xi	594
+c	织	zhi	299
+c	终	zhong	307
+c	绉	zhou	19
+c	绊	ban	58
+c	绋	fu	15
+c	绌	chu	45
+c	绍	shao	71
+c	绎	yi	54
+c	经	jing	1120
+c	绐	dai	8
+c	绑	bang	36
+c	绒	rong	83
+c	结	jie	892
+c	绔	ku	9
+c	绕	rao	112
+c	绖	die	19
+c	绗	hang	2
+c	绘	hui	71
+c	给	gei	197
+c	给	ji	97
+c	绚	xuan	30
+c	绛	jiang	83
+c	络	luo	207
+c	络	lao	3
+c	绝	jue	812
+c	绞	jiao	58
+c	统	tong	438
+c	绠	geng	20
+c	绡	xiao	51
+c	绢	juan	68
+c	绣	xiu	191
+c	绤	xi	5
+c	绥	sui	101
+c	绦	tao	36
+c	继	ji	213
+c	绨	ti	19
+c	绩	ji	120
+c	绪	xu	188
+c	绫	ling	32
+c	续	xu	206
+c	绮	qi	145
+c	绯	fei	21
+c	绰	chuo	87
+c	绰	chao	5
+c	绲	gun	6
+c	绳	sheng	272
+c	维	wei	408
+c	绵	mian	200
+c	绶	shou	65
+c	绷	beng	72
+c	绸	chou	63
+c	绹	tao	3
+c	绺	liu	9
+c	绻	quan	13
+c	综	zong	127
+c	综	zeng	2
+c	绽	zhan	30
+c	绾	wan	20
+c	绿	lv	390
+c	绿	lu	15
+c	缀	zhui	113
+c	缁	zi	56
+c	缂	ke	2
+c	缃	xiang	33
+c	缄	jian	63
+c	缅	mian	44
+c	缆	lan	43
+c	缇	ti	28
+c	缈	miao	8
+c	缉	ji	115
+c	缉	qi	2
+c	缊	yun	11
+c	缋	hui	24
+c	缌	si	17
+c	缎	duan	30
+c	缏	bian	3
+c	缑	gou	9
+c	缒	zhui	7
+c	缓	huan	205
+c	缔	di	34
+c	缕	lv	138
+c	编	bian	304
+c	缗	min	34
+c	缘	yuan	305
+c	缙	jin	8
+c	缚	fu	85
+c	缛	ru	51
+c	缜	zhen	9
+c	缝	feng	198
+c	缟	gao	41
+c	缠	chan	181
+c	缡	li	4
+c	缢	yi	8
+c	缣	jian	45
+c	缤	bin	10
+c	缥	piao	34
+c	缦	man	30
+c	缧	lei	12
+c	缨	ying	116
+c	缩	suo	328
+c	缩	su	5
+c	缪	miu	100
+c	缪	mou	8
+c	缫	sao	11
+c	缬	xie	30
+c	缭	liao	35
+c	缮	shan	45
+c	缯	zeng	48
+c	缰	jiang	27
+c	缱	qian	4
+c	缲	qiao	5
+c	缳	huan	4
+c	缴	jiao	82
+c	缴	zhuo	1
+c	缵	zuan	23
+c	缶	fou	18
+c	缸	gang	62
+c	缺	que	283
+c	缻	fou	4
+c	缾	ping	18
+c	缿	xiang	4
+c	罂	ying	31
+c	罃	ying	3
+c	罄	qing	57
+c	罅	xia	25
+c	罇	zun	21
+c	罋	weng	3
+c	罍	lei	31
+c	罐	guan	88
+c	网	wang	528
+c	罔	wang	120
+c	罕	han	70
+c	罗	luo	969
+c	罘	fu	12
+c	罚	fa	215
+c	罛	gu	8
+c	罝	ju	15
+c	罟	gu	25
+c	罡	gang	20
+c	罢	ba	178
+c	罣	gua	17
+c	罤	ti	3
+c	罥	juan	5
+c	罦	fu	5
+c	罨	yan	9
+c	罩	zhao	71
+c	罪	zui	522
+c	罫	gua	4
+c	罫	guai	1
+c	罭	yu	2
+c	置	zhi	355
+c	罯	an	2
+c	署	shu	165
+c	罳	si	5
+c	罴	pi	17
+c	罶	liu	4
+c	罹	li	19
+c	罻	wei	5
+c	罼	bi	5
+c	罽	ji	35
+c	罾	zeng	14
+c	罿	chong	2
+c	羁	ji	179
+c	羃	mi	5
+c	羇	ji	6
+c	羉	luan	3
+c	羊	yang	504
+c	羌	qiang	34
+c	美	mei	834
+c	羔	gao	40
+c	羖	gu	5
+c	羚	ling	16
+c	羝	di	14
+c	羞	xiu	209
+c	羟	qiang	7
+c	羡	xian	93
+c	群	qun	543
+c	羧	suo	5
+c	羯	jie	22
+c	羲	xi	45
+c	羵	fen	3
+c	羶	shan	7
+c	羸	lei	97
+c	羹	geng	147
+c	羼	chan	14
+c	羽	yu	375
+c	羿	yi	12
+c	翁	weng	233
+c	翂	fen	2
+c	翅	chi	180
+c	翊	yi	30
+c	翌	yi	8
+c	翎	ling	44
+c	翏	lu	2
+c	翐	zhi	6
+c	習	xi	2
+c	翔	xiang	136
+c	翕	xi	56
+c	翘	qiao	134
+c	翙	hui	2
+c	翚	hui	16
+c	翛	xiao	7
+c	翞	jiang	2
+c	翟	zhai	36
+c	翟	di	4
+c	翠	cui	332
+c	翡	fei	11
+c	翢	dao	2
+c	翣	sha	20
+c	翥	zhu	37
+c	翦	jian	116
+c	翩	pian	56
+c	翫	wan	72
+c	翮	he	52
+c	翯	he	2
+c	翰	han	177
+c	翱	ao	10
+c	翳	yi	102
+c	翴	lian	2
+c	翻	fan	388
+c	翼	yi	334
+c	翾	xuan	14
+c	翿	dao	4
+c	耀	yao	161
+c	老	lao	1537
+c	考	kao	416
+c	耄	mao	43
+c	者	zhe	770
+c	耆	qi	90
+c	耆	shi	2
+c	耇	gou	13
+c	耉	gou	5
+c	耋	die	21
+c	而	er	1120
+c	耍	shua	143
+c	耎	ruan	14
+c	耏	er	5
+c	耐	nai	130
+c	耑	zhuan	18
+c	耒	lei	14
+c	耕	geng	224
+c	耗	hao	212
+c	耘	yun	38
+c	耙	pa	26
+c	耙	ba	8
+c	耜	si	9
+c	耞	jia	2
+c	耤	ji	3
+c	耥	tang	3
+c	耦	ou	61
+c	耧	lou	9
+c	耨	nou	26
+c	耰	you	6
+c	耳	er	758
+c	耶	ye	102
+c	耷	da	10
+c	耸	song	120
+c	耻	chi	131
+c	耽	dan	73
+c	耾	hong	5
+c	耿	geng	46
+c	聂	nie	14
+c	聃	dan	9
+c	聆	ling	20
+c	聊	liao	75
+c	聋	long	85
+c	职	zhi	467
+c	聒	guo	57
+c	联	lian	457
+c	聘	pin	133
+c	聚	ju	379
+c	聡	cong	2
+c	聩	kui	29
+c	聪	cong	97
+c	聬	weng	2
+c	聱	ao	25
+c	聿	yu	17
+c	肃	su	195
+c	肄	yi	23
+c	肆	si	284
+c	肇	zhao	57
+c	肉	rou	655
+c	肋	lei	43
+c	肋	le	5
+c	肌	ji	152
+c	肏	cao	5
+c	肐	ge	11
+c	肓	huang	18
+c	肕	ren	4
+c	肖	xiao	70
+c	肘	zhou	75
+c	肚	du	201
+c	肛	gang	17
+c	肜	chen	2
+c	肜	rong	2
+c	肝	gan	235
+c	肠	chang	386
+c	股	gu	249
+c	肢	zhi	56
+c	肤	fu	165
+c	肥	fei	333
+c	肨	pang	2
+c	肩	jian	299
+c	肪	fang	25
+c	肫	zhun	17
+c	肬	you	6
+c	肭	na	5
+c	肮	ang	7
+c	肯	ken	105
+c	肰	ran	2
+c	肱	gong	34
+c	育	yu	310
+c	育	yo	1
+c	肴	yao	48
+c	肷	qian	2
+c	肸	xi	11
+c	肹	xi	2
+c	肺	fei	134
+c	肽	tai	10
+c	肾	shen	56
+c	肿	zhong	85
+c	胀	zhang	54
+c	胁	xie	123
+c	胂	shen	3
+c	胃	wei	91
+c	胄	zhou	76
+c	胆	dan	450
+c	胊	qu	10
+c	背	bei	727
+c	胎	tai	217
+c	胏	fei	6
+c	胔	zi	17
+c	胖	pang	51
+c	胖	pan	5
+c	胗	zhen	4
+c	胙	zuo	29
+c	胚	pei	42
+c	胛	jia	10
+c	胜	sheng	490
+c	胝	zhi	19
+c	胞	bao	155
+c	胠	qu	8
+c	胡	hu	635
+c	胤	yin	46
+c	胥	xu	108
+c	胧	long	24
+c	胪	lu	37
+c	胫	jing	41
+c	胭	yan	13
+c	胮	pang	2
+c	胯	kua	19
+c	胰	yi	15
+c	胱	guang	6
+c	胲	hai	5
+c	胳	ge	30
+c	胴	dong	10
+c	胶	jiao	287
+c	胷	xiong	2
+c	胸	xiong	307
+c	胹	er	3
+c	胺	an	42
+c	胼	pian	8
+c	能	neng	921
+c	胾	zi	12
+c	脂	zhi	200
+c	脃	cui	5
+c	脆	cui	91
+c	脉	mai	351
+c	脉	mo	20
+c	脊	ji	131
+c	脍	kuai	38
+c	脏	zang	92
+c	脐	qi	41
+c	脑	nao	557
+c	脓	nong	31
+c	脔	luan	35
+c	脔	ji	3
+c	脖	bo	63
+c	脗	wen	4
+c	脘	wan	2
+c	脚	jiao	822
+c	脚	jue	8
+c	脞	cuo	9
+c	脡	ting	10
+c	脢	mei	2
+c	脤	shen	4
+c	脩	xiu	157
+c	脬	pao	9
+c	脯	fu	73
+c	脯	pu	9
+c	脰	dou	16
+c	脱	tuo	460
+c	脸	lian	415
+c	脽	shui	5
+c	脾	pi	62
+c	腃	quan	2
+c	腄	hou	2
+c	腆	tian	28
+c	腇	nei	2
+c	腈	jing	5
+c	腊	la	155
+c	腊	xi	3
+c	腋	ye	34
+c	腌	yan	29
+c	腌	a	5
+c	腐	fu	219
+c	腑	fu	30
+c	腒	ju	3
+c	腓	fei	15
+c	腔	qiang	147
+c	腕	wan	81
+c	腘	guo	10
+c	腚	ding	7
+c	腜	mei	3
+c	腝	ni	2
+c	腠	cou	5
+c	腤	an	4
+c	腥	xing	85
+c	腧	shu	5
+c	腩	nan	4
+c	腪	yun	2
+c	腭	e	16
+c	腮	sai	74
+c	腯	tu	13
+c	腰	yao	339
+c	腱	jian	12
+c	腲	wei	3
+c	腴	yu	60
+c	腶	duan	2
+c	腷	bi	5
+c	腹	fu	404
+c	腺	xian	79
+c	腻	ni	92
+c	腼	mian	28
+c	腽	wa	4
+c	腾	teng	416
+c	腿	tui	169
+c	膀	bang	39
+c	膀	pang	4
+c	膂	lv	17
+c	膇	zhui	2
+c	膈	ge	23
+c	膊	bo	58
+c	膋	liao	8
+c	膌	ji	2
+c	膍	pi	2
+c	膏	gao	298
+c	膑	bin	8
+c	膓	chang	4
+c	膘	biao	29
+c	膛	tang	26
+c	膜	mo	107
+c	膝	xi	123
+c	膨	peng	24
+c	膫	liao	2
+c	膬	cui	2
+c	膰	fan	7
+c	膱	zhi	2
+c	膳	shan	106
+c	膴	wu	13
+c	膹	fen	2
+c	膺	ying	100
+c	膻	shan	41
+c	膻	dan	2
+c	臀	tun	30
+c	臁	lian	5
+c	臂	bi	227
+c	臂	bei	5
+c	臃	yong	2
+c	臆	yi	68
+c	臈	la	5
+c	臊	sao	41
+c	臌	gu	3
+c	臑	nao	8
+c	臔	xian	2
+c	臕	biao	7
+c	臛	huo	11
+c	臜	za	5
+c	臝	luo	12
+c	臞	qu	17
+c	臡	ni	7
+c	臢	za	2
+c	臣	chen	404
+c	臧	zang	71
+c	自	zi	1866
+c	臬	nie	23
+c	臭	chou	147
+c	臭	xiu	26
+c	臯	gao	9
+c	臲	nie	4
+c	至	zhi	502
+c	致	zhi	438
+c	臷	die	2
+c	臻	zhen	34
+c	臼	jiu	52
+c	臾	yu	12
+c	臿	cha	7
+c	舀	yao	10
+c	舁	yu	12
+c	舂	chong	52
+c	舄	xi	35
+c	舅	jiu	65
+c	舆	yu	231
+c	舋	xin	22
+c	舌	she	496
+c	舍	she	519
+c	舍	shi	2
+c	舐	shi	17
+c	舑	tan	4
+c	舒	shu	164
+c	舔	tian	12
+c	舕	tan	2
+c	舛	chuan	54
+c	舜	shun	26
+c	舞	wu	488
+c	舟	zhou	271
+c	舠	dao	7
+c	舡	chuan	11
+c	舢	shan	2
+c	舣	yi	4
+c	舩	chuan	8
+c	航	hang	241
+c	舫	fang	37
+c	般	ban	169
+c	般	pan	11
+c	般	bo	5
+c	舰	jian	84
+c	舱	cang	55
+c	舲	ling	8
+c	舳	zhu	3
+c	舳	zhou	1
+c	舵	duo	50
+c	舶	bo	37
+c	舷	xian	19
+c	舸	ge	23
+c	船	chuan	503
+c	舻	lu	11
+c	艄	shao	5
+c	艇	ting	71
+c	艋	meng	2
+c	艎	huang	4
+c	艏	shou	3
+c	艑	bian	2
+c	艒	mu	2
+c	艓	die	5
+c	艗	yi	2
+c	艘	sou	11
+c	艚	cao	2
+c	艛	lou	3
+c	艟	chong	3
+c	艨	meng	4
+c	艮	gen	13
+c	良	liang	457
+c	艰	jian	148
+c	色	se	1205
+c	色	shai	15
+c	艳	yan	313
+c	艴	fu	5
+c	艶	yan	4
+c	艸	cao	7
+c	艺	yi	257
+c	艼	ding	3
+c	艽	jiao	3
+c	艾	ai	185
+c	艾	yi	9
+c	艿	reng	3
+c	艿	nai	1
+c	节	jie	1444
+c	芃	peng	2
+c	芊	qian	20
+c	芋	yu	44
+c	芍	shao	8
+c	芍	que	1
+c	芎	xiong	4
+c	芎	qiong	2
+c	芑	qi	4
+c	芒	mang	154
+c	芔	hui	4
+c	芗	xiang	13
+c	芘	pi	14
+c	芙	fu	51
+c	芚	tun	2
+c	芜	wu	79
+c	芝	zhi	146
+c	芟	shan	22
+c	芡	qian	7
+c	芣	fou	2
+c	芣	fu	1
+c	芤	kou	2
+c	芥	jie	91
+c	芥	gai	3
+c	芦	lu	150
+c	芨	ji	5
+c	芩	qin	3
+c	芫	yuan	6
+c	芫	yan	4
+c	芬	fen	87
+c	芭	ba	28
+c	芮	rui	10
+c	芯	xin	29
+c	芰	ji	8
+c	花	hua	2254
+c	芳	fang	229
+c	芴	wu	4
+c	芵	jue	2
+c	芷	zhi	20
+c	芸	yun	46
+c	芹	qin	43
+c	芼	mao	3
+c	芽	ya	109
+c	芾	fei	4
+c	芾	fu	2
+c	芿	reng	3
+c	苁	cong	4
+c	苄	bian	4
+c	苇	wei	68
+c	苋	xian	14
+c	苌	chang	7
+c	苍	cang	196
+c	苎	zhu	13
+c	苏	su	329
+c	苑	yuan	120
+c	苒	ran	12
+c	苓	ling	24
+c	苔	tai	58
+c	苕	tiao	21
+c	苕	shao	3
+c	苗	miao	191
+c	苘	qing	2
+c	苛	ke	95
+c	苜	mu	5
+c	苞	bao	74
+c	苟	gou	110
+c	苡	yi	11
+c	苣	ju	7
+c	苣	qu	4
+c	苤	pie	3
+c	若	ruo	599
+c	若	re	9
+c	苦	ku	583
+c	苧	ning	2
+c	苨	ni	4
+c	苫	shan	35
+c	苯	ben	45
+c	英	ying	525
+c	苴	ju	32
+c	苶	nie	9
+c	苷	gan	14
+c	苹	ping	46
+c	苻	fu	9
+c	苽	gu	3
+c	苾	bi	12
+c	茀	bo	18
+c	茀	fu	1
+c	茁	zhuo	21
+c	茂	mao	199
+c	范	fan	218
+c	茄	qie	38
+c	茄	jia	9
+c	茅	mao	179
+c	茆	mao	9
+c	茇	ba	8
+c	茈	zi	8
+c	茈	ci	1
+c	茉	mo	5
+c	茌	chi	2
+c	茎	jing	56
+c	茏	long	7
+c	茑	niao	4
+c	茔	ying	33
+c	茕	qiong	23
+c	茗	ming	46
+c	茙	rong	2
+c	茜	qian	11
+c	茜	xi	5
+c	茝	chai	7
+c	茝	zhi	2
+c	茧	jian	84
+c	茨	ci	66
+c	茫	mang	86
+c	茬	cha	51
+c	茭	jiao	19
+c	茯	fu	4
+c	茱	zhu	16
+c	茳	jiang	2
+c	茴	hui	16
+c	茵	yin	81
+c	茶	cha	387
+c	茷	fa	4
+c	茸	rong	67
+c	茹	ru	71
+c	茺	chong	2
+c	荀	xun	12
+c	荂	fu	4
+c	荃	quan	14
+c	荄	gai	9
+c	荅	da	11
+c	荆	jing	184
+c	荇	xing	5
+c	荈	chuan	4
+c	草	cao	1104
+c	荏	ren	15
+c	荐	jian	172
+c	荑	yi	13
+c	荑	ti	3
+c	荒	huang	391
+c	荔	li	33
+c	荚	jia	22
+c	荛	rao	12
+c	荜	bi	18
+c	荞	qiao	8
+c	荟	hui	14
+c	荠	qi	8
+c	荠	ji	4
+c	荡	dang	392
+c	荣	rong	431
+c	荤	hun	32
+c	荤	xun	2
+c	荥	ying	7
+c	荥	xing	5
+c	荦	luo	34
+c	荧	ying	47
+c	荨	xun	4
+c	荨	qian	2
+c	荩	jin	11
+c	荪	sun	8
+c	荫	yin	148
+c	荬	mai	4
+c	荭	hong	2
+c	药	yao	552
+c	荰	du	2
+c	荳	dou	3
+c	荴	fu	3
+c	荷	he	208
+c	荸	bi	2
+c	荻	di	17
+c	荼	tu	44
+c	荼	shu	3
+c	荽	sui	7
+c	莅	li	31
+c	莆	pu	7
+c	莉	li	19
+c	莎	sha	48
+c	莎	suo	6
+c	莒	ju	13
+c	莓	mei	22
+c	莘	shen	14
+c	莘	xin	3
+c	莚	yan	2
+c	莛	ting	5
+c	莜	you	3
+c	莞	wan	17
+c	莞	guan	4
+c	莠	you	23
+c	莤	you	2
+c	莨	liang	6
+c	莨	lang	4
+c	莩	piao	11
+c	莩	fu	3
+c	莪	e	5
+c	莫	mo	361
+c	莫	mu	2
+c	莮	nan	2
+c	莰	kan	3
+c	莱	lai	165
+c	莲	lian	227
+c	莳	shi	12
+c	莴	wo	3
+c	莶	xian	2
+c	获	huo	219
+c	莸	you	13
+c	莹	ying	72
+c	莺	ying	268
+c	莼	chun	22
+c	莽	mang	96
+c	莿	ci	2
+c	菀	wan	18
+c	菀	yu	5
+c	菁	jing	28
+c	菂	di	2
+c	菅	jian	21
+c	菆	zou	3
+c	菇	gu	27
+c	菉	lu	2
+c	菊	ju	107
+c	菌	jun	218
+c	菎	kun	2
+c	菏	he	3
+c	菑	zi	26
+c	菓	guo	11
+c	菔	fu	5
+c	菖	chang	11
+c	菘	song	7
+c	菜	cai	473
+c	菝	ba	2
+c	菟	tu	21
+c	菠	bo	10
+c	菢	bao	2
+c	菤	juan	2
+c	菨	jie	2
+c	菩	pu	47
+c	菪	dang	3
+c	菫	jin	4
+c	菰	gu	16
+c	菱	ling	35
+c	菲	fei	105
+c	菵	wang	3
+c	菶	beng	5
+c	菸	yan	10
+c	菹	zu	28
+c	菼	tan	3
+c	菽	shu	43
+c	萁	qi	16
+c	萃	cui	54
+c	萄	tao	41
+c	萆	bi	4
+c	萉	fei	2
+c	萋	qi	17
+c	萌	meng	82
+c	萍	ping	63
+c	萎	wei	58
+c	萏	dan	2
+c	萐	sha	5
+c	萑	huan	6
+c	萓	yi	2
+c	萘	nai	3
+c	萚	tuo	2
+c	萝	luo	87
+c	萣	ding	2
+c	萤	ying	57
+c	营	ying	584
+c	萦	ying	70
+c	萧	xiao	126
+c	萨	sa	216
+c	萮	yu	2
+c	萯	fu	2
+c	萱	xuan	19
+c	萷	xiao	2
+c	萸	yu	14
+c	萹	bian	5
+c	萼	e	44
+c	落	luo	1144
+c	落	lao	27
+c	落	la	26
+c	葅	zu	12
+c	葆	bao	39
+c	葇	rou	2
+c	葑	feng	14
+c	葓	hong	2
+c	葖	tu	2
+c	著	zhu	116
+c	著	zhuo	24
+c	著	zhe	1
+c	葘	zi	3
+c	葙	xiang	3
+c	葚	shen	4
+c	葚	ren	2
+c	葛	ge	121
+c	葜	qia	2
+c	葡	pu	43
+c	董	dong	85
+c	葥	jian	2
+c	葩	pa	51
+c	葪	ji	3
+c	葫	hu	65
+c	葬	zang	125
+c	葭	jia	28
+c	葰	jun	2
+c	葱	cong	89
+c	葳	wei	5
+c	葵	kui	67
+c	葶	ting	3
+c	葸	xi	12
+c	葺	qi	23
+c	蒀	yun	3
+c	蒂	di	91
+c	蒇	chan	5
+c	蒉	kui	3
+c	蒋	jiang	20
+c	蒌	lou	13
+c	蒐	sou	6
+c	蒗	lang	3
+c	蒙	meng	398
+c	蒜	suan	50
+c	蒟	ju	5
+c	蒡	bang	3
+c	蒢	chu	2
+c	蒨	qian	8
+c	蒭	chu	7
+c	蒯	kuai	9
+c	蒲	pu	188
+c	蒴	shuo	3
+c	蒸	zheng	112
+c	蒹	jian	6
+c	蒺	ji	6
+c	蒻	ruo	8
+c	蒽	en	2
+c	蒿	hao	39
+c	蓁	zhen	7
+c	蓂	mi	10
+c	蓂	ming	1
+c	蓄	xu	112
+c	蓇	gu	3
+c	蓉	rong	48
+c	蓊	weng	5
+c	蓍	shi	17
+c	蓐	ru	14
+c	蓑	suo	26
+c	蓓	bei	2
+c	蓖	bi	5
+c	蓝	lan	238
+c	蓟	ji	13
+c	蓠	li	5
+c	蓣	yu	3
+c	蓥	ying	2
+c	蓦	mo	10
+c	蓩	mao	2
+c	蓬	peng	193
+c	蓰	xi	2
+c	蓱	ping	5
+c	蓲	qiu	1
+c	蓲	xu	1
+c	蓺	yi	11
+c	蓼	liao	17
+c	蓿	xu	5
+c	蔀	bu	12
+c	蔈	biao	2
+c	蔌	su	10
+c	蔑	mie	34
+c	蔓	man	91
+c	蔓	wan	11
+c	蔕	di	18
+c	蔗	zhe	18
+c	蔘	shen	4
+c	蔚	wei	64
+c	蔚	yu	4
+c	蔟	cu	9
+c	蔡	cai	39
+c	蔫	nian	17
+c	蔬	shu	51
+c	蔰	hu	2
+c	蔷	qiang	8
+c	蔺	lin	8
+c	蔻	kou	16
+c	蔼	ai	48
+c	蔽	bi	144
+c	蔿	wei	2
+c	蕀	ji	2
+c	蕃	fan	52
+c	蕃	bo	3
+c	蕈	xun	19
+c	蕉	jiao	37
+c	蕉	qiao	1
+c	蕊	rui	46
+c	蕋	rui	4
+c	蕖	qu	10
+c	蕙	hui	16
+c	蕚	e	17
+c	蕝	jue	4
+c	蕞	zui	4
+c	蕟	fa	2
+c	蕤	rui	26
+c	蕨	jue	6
+c	蕫	dong	2
+c	蕰	wen	2
+c	蕲	qi	12
+c	蕴	yun	38
+c	蕹	weng	2
+c	蕻	hong	2
+c	蕾	lei	22
+c	薄	bao	282
+c	薄	bo	241
+c	薄	bu	3
+c	薅	hao	5
+c	薆	ai	6
+c	薇	wei	20
+c	薉	hui	6
+c	薏	yi	8
+c	薓	shen	2
+c	薙	ti	19
+c	薛	xue	16
+c	薜	bi	3
+c	薠	fan	2
+c	薡	ding	2
+c	薤	xie	8
+c	薧	kao	2
+c	薨	hong	4
+c	薪	xin	177
+c	薮	sou	59
+c	薯	shu	33
+c	薰	xun	20
+c	薶	wo	4
+c	薷	ru	2
+c	薹	tai	7
+c	薻	zao	2
+c	薾	er	5
+c	藁	gao	16
+c	藉	jie	108
+c	藉	ji	40
+c	藋	diao	2
+c	藋	di	1
+c	藏	cang	471
+c	藏	zang	111
+c	藐	miao	24
+c	藓	xian	17
+c	藕	ou	27
+c	藘	lv	2
+c	藜	li	21
+c	藟	lei	5
+c	藤	teng	111
+c	藨	biao	3
+c	藨	pao	1
+c	藩	fan	87
+c	藭	qiong	4
+c	藳	gao	17
+c	藴	yun	31
+c	藴	wen	3
+c	藷	zhu	5
+c	藻	zao	128
+c	藿	huo	23
+c	蘂	rui	19
+c	蘅	heng	6
+c	蘌	yu	2
+c	蘑	mo	10
+c	蘖	nie	25
+c	蘖	bo	1
+c	蘗	bo	5
+c	蘠	qiang	3
+c	蘤	hua	6
+c	蘧	qu	4
+c	蘩	fan	2
+c	蘵	zhi	2
+c	蘸	zhan	4
+c	蘼	mi	2
+c	虀	ji	24
+c	虆	lei	2
+c	虎	hu	892
+c	虏	lu	93
+c	虐	nve	154
+c	虑	lv	332
+c	虒	si	5
+c	虓	xiao	21
+c	虔	qian	55
+c	虖	hu	8
+c	虙	fu	4
+c	虚	xu	695
+c	虞	yu	138
+c	虡	ju	8
+c	虢	guo	18
+c	虣	bao	11
+c	虤	yan	2
+c	虩	xi	3
+c	虫	chong	533
+c	虬	qiu	86
+c	虭	diao	4
+c	虮	ji	15
+c	虰	ding	2
+c	虱	shi	70
+c	虴	zhe	4
+c	虵	she	26
+c	虵	ye	1
+c	虸	zi	2
+c	虹	hong	116
+c	虺	hui	43
+c	虻	meng	9
+c	虼	ge	8
+c	虽	sui	29
+c	虾	xia	118
+c	虾	ha	29
+c	虿	chai	25
+c	蚀	shi	83
+c	蚁	yi	246
+c	蚂	ma	43
+c	蚄	fang	2
+c	蚊	wen	78
+c	蚋	rui	8
+c	蚌	bang	65
+c	蚌	beng	6
+c	蚍	pi	15
+c	蚑	qi	17
+c	蚓	yin	33
+c	蚕	can	201
+c	蚖	yuan	15
+c	蚗	jue	3
+c	蚘	hui	3
+c	蚜	ya	4
+c	蚝	hao	16
+c	蚡	fen	3
+c	蚣	gong	4
+c	蚤	zao	84
+c	蚧	jie	4
+c	蚨	fu	10
+c	蚩	chi	50
+c	蚪	dou	10
+c	蚫	bao	3
+c	蚬	xian	7
+c	蚯	qiu	4
+c	蚰	you	10
+c	蚱	zha	12
+c	蚳	chi	8
+c	蚴	you	6
+c	蚵	ke	4
+c	蚶	han	15
+c	蚷	ju	2
+c	蚹	fu	3
+c	蚺	ran	6
+c	蚻	zha	2
+c	蚼	gou	4
+c	蚾	bo	2
+c	蚿	xian	3
+c	蛀	zhu	20
+c	蛁	diao	2
+c	蛃	bing	2
+c	蛄	gu	9
+c	蛅	zhan	5
+c	蛆	qu	33
+c	蛇	she	497
+c	蛇	yi	6
+c	蛈	tie	2
+c	蛉	ling	13
+c	蛊	gu	82
+c	蛋	dan	260
+c	蛎	li	17
+c	蛏	cheng	7
+c	蛐	qu	8
+c	蛑	mou	7
+c	蛓	ci	2
+c	蛔	hui	10
+c	蛖	mang	2
+c	蛘	yang	2
+c	蛙	wa	80
+c	蛚	lie	3
+c	蛛	zhu	46
+c	蛞	kuo	5
+c	蛟	jiao	79
+c	蛡	yi	2
+c	蛣	jie	6
+c	蛤	ge	58
+c	蛤	ha	16
+c	蛥	she	2
+c	蛦	yi	5
+c	蛨	mo	4
+c	蛩	qiong	40
+c	蛬	qiong	4
+c	蛭	zhi	14
+c	蛮	man	253
+c	蛰	zhe	47
+c	蛱	jia	12
+c	蛲	nao	8
+c	蛳	si	4
+c	蛴	qi	10
+c	蛷	qiu	2
+c	蛸	shao	5
+c	蛸	xiao	3
+c	蛹	yong	10
+c	蛾	e	123
+c	蛾	yi	1
+c	蜀	shu	113
+c	蜂	feng	244
+c	蜃	shen	47
+c	蜇	zhe	6
+c	蜈	wu	4
+c	蜉	fu	19
+c	蜊	li	7
+c	蜋	lang	16
+c	蜍	chu	11
+c	蜎	yuan	11
+c	蜎	xuan	4
+c	蜑	dan	20
+c	蜒	yan	19
+c	蜒	dan	6
+c	蜓	ting	19
+c	蜕	tui	43
+c	蜗	wo	68
+c	蜘	zhi	19
+c	蜚	fei	71
+c	蜛	ju	2
+c	蜜	mi	165
+c	蜞	qi	5
+c	蜟	yu	4
+c	蜡	la	204
+c	蜡	zha	1
+c	蜢	meng	5
+c	蜣	qiang	13
+c	蜥	xi	11
+c	蜨	die	9
+c	蜩	tiao	35
+c	蜪	tao	4
+c	蜫	kun	4
+c	蜮	yu	23
+c	蜯	bang	3
+c	蜰	fei	3
+c	蜱	pi	5
+c	蜲	wei	2
+c	蜴	yi	6
+c	蜴	xi	1
+c	蜷	quan	20
+c	蜺	ni	23
+c	蜻	qing	22
+c	蜼	wei	5
+c	蜽	liang	4
+c	蜾	guo	3
+c	蜿	wan	21
+c	蝀	dong	6
+c	蝂	ban	2
+c	蝃	di	1
+c	蝃	zhuo	1
+c	蝄	wang	2
+c	蝇	ying	128
+c	蝈	guo	12
+c	蝉	chan	155
+c	蝌	ke	9
+c	蝍	ji	6
+c	蝎	xie	41
+c	蝑	xu	3
+c	蝒	mian	3
+c	蝓	yu	5
+c	蝗	huang	34
+c	蝘	yan	7
+c	蝙	bian	8
+c	蝚	rou	6
+c	蝝	yuan	11
+c	蝠	fu	15
+c	蝡	ruan	5
+c	蝣	you	9
+c	蝤	you	8
+c	蝤	qiu	4
+c	蝥	mao	3
+c	蝨	shi	24
+c	蝩	chong	2
+c	蝭	ti	4
+c	蝮	fu	17
+c	蝯	yuan	6
+c	蝰	kui	2
+c	蝱	meng	9
+c	蝲	la	5
+c	蝴	hu	28
+c	蝶	die	133
+c	蝹	yun	4
+c	蝻	nan	4
+c	蝼	lou	24
+c	蝾	rong	5
+c	螀	jiang	5
+c	螂	lang	23
+c	螃	pang	6
+c	螅	xi	2
+c	螇	xi	3
+c	螈	yuan	9
+c	螉	weng	4
+c	螋	sou	3
+c	螌	ban	2
+c	融	rong	202
+c	螑	xiu	2
+c	螓	qin	7
+c	螖	hua	3
+c	螗	tang	6
+c	螟	ming	28
+c	螣	te	3
+c	螣	teng	1
+c	螨	man	2
+c	螪	shang	2
+c	螫	shi	28
+c	螫	zhe	6
+c	螬	cao	4
+c	螭	chi	66
+c	螯	ao	16
+c	螲	zhi	2
+c	螲	die	1
+c	螳	tang	31
+c	螵	piao	3
+c	螹	jian	2
+c	螺	luo	175
+c	螼	qin	2
+c	螽	zhong	26
+c	螾	yin	11
+c	蟀	shuai	6
+c	蟂	xiao	2
+c	蟃	wan	2
+c	蟆	ma	53
+c	蟇	ma	17
+c	蟉	liao	7
+c	蟊	mao	15
+c	蟋	xi	5
+c	蟏	xiao	2
+c	蟒	mang	24
+c	蟕	zui	2
+c	蟖	si	2
+c	蟛	peng	5
+c	蟜	jiao	5
+c	蟞	bie	3
+c	蟟	liao	7
+c	蟠	pan	121
+c	蟢	xi	2
+c	蟥	huang	7
+c	蟧	lao	6
+c	蟨	jue	3
+c	蟪	hui	3
+c	蟫	yin	10
+c	蟭	jiao	2
+c	蟮	shan	4
+c	蟷	dang	3
+c	蟹	xie	116
+c	蟺	dan	9
+c	蟾	chan	87
+c	蠀	ci	2
+c	蠁	xiang	5
+c	蠃	luo	11
+c	蠉	xuan	4
+c	蠊	lian	2
+c	蠋	zhu	7
+c	蠏	xie	3
+c	蠒	jian	23
+c	蠓	meng	6
+c	蠕	ru	26
+c	蠖	huo	31
+c	蠙	pin	11
+c	蠚	he	2
+c	蠛	mie	4
+c	蠡	li	56
+c	蠢	chun	82
+c	蠥	nie	2
+c	蠦	lu	3
+c	蠧	du	19
+c	蠩	zhu	3
+c	蠪	long	6
+c	蠭	feng	8
+c	蠭	pang	2
+c	蠮	ye	3
+c	蠯	pi	5
+c	蠰	nang	3
+c	蠲	juan	80
+c	蠳	ying	2
+c	蠵	xi	5
+c	蠸	quan	2
+c	蠹	du	165
+c	蠼	qu	4
+c	蠽	jie	3
+c	血	xue	954
+c	血	xie	55
+c	衂	nv	2
+c	衃	pei	2
+c	衄	nv	18
+c	衅	xin	114
+c	衇	mai	2
+c	衊	mie	3
+c	衋	xi	2
+c	行	xing	2760
+c	行	hang	353
+c	行	heng	2
+c	衍	yan	190
+c	衎	kan	17
+c	衒	xuan	50
+c	衔	xian	253
+c	衕	tong	4
+c	衖	long	8
+c	街	jie	301
+c	衙	ya	95
+c	衞	wei	5
+c	衡	heng	292
+c	衢	qu	96
+c	衣	yi	1231
+c	补	bu	394
+c	表	biao	750
+c	衩	cha	8
+c	衫	shan	122
+c	衬	chen	41
+c	衮	gun	60
+c	衰	shuai	306
+c	衰	cui	2
+c	衱	jie	2
+c	衲	na	36
+c	衵	yi	2
+c	衷	zhong	119
+c	衺	xie	7
+c	衽	ren	28
+c	衾	qin	72
+c	衿	jin	46
+c	袁	yuan	31
+c	袂	mei	68
+c	袄	ao	26
+c	袅	niao	57
+c	袆	hui	2
+c	袈	jia	2
+c	袋	dai	169
+c	袍	pao	114
+c	袒	tan	48
+c	袖	xiu	134
+c	袚	bo	2
+c	袜	wa	63
+c	袟	zhi	3
+c	袠	zhi	10
+c	袢	pan	3
+c	袤	mao	14
+c	袨	xuan	2
+c	袪	qu	6
+c	被	bei	215
+c	被	pi	25
+c	袭	xi	197
+c	袯	bo	2
+c	袱	fu	26
+c	袴	ku	34
+c	袵	ren	13
+c	袷	jia	9
+c	袷	qia	2
+c	袼	ge	2
+c	袿	gui	5
+c	裀	yin	12
+c	裁	cai	263
+c	裂	lie	325
+c	装	zhuang	539
+c	裆	dang	21
+c	裈	kun	9
+c	裎	cheng	8
+c	裒	pou	39
+c	裓	jie	3
+c	裔	yi	86
+c	裕	yu	82
+c	裘	qiu	158
+c	裙	qun	111
+c	裛	yi	9
+c	裟	sha	2
+c	裠	qun	2
+c	裢	lian	4
+c	裤	ku	115
+c	裥	jian	2
+c	裨	bi	9
+c	裨	pi	4
+c	裩	kun	4
+c	裯	dao	8
+c	裯	chou	1
+c	裰	duo	2
+c	裱	biao	12
+c	裳	chang	99
+c	裳	shang	23
+c	裴	pei	7
+c	裸	luo	55
+c	裹	guo	112
+c	裼	xi	6
+c	裼	ti	2
+c	裾	ju	37
+c	褂	gua	25
+c	褃	ken	2
+c	褊	bian	15
+c	褎	you	10
+c	褐	he	130
+c	褒	bao	35
+c	褓	bao	7
+c	褕	yu	3
+c	褙	bei	4
+c	褚	chu	12
+c	褚	zhu	4
+c	褛	lv	4
+c	褟	ta	3
+c	褠	gou	2
+c	褡	da	8
+c	褢	huai	2
+c	褥	ru	40
+c	褧	jiong	2
+c	褪	tun	8
+c	褪	tui	7
+c	褫	chi	14
+c	褭	niao	33
+c	褰	qian	12
+c	褱	huai	4
+c	褴	lan	3
+c	褵	li	3
+c	褶	zhe	18
+c	褾	biao	4
+c	襁	qiang	6
+c	襂	shan	2
+c	襃	bao	104
+c	襄	xiang	55
+c	襋	ji	2
+c	襕	lan	9
+c	襚	sui	8
+c	襜	chan	9
+c	襞	bi	10
+c	襟	jin	124
+c	襢	tan	2
+c	襦	ru	21
+c	襪	wa	2
+c	襫	shi	2
+c	襮	bo	4
+c	襻	pan	5
+c	襼	yi	4
+c	西	xi	1268
+c	要	yao	731
+c	覂	feng	5
+c	覃	qin	31
+c	覃	tan	12
+c	覆	fu	420
+c	覇	ba	3
+c	覈	he	21
+c	覊	ji	9
+c	覔	mi	2
+c	覗	si	3
+c	覜	tiao	2
+c	覤	xi	2
+c	覩	du	30
+c	覼	luo	4
+c	见	jian	1350
+c	见	xian	32
+c	观	guan	794
+c	规	gui	469
+c	觅	mi	53
+c	视	shi	722
+c	觇	chan	32
+c	览	lan	179
+c	觉	jue	262
+c	觉	jiao	24
+c	觊	ji	19
+c	觋	xi	5
+c	觌	di	19
+c	觍	tian	3
+c	觎	yu	6
+c	觏	gou	15
+c	觐	jin	33
+c	觑	qu	61
+c	角	jiao	1013
+c	角	jue	80
+c	觔	jin	12
+c	觕	cu	22
+c	觖	jue	8
+c	觚	gu	39
+c	觜	zi	39
+c	觜	zui	3
+c	觞	shang	112
+c	觟	hua	4
+c	觠	quan	2
+c	觡	ge	3
+c	解	jie	1219
+c	解	xie	22
+c	觥	gong	45
+c	触	chu	288
+c	觫	su	7
+c	觭	ji	5
+c	觯	zhi	5
+c	觱	bi	9
+c	觲	xing	2
+c	觳	hu	18
+c	觺	yi	3
+c	觽	xi	3
+c	觾	yan	2
+c	觿	xi	11
+c	言	yan	1923
+c	訇	hong	32
+c	訏	xu	7
+c	訑	yi	9
+c	訔	yin	2
+c	訚	yin	15
+c	訞	yao	9
+c	訢	xi	5
+c	訧	you	2
+c	訬	miao	5
+c	訰	zhun	2
+c	訹	xu	6
+c	訽	gou	6
+c	訾	zi	100
+c	訿	zi	7
+c	詀	zhan	10
+c	詃	jian	5
+c	詄	die	5
+c	詅	ling	6
+c	詈	li	47
+c	詉	nao	5
+c	詍	yi	3
+c	詓	qu	2
+c	詟	zhe	30
+c	詧	cha	4
+c	詨	xiao	3
+c	詪	hen	2
+c	詶	zhou	22
+c	詹	zhan	31
+c	詻	e	3
+c	誂	diao	3
+c	誉	yu	242
+c	誊	teng	26
+c	誓	shi	153
+c	誖	bei	17
+c	誙	keng	2
+c	誷	wang	3
+c	誻	ta	6
+c	誾	yin	15
+c	諆	qi	3
+c	諈	zhui	3
+c	諐	qian	22
+c	諓	jian	3
+c	諕	hao	9
+c	諟	shi	6
+c	諠	xuan	28
+c	諡	shi	5
+c	諰	xi	2
+c	諲	yin	2
+c	諴	xian	4
+c	諵	nan	6
+c	謇	jian	27
+c	謌	ge	17
+c	謍	ying	3
+c	謏	xiao	11
+c	謑	xi	4
+c	謘	chi	2
+c	謜	yuan	2
+c	謞	he	4
+c	謟	tao	2
+c	謡	yao	75
+c	謣	yu	5
+c	謦	qing	6
+c	謩	mo	3
+c	謭	jian	2
+c	謯	jie	2
+c	謰	lian	2
+c	謷	ao	14
+c	謻	yi	6
+c	謼	hu	6
+c	譆	xi	5
+c	譊	nao	6
+c	譍	ying	4
+c	譐	zun	3
+c	譔	zhuan	9
+c	譝	sheng	2
+c	譞	xuan	2
+c	譣	xian	4
+c	警	jing	364
+c	譨	nou	2
+c	譩	yi	2
+c	譬	pi	66
+c	譺	ai	3
+c	譻	ying	2
+c	讁	zhe	3
+c	讆	wei	2
+c	讇	chan	3
+c	讔	yin	5
+c	讙	huan	61
+c	讛	yi	3
+c	讝	zhan	2
+c	讟	du	10
+c	计	ji	871
+c	订	ding	125
+c	讣	fu	15
+c	认	ren	260
+c	讥	ji	111
+c	讦	jie	69
+c	讧	hong	13
+c	讨	tao	322
+c	让	rang	247
+c	讪	shan	77
+c	讫	qi	32
+c	讬	tuo	226
+c	训	xun	324
+c	议	yi	552
+c	讯	xun	205
+c	记	ji	549
+c	讱	ren	2
+c	讲	jiang	369
+c	讳	hui	133
+c	讴	ou	48
+c	讵	ju	12
+c	讶	ya	25
+c	讷	ne	54
+c	许	xu	273
+c	许	hu	1
+c	讹	e	143
+c	论	lun	1068
+c	讻	xiong	7
+c	讼	song	158
+c	讽	feng	112
+c	设	she	390
+c	访	fang	228
+c	诀	jue	71
+c	证	zheng	426
+c	诂	gu	16
+c	诃	he	89
+c	评	ping	246
+c	诅	zu	31
+c	识	shi	699
+c	识	zhi	12
+c	诇	xiong	20
+c	诈	zha	236
+c	诉	su	165
+c	诊	zhen	92
+c	诋	di	94
+c	诌	zhou	18
+c	词	ci	901
+c	诎	qu	58
+c	诏	zhao	172
+c	诐	bi	26
+c	译	yi	161
+c	诒	yi	28
+c	诓	kuang	21
+c	诔	lei	13
+c	试	shi	422
+c	诖	gua	6
+c	诗	shi	619
+c	诘	jie	128
+c	诘	ji	8
+c	诙	hui	28
+c	诚	cheng	314
+c	诛	zhu	197
+c	诜	shen	17
+c	话	hua	771
+c	诞	dan	215
+c	诟	gou	69
+c	诠	quan	54
+c	诡	gui	280
+c	询	xun	73
+c	诣	yi	53
+c	诤	zheng	40
+c	该	gai	125
+c	详	xiang	267
+c	诧	cha	25
+c	诨	hun	38
+c	诩	xu	19
+c	诪	zhou	9
+c	诫	jie	67
+c	诬	wu	154
+c	语	yu	1474
+c	诮	qiao	60
+c	误	wu	225
+c	诰	gao	73
+c	诱	you	180
+c	诲	hui	105
+c	诳	kuang	69
+c	说	shuo	1434
+c	说	shui	7
+c	说	yue	6
+c	诵	song	155
+c	诶	ei	2
+c	请	qing	310
+c	诸	zhu	271
+c	诹	zou	21
+c	诺	nuo	195
+c	读	du	315
+c	读	dou	3
+c	诼	zhuo	5
+c	诽	fei	39
+c	课	ke	321
+c	诿	wei	24
+c	谀	yu	77
+c	谁	shui	49
+c	谁	shei	20
+c	谂	shen	3
+c	调	diao	756
+c	调	tiao	327
+c	谄	chan	102
+c	谅	liang	54
+c	谆	zhun	56
+c	谇	sui	16
+c	谈	tan	534
+c	谊	yi	114
+c	谋	mou	471
+c	谌	chen	10
+c	谍	die	45
+c	谎	huang	76
+c	谏	jian	175
+c	谐	xie	174
+c	谑	xue	70
+c	谒	ye	123
+c	谓	wei	47
+c	谔	e	17
+c	谕	yu	129
+c	谖	xuan	15
+c	谗	chan	127
+c	谘	zi	57
+c	谙	an	36
+c	谚	yan	28
+c	谛	di	62
+c	谜	mi	49
+c	谜	mei	3
+c	谝	pian	4
+c	谞	xu	8
+c	谟	mo	85
+c	谠	dang	21
+c	谡	su	6
+c	谢	xie	417
+c	谣	yao	49
+c	谤	bang	124
+c	谥	shi	32
+c	谦	qian	148
+c	谧	mi	23
+c	谨	jin	257
+c	谩	man	103
+c	谪	zhe	85
+c	谫	jian	22
+c	谬	miu	187
+c	谭	tan	53
+c	谮	zen	38
+c	谯	qiao	31
+c	谰	lan	14
+c	谱	pu	159
+c	谲	jue	90
+c	谳	yan	58
+c	谴	qian	72
+c	谵	zhan	10
+c	谶	chen	45
+c	谷	gu	556
+c	谷	yu	3
+c	谸	qian	3
+c	谹	hong	10
+c	谺	xia	4
+c	谼	hong	5
+c	谽	han	4
+c	谾	hong	7
+c	谿	xi	2
+c	豀	xi	2
+c	豁	huo	177
+c	豁	hua	3
+c	豅	long	2
+c	豆	dou	412
+c	豇	jiang	2
+c	豉	chi	13
+c	豌	wan	11
+c	豏	xian	2
+c	豓	yan	3
+c	豕	shi	95
+c	豖	chu	2
+c	豗	hui	19
+c	豚	tun	70
+c	豜	jian	2
+c	象	xiang	588
+c	豢	huan	23
+c	豤	ken	6
+c	豨	xi	19
+c	豩	bin	2
+c	豪	hao	384
+c	豫	yu	164
+c	豭	jia	13
+c	豱	wen	2
+c	豲	huan	3
+c	豳	bin	17
+c	豵	zong	2
+c	豸	zhi	29
+c	豹	bao	154
+c	豺	chai	50
+c	豻	an	5
+c	貂	diao	90
+c	貅	xiu	2
+c	貉	mo	25
+c	貉	hao	4
+c	貉	he	4
+c	貊	mo	20
+c	貌	mao	241
+c	貍	mai	2
+c	貎	ni	8
+c	貑	jia	2
+c	貔	pi	10
+c	貙	chu	19
+c	貛	huan	6
+c	貜	jue	7
+c	貣	te	11
+c	貤	yi	18
+c	賔	bin	2
+c	賝	chen	5
+c	賨	cong	8
+c	賮	jin	6
+c	贉	dan	4
+c	贙	xuan	2
+c	贝	bei	239
+c	贞	zhen	381
+c	负	fu	614
+c	贡	gong	221
+c	财	cai	424
+c	责	ze	385
+c	贤	xian	471
+c	败	bai	449
+c	账	zhang	176
+c	货	huo	551
+c	质	zhi	690
+c	贩	fan	134
+c	贪	tan	349
+c	贫	pin	371
+c	贬	bian	127
+c	购	gou	114
+c	贮	zhu	51
+c	贯	guan	338
+c	贰	er	127
+c	贱	jian	289
+c	贲	ben	64
+c	贲	bi	3
+c	贳	shi	20
+c	贴	tie	262
+c	贵	gui	549
+c	贶	kuang	50
+c	贷	dai	143
+c	贸	mao	129
+c	费	fei	457
+c	贺	he	169
+c	贻	yi	86
+c	贼	zei	376
+c	贽	zhi	40
+c	贾	jia	175
+c	贾	gu	54
+c	贿	hui	82
+c	赀	zi	85
+c	赁	lin	38
+c	赂	lu	54
+c	赃	zang	110
+c	资	zi	585
+c	赅	gai	16
+c	赆	jin	27
+c	赇	qiu	25
+c	赈	zhen	63
+c	赉	lai	49
+c	赊	she	36
+c	赋	fu	244
+c	赌	du	147
+c	赍	ji	71
+c	赎	shu	72
+c	赏	shang	431
+c	赐	ci	221
+c	赑	bi	11
+c	赒	zhou	19
+c	赓	geng	18
+c	赔	pei	70
+c	赕	dan	12
+c	赖	lai	204
+c	赗	feng	12
+c	赘	zhui	117
+c	赙	fu	28
+c	赚	zhuan	33
+c	赚	zuan	5
+c	赛	sai	281
+c	赜	ze	28
+c	赝	yan	24
+c	赞	zan	283
+c	赠	zeng	156
+c	赡	shan	124
+c	赢	ying	84
+c	赣	gan	16
+c	赤	chi	619
+c	赥	xi	2
+c	赦	she	70
+c	赧	nan	22
+c	赩	xi	16
+c	赪	cheng	33
+c	赫	he	216
+c	赭	zhe	49
+c	赮	xia	5
+c	走	zou	740
+c	赳	jiu	19
+c	赴	fu	166
+c	赵	zhao	148
+c	赶	gan	177
+c	起	qi	1033
+c	赸	shan	6
+c	趁	chen	134
+c	趂	chen	3
+c	趄	ju	11
+c	趄	qie	11
+c	超	chao	401
+c	越	yue	443
+c	趋	qu	243
+c	趌	ji	2
+c	趍	qu	7
+c	趑	zi	10
+c	趓	duo	3
+c	趔	lie	11
+c	趚	su	4
+c	趟	tang	29
+c	趟	cheng	1
+c	趠	chao	6
+c	趢	lu	4
+c	趣	qu	279
+c	趣	cu	5
+c	趧	ti	3
+c	趩	chi	3
+c	趪	huang	2
+c	趫	qiao	26
+c	趭	jiao	2
+c	趯	yue	11
+c	趱	zan	19
+c	足	zu	911
+c	足	ju	1
+c	趴	pa	18
+c	趵	bo	3
+c	趵	bao	2
+c	趷	ke	13
+c	趸	dun	19
+c	趹	gui	6
+c	趺	fu	30
+c	趼	jian	15
+c	趾	zhi	95
+c	趿	ta	14
+c	跁	pa	2
+c	跂	qi	60
+c	跂	zhi	1
+c	跃	yue	159
+c	跄	qiang	40
+c	跅	tuo	8
+c	跆	tai	3
+c	跇	yi	5
+c	跋	ba	95
+c	跌	die	171
+c	跎	tuo	19
+c	跏	jia	10
+c	跐	ci	12
+c	跑	pao	268
+c	跒	qia	3
+c	跕	die	16
+c	跖	zhi	50
+c	跗	fu	33
+c	跘	pan	2
+c	跙	ju	5
+c	跚	shan	19
+c	跛	bo	41
+c	跜	ni	2
+c	距	ju	143
+c	跞	luo	12
+c	跟	gen	139
+c	跢	dai	2
+c	跣	xian	29
+c	跤	jiao	9
+c	跦	zhu	4
+c	跧	quan	18
+c	跨	kua	152
+c	跪	gui	51
+c	跫	qiong	10
+c	跬	kui	12
+c	跮	die	3
+c	路	lu	1196
+c	路	luo	2
+c	跰	beng	6
+c	跱	zhi	32
+c	跲	jia	4
+c	跳	tiao	410
+c	践	jian	133
+c	跶	da	13
+c	跷	qiao	47
+c	跸	bi	46
+c	跹	xian	5
+c	跺	duo	7
+c	跻	ji	34
+c	跼	ju	16
+c	跽	ji	12
+c	跾	shu	2
+c	踁	jing	5
+c	踃	xiao	2
+c	踅	xue	25
+c	踆	qun	9
+c	踆	cun	3
+c	踈	shu	4
+c	踉	liang	14
+c	踊	yong	67
+c	踌	chou	16
+c	踏	ta	290
+c	踑	ji	2
+c	踒	wo	9
+c	踔	chuo	38
+c	踕	jie	2
+c	踖	ji	15
+c	踘	ju	6
+c	踜	leng	2
+c	踝	huai	17
+c	踞	ju	61
+c	踟	chi	10
+c	踠	wan	18
+c	踡	quan	2
+c	踡	juan	1
+c	踢	ti	88
+c	踣	bo	36
+c	踤	zu	2
+c	踥	qie	4
+c	踦	ji	24
+c	踧	di	20
+c	踧	cu	4
+c	踩	cai	42
+c	踪	zong	153
+c	踬	zhi	40
+c	踮	dian	4
+c	踯	zhi	14
+c	踰	yu	31
+c	踰	yao	2
+c	踱	duo	15
+c	踳	chuan	12
+c	踵	zhong	170
+c	踶	di	13
+c	踸	chen	3
+c	踹	chuai	21
+c	踼	tang	4
+c	踽	ju	20
+c	踾	fu	2
+c	蹀	die	33
+c	蹁	pian	2
+c	蹂	rou	26
+c	蹄	ti	142
+c	蹅	cha	8
+c	蹇	jian	160
+c	蹈	dao	188
+c	蹉	cuo	27
+c	蹊	qi	41
+c	蹊	xi	14
+c	蹋	ta	31
+c	蹍	zhan	8
+c	蹎	dian	5
+c	蹐	ji	32
+c	蹑	nie	105
+c	蹒	pan	12
+c	蹓	liu	12
+c	蹔	zan	4
+c	蹗	lu	2
+c	蹙	cu	139
+c	蹚	tang	6
+c	蹛	dai	3
+c	蹛	die	1
+c	蹜	su	9
+c	蹝	xi	4
+c	蹠	zhi	17
+c	蹡	qiang	12
+c	蹢	di	2
+c	蹢	zhi	1
+c	蹥	lian	2
+c	蹦	beng	55
+c	蹧	zao	7
+c	蹩	bie	16
+c	蹪	tui	2
+c	蹬	deng	53
+c	蹭	ceng	28
+c	蹯	fan	6
+c	蹰	chu	9
+c	蹱	zhong	3
+c	蹲	dun	65
+c	蹲	cun	2
+c	蹴	cu	59
+c	蹶	jue	91
+c	蹷	jue	16
+c	蹸	lin	4
+c	蹹	ta	2
+c	蹻	jue	37
+c	蹼	pu	13
+c	蹽	liao	2
+c	蹿	cuan	17
+c	躁	zao	160
+c	躃	bi	16
+c	躄	bi	14
+c	躅	zhu	38
+c	躅	zhuo	2
+c	躇	chu	19
+c	躏	lin	8
+c	躐	lie	36
+c	躔	chan	24
+c	躗	wei	2
+c	躘	long	3
+c	躜	zuan	2
+c	躝	lan	2
+c	躞	xie	9
+c	躟	rang	4
+c	躠	xie	3
+c	躢	ta	2
+c	躣	qu	2
+c	躧	xi	27
+c	躨	kui	3
+c	躩	jue	5
+c	身	shen	1276
+c	躬	gong	133
+c	躭	dan	46
+c	躯	qu	92
+c	躰	ti	2
+c	躲	duo	62
+c	躶	luo	10
+c	躺	tang	27
+c	躽	yan	2
+c	軄	zhi	7
+c	軆	ti	5
+c	軉	yu	2
+c	軏	yue	7
+c	軖	kuang	4
+c	軥	qu	4
+c	軨	ling	16
+c	軬	fan	3
+c	軯	peng	3
+c	軵	rong	3
+c	軷	ba	10
+c	輀	er	11
+c	輁	gong	2
+c	輂	ju	4
+c	輆	kai	2
+c	輖	zhou	2
+c	輗	ni	3
+c	輘	ling	4
+c	輚	zhan	2
+c	輠	guo	5
+c	輢	yi	3
+c	輣	peng	5
+c	輤	qian	7
+c	輨	guan	2
+c	輭	er	6
+c	輮	rou	9
+c	輲	chuan	2
+c	輴	chun	9
+c	輵	ge	8
+c	輶	you	14
+c	輷	hong	7
+c	轇	jiao	6
+c	轊	wei	5
+c	轑	lao	7
+c	轒	fen	2
+c	轓	fan	18
+c	轕	ge	2
+c	轖	se	6
+c	轗	kan	2
+c	轘	huan	15
+c	轜	er	2
+c	轝	yu	16
+c	轞	jian	3
+c	轠	lei	5
+c	轣	li	2
+c	轥	lin	3
+c	车	che	1882
+c	车	ju	7
+c	轧	zha	71
+c	轧	ya	21
+c	轧	ga	7
+c	轨	gui	239
+c	轩	xuan	313
+c	轪	dai	2
+c	轫	ren	7
+c	转	zhuan	1032
+c	转	zhuai	3
+c	轭	e	27
+c	轮	lun	521
+c	软	ruan	399
+c	轰	hong	109
+c	轱	gu	10
+c	轲	ke	20
+c	轳	lu	12
+c	轴	zhou	228
+c	轵	zhi	9
+c	轶	yi	82
+c	轸	zhen	88
+c	轹	li	28
+c	轺	yao	22
+c	轻	qing	897
+c	轼	shi	27
+c	载	zai	399
+c	轾	zhi	7
+c	轿	jiao	67
+c	辀	zhou	18
+c	辁	quan	6
+c	辂	lu	64
+c	较	jiao	183
+c	辄	zhe	23
+c	辅	fu	210
+c	辆	liang	16
+c	辇	nian	98
+c	辈	bei	137
+c	辉	hui	157
+c	辊	gun	13
+c	辋	wang	10
+c	辌	liang	5
+c	辍	chuo	64
+c	辎	zi	21
+c	辏	cou	24
+c	辐	fu	65
+c	辑	ji	124
+c	辒	wen	9
+c	输	shu	266
+c	辔	pei	119
+c	辕	yuan	88
+c	辖	xia	64
+c	辗	nian	13
+c	辗	zhan	8
+c	辘	lu	35
+c	辙	zhe	141
+c	辚	lin	17
+c	辛	xin	144
+c	辜	gu	59
+c	辞	ci	715
+c	辟	pi	332
+c	辟	bi	35
+c	辠	zui	14
+c	辣	la	157
+c	辥	xue	2
+c	辨	bian	260
+c	辩	bian	322
+c	辫	bian	31
+c	辬	ban	2
+c	辰	chen	189
+c	辱	ru	226
+c	辵	chuo	2
+c	边	bian	810
+c	辽	liao	150
+c	达	da	794
+c	迁	qian	400
+c	迂	yu	112
+c	迄	qi	8
+c	迅	xun	98
+c	迆	yi	3
+c	过	guo	1371
+c	迈	mai	161
+c	迋	wang	3
+c	迍	zhun	29
+c	迎	ying	279
+c	运	yun	831
+c	近	jin	481
+c	迒	hang	4
+c	迓	ya	24
+c	返	fan	230
+c	迕	wu	22
+c	还	hai	318
+c	还	huan	259
+c	这	zhe	139
+c	这	zhei	2
+c	进	jin	1045
+c	远	yuan	1089
+c	违	wei	310
+c	连	lian	1149
+c	迟	chi	207
+c	迢	tiao	30
+c	迣	zhi	2
+c	迤	yi	38
+c	迥	jiong	71
+c	迦	jia	72
+c	迨	dai	4
+c	迩	er	68
+c	迪	di	124
+c	迫	po	243
+c	迫	pai	6
+c	迭	die	237
+c	迮	ze	15
+c	述	shu	196
+c	迱	yi	2
+c	迳	jing	64
+c	迴	hui	2
+c	迵	dong	6
+c	迷	mi	473
+c	迸	beng	92
+c	迹	ji	496
+c	迺	nai	3
+c	迻	yi	10
+c	追	zhui	524
+c	追	dui	2
+c	迾	lie	7
+c	退	tui	559
+c	送	song	438
+c	适	shi	345
+c	适	kuo	1
+c	逃	tao	238
+c	逄	pang	3
+c	逅	hou	10
+c	逆	ni	433
+c	逈	jiong	3
+c	选	xuan	520
+c	逊	xun	128
+c	逋	bu	107
+c	逌	you	2
+c	逍	xiao	28
+c	透	tou	244
+c	逐	zhu	345
+c	逑	qiu	8
+c	递	di	179
+c	途	tu	245
+c	逖	ti	17
+c	逗	dou	87
+c	通	tong	1500
+c	逛	guang	26
+c	逜	wu	4
+c	逝	shi	114
+c	逞	cheng	149
+c	速	su	391
+c	造	zao	536
+c	逡	qun	18
+c	逢	feng	193
+c	逤	suo	3
+c	逦	li	11
+c	逩	ben	4
+c	逭	huan	11
+c	逮	dai	83
+c	逯	lu	2
+c	逴	chuo	21
+c	逵	kui	29
+c	逶	wei	28
+c	逷	ti	9
+c	逸	yi	478
+c	逻	luo	111
+c	逼	bi	311
+c	逾	yu	164
+c	逿	dang	3
+c	遁	dun	198
+c	遂	sui	163
+c	遄	chuan	16
+c	遅	chi	2
+c	遇	yu	244
+c	遌	e	6
+c	遍	bian	83
+c	遏	e	100
+c	遐	xia	244
+c	遑	huang	59
+c	遒	qiu	66
+c	道	dao	2166
+c	遗	yi	1047
+c	遗	wei	16
+c	遘	gou	36
+c	遛	liu	15
+c	遝	ta	10
+c	遟	zhi	8
+c	遡	su	14
+c	遢	ta	9
+c	遣	qian	182
+c	遥	yao	184
+c	遨	ao	20
+c	適	di	2
+c	遫	chi	3
+c	遬	su	8
+c	遭	zao	141
+c	遮	zhe	225
+c	遯	dun	27
+c	遰	di	5
+c	遳	cuo	3
+c	遴	lin	27
+c	遵	zun	122
+c	遶	rao	32
+c	遹	yu	5
+c	遽	ju	58
+c	避	bi	407
+c	邀	yao	112
+c	邂	xie	9
+c	邃	sui	97
+c	邅	zhan	19
+c	邆	teng	2
+c	邈	miao	84
+c	邋	la	13
+c	邌	li	3
+c	邍	yuan	2
+c	邑	yi	225
+c	邓	deng	81
+c	邕	yong	15
+c	邗	han	8
+c	邙	mang	6
+c	邛	qiong	37
+c	邠	bin	7
+c	邡	fang	2
+c	邢	xing	12
+c	那	na	316
+c	那	nei	2
+c	那	ne	1
+c	邦	bang	270
+c	邨	cun	29
+c	邪	xie	432
+c	邪	ye	6
+c	邪	ya	2
+c	邬	wu	2
+c	邮	you	193
+c	邯	han	28
+c	邰	tai	4
+c	邱	qiu	78
+c	邳	pi	8
+c	邴	bing	8
+c	邵	shao	36
+c	邷	wa	2
+c	邸	di	76
+c	邹	zou	34
+c	邺	ye	20
+c	邻	lin	194
+c	邾	zhu	3
+c	郁	yu	374
+c	郄	xi	29
+c	郄	qie	3
+c	郅	zhi	7
+c	郇	huan	6
+c	郇	xun	2
+c	郊	jiao	199
+c	郍	na	2
+c	郎	lang	432
+c	郏	jia	4
+c	郐	kuai	7
+c	郑	zheng	134
+c	郓	yun	2
+c	郗	xi	4
+c	郙	fu	2
+c	郛	fu	14
+c	郜	gao	2
+c	郝	hao	6
+c	郞	lang	12
+c	郡	jun	140
+c	郢	ying	66
+c	郤	xi	12
+c	郦	li	8
+c	郧	yun	3
+c	部	bu	591
+c	郫	pi	3
+c	郭	guo	142
+c	郯	tan	2
+c	郴	chen	2
+c	郸	dan	26
+c	都	dou	371
+c	都	du	223
+c	郾	yan	3
+c	郿	mei	3
+c	鄂	e	69
+c	鄄	juan	2
+c	鄙	bi	243
+c	鄞	yin	4
+c	鄠	hu	2
+c	鄢	yan	3
+c	鄣	zhang	41
+c	鄨	bi	2
+c	鄯	shan	2
+c	鄱	po	6
+c	鄳	meng	3
+c	鄹	zou	2
+c	鄽	chan	17
+c	酂	zan	8
+c	酃	ling	7
+c	酆	feng	16
+c	酇	zan	8
+c	酉	you	33
+c	酊	ding	11
+c	酋	qiu	35
+c	酌	zhuo	127
+c	配	pei	352
+c	酎	zhou	23
+c	酏	yi	6
+c	酒	jiu	1259
+c	酓	yan	2
+c	酖	dan	15
+c	酗	xu	15
+c	酘	dou	3
+c	酙	zhen	2
+c	酚	fen	13
+c	酝	yun	29
+c	酞	tai	2
+c	酡	tuo	14
+c	酢	cu	20
+c	酢	zuo	2
+c	酣	han	106
+c	酤	gu	22
+c	酥	su	83
+c	酦	po	2
+c	酦	fa	1
+c	酧	chou	2
+c	酨	zai	2
+c	酩	ming	9
+c	酪	lao	46
+c	酪	luo	1
+c	酬	chou	133
+c	酮	tong	39
+c	酯	zhi	25
+c	酰	xian	17
+c	酱	jiang	108
+c	酲	cheng	26
+c	酳	yin	4
+c	酴	tu	11
+c	酵	jiao	22
+c	酶	mei	40
+c	酷	ku	126
+c	酸	suan	441
+c	酹	lei	16
+c	酺	pu	12
+c	酽	yan	17
+c	酾	shai	8
+c	酾	shi	2
+c	酿	niang	72
+c	醁	lu	12
+c	醂	lan	2
+c	醄	tao	7
+c	醅	pei	29
+c	醆	zhan	11
+c	醇	chun	167
+c	醉	zui	326
+c	醊	zhui	7
+c	醋	cu	106
+c	醌	kun	5
+c	醍	ti	11
+c	醎	xian	7
+c	醐	hu	6
+c	醑	xu	20
+c	醒	xing	128
+c	醓	tan	2
+c	醗	po	3
+c	醚	mi	7
+c	醛	quan	19
+c	醝	cuo	2
+c	醟	yong	9
+c	醢	hai	29
+c	醣	tang	4
+c	醥	piao	3
+c	醧	yu	3
+c	醨	li	16
+c	醩	zao	2
+c	醪	lao	50
+c	醭	bu	2
+c	醮	jiao	61
+c	醯	xi	12
+c	醰	tan	6
+c	醲	nong	21
+c	醳	yi	10
+c	醴	li	62
+c	醵	ju	24
+c	醹	ru	4
+c	醺	xun	16
+c	醼	yan	6
+c	醽	ling	6
+c	醾	mi	2
+c	醿	mi	2
+c	釂	jiao	9
+c	采	cai	584
+c	釉	you	14
+c	释	shi	266
+c	里	li	1393
+c	重	zhong	1334
+c	重	chong	530
+c	野	ye	663
+c	量	liang	834
+c	金	jin	2501
+c	釜	fu	99
+c	釭	gang	14
+c	釱	di	4
+c	釿	yin	2
+c	鈆	qian	4
+c	鈇	fu	15
+c	鈚	pi	7
+c	鈜	hong	2
+c	鈲	gu	2
+c	鉎	sheng	2
+c	鉏	chu	43
+c	鉟	pi	4
+c	鉠	yang	2
+c	鉥	xu	5
+c	鉥	shu	1
+c	鉧	mu	2
+c	鉴	jian	270
+c	銊	xu	2
+c	銕	yi	3
+c	銗	hou	2
+c	銡	ji	3
+c	銮	luan	49
+c	鋄	wan	2
+c	鋈	wu	4
+c	鋋	chan	4
+c	鋐	hong	3
+c	鋗	juan	2
+c	鋘	wu	3
+c	鋞	xing	2
+c	錍	bei	2
+c	錔	ta	2
+c	錞	dui	2
+c	錞	chun	1
+c	錣	zhui	4
+c	錥	yu	2
+c	錧	guan	5
+c	錪	tian	2
+c	録	lu	224
+c	錾	zan	6
+c	鍉	di	3
+c	鍖	zhen	2
+c	鍜	xia	2
+c	鍡	wei	2
+c	鍧	hong	8
+c	鍪	mou	6
+c	鍭	hou	2
+c	鍮	tou	3
+c	鍳	jian	3
+c	鎌	lian	7
+c	鎏	liu	2
+c	鎗	qiang	25
+c	鎝	da	2
+c	鎞	bi	2
+c	鎞	pi	1
+c	鎯	lang	3
+c	鏁	suo	10
+c	鏂	ou	2
+c	鏆	guan	2
+c	鏊	ao	8
+c	鏓	cong	2
+c	鏕	lu	2
+c	鏖	ao	12
+c	鏙	cui	2
+c	鏦	cong	8
+c	鏧	long	2
+c	鏩	jian	2
+c	鏬	xia	3
+c	鐀	gui	3
+c	鐀	kui	1
+c	鐄	huang	7
+c	鐍	jue	10
+c	鐎	jiao	3
+c	鐏	zun	5
+c	鐥	shan	2
+c	鐩	sui	2
+c	鐯	zhuo	2
+c	鐻	ju	5
+c	鑐	xu	3
+c	鑛	kuang	3
+c	鑢	lv	3
+c	针	zhen	366
+c	钉	ding	184
+c	钊	zhao	4
+c	钌	liao	4
+c	钎	qian	11
+c	钏	chuan	13
+c	钐	shan	5
+c	钑	sa	4
+c	钒	fan	3
+c	钓	diao	166
+c	钖	yang	2
+c	钗	chai	102
+c	钙	gai	26
+c	钛	tai	6
+c	钜	ju	86
+c	钝	dun	149
+c	钞	chao	145
+c	钟	zhong	400
+c	钠	na	29
+c	钡	bei	3
+c	钢	gang	243
+c	钣	ban	3
+c	钤	qian	41
+c	钥	yue	45
+c	钥	yao	27
+c	钦	qin	146
+c	钧	jun	119
+c	钨	wu	9
+c	钩	gou	383
+c	钮	niu	23
+c	钯	ba	4
+c	钱	qian	842
+c	钲	zheng	14
+c	钳	qian	88
+c	钴	gu	6
+c	钵	bo	76
+c	钹	bo	15
+c	钺	yue	46
+c	钻	zuan	271
+c	钾	jia	21
+c	钿	dian	47
+c	钿	tian	10
+c	铀	you	14
+c	铁	tie	824
+c	铃	ling	159
+c	铄	shuo	63
+c	铅	qian	147
+c	铅	yan	3
+c	铆	mao	17
+c	铉	xuan	14
+c	铊	ta	5
+c	铋	bi	2
+c	铍	pi	6
+c	铎	duo	49
+c	铏	xing	5
+c	铐	kao	5
+c	铓	mang	22
+c	铗	jia	16
+c	铙	nao	14
+c	铚	zhi	2
+c	铛	cheng	37
+c	铛	dang	13
+c	铜	tong	404
+c	铝	lv	19
+c	铞	diao	4
+c	铠	kai	29
+c	铡	zha	5
+c	铢	zhu	92
+c	铣	xi	16
+c	铣	xian	1
+c	铤	ting	15
+c	铤	ding	4
+c	铦	xian	18
+c	铧	hua	12
+c	铨	quan	81
+c	铩	sha	15
+c	铪	ha	2
+c	铫	yao	13
+c	铬	ge	11
+c	铭	ming	116
+c	铮	zheng	52
+c	铰	jiao	14
+c	铲	chan	45
+c	铳	chong	26
+c	铵	an	3
+c	银	yin	567
+c	铸	zhu	99
+c	铺	pu	343
+c	铻	wu	1
+c	铻	yu	1
+c	链	lian	81
+c	铿	keng	39
+c	销	xiao	385
+c	锁	suo	230
+c	锂	li	2
+c	锃	zeng	10
+c	锄	chu	77
+c	锅	guo	201
+c	锆	gao	3
+c	锈	xiu	42
+c	锉	cuo	32
+c	锋	feng	236
+c	锌	xin	9
+c	锏	jian	8
+c	锐	rui	159
+c	锑	ti	3
+c	锒	lang	8
+c	锓	qin	7
+c	锔	ju	3
+c	错	cuo	484
+c	锚	mao	25
+c	锛	ben	3
+c	锝	de	2
+c	锞	ke	6
+c	锟	kun	5
+c	锡	xi	180
+c	锢	gu	57
+c	锣	luo	79
+c	锤	chui	75
+c	锥	zhui	113
+c	锦	jin	434
+c	锧	zhi	8
+c	锨	xian	2
+c	锪	huo	2
+c	锭	ding	35
+c	键	jian	76
+c	锯	ju	73
+c	锰	meng	8
+c	锱	zi	17
+c	锲	qie	11
+c	锳	ying	12
+c	锵	qiang	38
+c	锷	e	24
+c	锸	cha	9
+c	锹	qiao	15
+c	锺	zhong	21
+c	锻	duan	49
+c	锼	sou	8
+c	锽	huang	9
+c	锾	huan	3
+c	镀	du	12
+c	镁	mei	15
+c	镂	lou	128
+c	镃	zi	3
+c	镆	mo	8
+c	镇	zhen	376
+c	镈	bo	13
+c	镊	nie	17
+c	镋	tang	2
+c	镌	juan	71
+c	镍	nie	7
+c	镏	liu	7
+c	镐	hao	20
+c	镐	gao	9
+c	镑	bang	10
+c	镒	yi	7
+c	镔	bin	4
+c	镕	rong	32
+c	镖	biao	16
+c	镗	tang	12
+c	镘	man	14
+c	镚	beng	7
+c	镛	yong	7
+c	镜	jing	439
+c	镝	di	14
+c	镞	zu	30
+c	镟	xuan	7
+c	镠	liu	4
+c	镡	tan	3
+c	镢	jue	8
+c	镣	liao	25
+c	镦	dun	3
+c	镩	cuan	2
+c	镪	qiang	18
+c	镫	deng	47
+c	镬	huo	26
+c	镭	lei	7
+c	镮	huan	19
+c	镯	zhuo	11
+c	镰	lian	27
+c	镲	cha	2
+c	镳	biao	50
+c	镴	la	11
+c	镵	chan	18
+c	镶	xiang	20
+c	长	chang	1775
+c	长	zhang	479
+c	閒	jian	2
+c	閕	xia	2
+c	閛	peng	2
+c	閜	xia	4
+c	閟	bi	37
+c	閤	ge	4
+c	閦	chu	3
+c	閧	hong	9
+c	閴	qu	2
+c	闇	an	149
+c	闉	yin	28
+c	闑	nie	4
+c	闚	kui	3
+c	闛	tang	5
+c	闝	piao	5
+c	闟	xi	8
+c	门	men	2026
+c	闩	shuan	9
+c	闪	shan	191
+c	闬	han	13
+c	闭	bi	280
+c	问	wen	669
+c	闯	chuang	59
+c	闰	run	37
+c	闱	wei	74
+c	闲	xian	643
+c	闳	hong	89
+c	间	jian	726
+c	闵	min	53
+c	闶	kang	4
+c	闷	men	235
+c	闸	zha	62
+c	闹	nao	295
+c	闺	gui	111
+c	闻	wen	546
+c	闼	ta	54
+c	闽	min	41
+c	闾	lv	118
+c	闿	kai	23
+c	阀	fa	53
+c	阁	ge	327
+c	阂	he	32
+c	阃	kun	73
+c	阄	jiu	15
+c	阅	yue	150
+c	阆	lang	26
+c	阇	du	15
+c	阇	she	7
+c	阈	yu	18
+c	阉	yan	34
+c	阊	chang	19
+c	阋	xi	21
+c	阍	hun	34
+c	阎	yan	60
+c	阏	e	24
+c	阏	yan	3
+c	阐	chan	57
+c	阑	lan	113
+c	阒	qu	26
+c	阓	hui	8
+c	阔	kuo	177
+c	阕	que	10
+c	阖	he	59
+c	阗	tian	35
+c	阘	ta	19
+c	阙	que	301
+c	阚	kan	14
+c	阛	huan	13
+c	阜	fu	115
+c	队	dui	338
+c	阡	qian	42
+c	阢	wu	2
+c	阤	yi	10
+c	阨	e	44
+c	阪	ban	34
+c	阬	gang	2
+c	阮	ruan	72
+c	阯	zhi	2
+c	阱	jing	29
+c	防	fang	517
+c	阳	yang	1087
+c	阴	yin	777
+c	阵	zhen	322
+c	阶	jie	257
+c	阸	e	24
+c	阹	qu	2
+c	阻	zu	244
+c	阼	zuo	10
+c	阽	yan	5
+c	阽	dian	2
+c	阿	a	816
+c	阿	e	106
+c	陀	tuo	122
+c	陁	tuo	26
+c	陂	bei	77
+c	陂	pi	4
+c	陂	po	3
+c	附	fu	513
+c	际	ji	290
+c	陆	lu	319
+c	陆	liu	8
+c	陇	long	86
+c	陈	chen	491
+c	陉	xing	11
+c	陊	duo	6
+c	陋	lou	205
+c	陌	mo	112
+c	降	jiang	397
+c	降	xiang	60
+c	限	xian	258
+c	陒	gui	2
+c	陔	gai	15
+c	陕	shan	27
+c	陖	jun	3
+c	陗	qiao	16
+c	陛	bi	67
+c	陜	xia	4
+c	陟	zhi	60
+c	陡	dou	34
+c	院	yuan	484
+c	除	chu	495
+c	陧	nie	2
+c	陨	yun	81
+c	险	xian	443
+c	陪	pei	148
+c	陬	zou	39
+c	陲	chui	14
+c	陴	pi	10
+c	陵	ling	504
+c	陶	tao	256
+c	陶	yao	1
+c	陷	xian	200
+c	陻	yin	6
+c	陼	du	2
+c	陾	reng	2
+c	陿	xia	18
+c	隁	yan	2
+c	隃	yu	9
+c	隄	di	6
+c	隅	yu	118
+c	隆	long	308
+c	隈	wei	25
+c	隋	sui	50
+c	隍	huang	20
+c	随	sui	429
+c	隐	yin	629
+c	隑	gai	3
+c	隒	yan	5
+c	隔	ge	260
+c	隖	wu	2
+c	隗	wei	24
+c	隘	ai	90
+c	隙	xi	202
+c	障	zhang	211
+c	隝	dao	3
+c	隟	xi	12
+c	隤	tui	27
+c	隥	deng	4
+c	隧	sui	49
+c	隨	sui	2
+c	隩	yu	15
+c	隩	ao	1
+c	隮	ji	8
+c	隰	xi	14
+c	隲	zhi	5
+c	隳	hui	62
+c	隶	li	158
+c	隹	zhui	2
+c	隺	he	3
+c	隼	sun	33
+c	隽	jun	93
+c	隽	juan	14
+c	难	nan	1064
+c	雀	que	487
+c	雀	qiao	8
+c	雁	yan	254
+c	雄	xiong	471
+c	雅	ya	525
+c	集	ji	605
+c	雇	gu	58
+c	雉	zhi	130
+c	雊	gou	7
+c	雌	ci	97
+c	雍	yong	98
+c	雎	ju	6
+c	雏	chu	70
+c	雒	luo	21
+c	雕	diao	434
+c	雘	wo	3
+c	雚	guan	8
+c	雚	huan	1
+c	雝	yong	18
+c	雠	chou	116
+c	雨	yu	1150
+c	雩	yu	23
+c	雪	xue	714
+c	雯	wen	4
+c	雰	fen	25
+c	雱	pang	2
+c	雳	li	21
+c	零	ling	305
+c	零	lian	1
+c	雷	lei	492
+c	雹	bao	25
+c	雺	wu	11
+c	雾	wu	304
+c	需	xu	81
+c	霁	ji	67
+c	霂	mu	2
+c	霃	chen	3
+c	霄	xiao	150
+c	霅	zha	11
+c	霆	ting	44
+c	震	zhen	287
+c	霈	pei	19
+c	霉	mei	80
+c	霍	huo	121
+c	霎	sha	23
+c	霏	fei	41
+c	霑	zhan	32
+c	霓	ni	54
+c	霔	zhu	5
+c	霖	lin	39
+c	霙	ying	8
+c	霜	shuang	507
+c	霞	xia	292
+c	霣	yun	21
+c	霩	kuo	2
+c	霪	yin	5
+c	霫	xi	3
+c	霭	ai	62
+c	霮	dan	2
+c	霰	xian	24
+c	露	lu	687
+c	露	lou	56
+c	霳	long	2
+c	霶	pang	3
+c	霸	ba	166
+c	霹	pi	27
+c	霾	mai	37
+c	霿	meng	8
+c	靁	lei	3
+c	靃	huo	5
+c	靇	long	2
+c	青	qing	1444
+c	靓	liang	37
+c	靓	jing	7
+c	靖	jing	102
+c	靘	qing	3
+c	静	jing	551
+c	靛	dian	20
+c	非	fei	711
+c	靠	kao	142
+c	靡	mi	284
+c	面	mian	1784
+c	靥	ye	37
+c	靦	tian	2
+c	靧	hui	8
+c	革	ge	409
+c	革	ji	2
+c	靪	ding	2
+c	靫	cha	7
+c	靬	jian	4
+c	靮	di	6
+c	靰	wu	3
+c	靳	jin	28
+c	靴	xue	100
+c	靶	ba	49
+c	靷	yin	5
+c	靸	sa	13
+c	靺	mo	7
+c	靼	da	5
+c	靽	ban	3
+c	靿	yao	4
+c	鞁	bei	6
+c	鞂	jie	2
+c	鞅	yang	39
+c	鞇	yin	2
+c	鞈	ge	5
+c	鞈	ta	1
+c	鞉	tao	6
+c	鞋	xie	212
+c	鞌	an	3
+c	鞍	an	87
+c	鞑	da	14
+c	鞒	qiao	3
+c	鞓	ting	6
+c	鞔	man	4
+c	鞘	qiao	33
+c	鞘	shao	2
+c	鞙	juan	4
+c	鞚	kong	15
+c	鞜	ta	2
+c	鞞	bi	19
+c	鞞	pi	3
+c	鞞	bing	2
+c	鞠	ju	103
+c	鞡	la	2
+c	鞣	rou	5
+c	鞧	qiu	3
+c	鞨	he	5
+c	鞫	ju	50
+c	鞬	jian	12
+c	鞭	bian	231
+c	鞮	di	28
+c	鞯	jian	16
+c	鞲	gou	19
+c	鞳	ta	3
+c	鞴	bei	29
+c	鞵	xie	11
+c	鞶	pan	12
+c	鞸	bi	2
+c	鞹	kuo	3
+c	鞺	tang	4
+c	鞻	lou	3
+c	鞼	gui	2
+c	鞾	xue	20
+c	鞿	ji	13
+c	韀	jian	3
+c	韅	xian	4
+c	韈	wa	12
+c	韐	ge	2
+c	韔	chang	5
+c	韕	kuo	2
+c	韗	yun	2
+c	韘	she	2
+c	韛	bai	5
+c	韠	bi	6
+c	韡	wei	17
+c	韣	du	2
+c	韥	du	2
+c	韦	wei	107
+c	韧	ren	21
+c	韨	fu	8
+c	韩	han	155
+c	韪	wei	11
+c	韫	yun	36
+c	韬	tao	117
+c	韭	jiu	22
+c	韰	xie	2
+c	韱	xian	3
+c	韲	ji	7
+c	音	yin	958
+c	韵	yun	285
+c	韶	shao	115
+c	韸	peng	4
+c	韹	huang	2
+c	韺	ying	5
+c	韽	an	2
+c	頀	hu	4
+c	頍	kui	3
+c	頖	pan	3
+c	頞	e	10
+c	頟	e	6
+c	頩	ping	3
+c	頳	cheng	4
+c	頿	zi	3
+c	顇	cui	25
+c	顋	sai	7
+c	顣	cu	3
+c	顦	qiao	2
+c	顩	yan	3
+c	页	ye	62
+c	顶	ding	446
+c	顷	qing	75
+c	顸	han	4
+c	项	xiang	183
+c	顺	shun	628
+c	须	xu	306
+c	顼	xu	8
+c	顽	wan	246
+c	顾	gu	466
+c	顿	dun	441
+c	顿	du	2
+c	颀	qi	19
+c	颁	ban	57
+c	颂	song	124
+c	颃	hang	5
+c	预	yu	230
+c	颅	lu	26
+c	领	ling	442
+c	颇	po	64
+c	颈	jing	148
+c	颈	geng	5
+c	颉	jie	18
+c	颉	xie	8
+c	颊	jia	84
+c	颋	ting	2
+c	颌	he	10
+c	颍	ying	29
+c	颎	jiong	6
+c	颏	ke	22
+c	颐	yi	114
+c	频	pin	144
+c	颒	hui	9
+c	颓	tui	200
+c	颔	han	51
+c	颖	ying	103
+c	颗	ke	32
+c	题	ti	373
+c	颙	yong	22
+c	颚	e	16
+c	颛	zhuan	46
+c	颜	yan	381
+c	额	e	320
+c	颞	nie	4
+c	颠	dian	321
+c	颡	sang	37
+c	颢	hao	20
+c	颣	lei	17
+c	颤	chan	101
+c	颤	zhan	11
+c	颦	pin	26
+c	颧	quan	7
+c	颩	biao	11
+c	颬	xia	2
+c	颭	zhan	2
+c	颲	lie	2
+c	颵	xiao	2
+c	颷	biao	17
+c	颽	kai	2
+c	颾	sao	3
+c	颿	fan	17
+c	飂	liu	10
+c	飂	liao	1
+c	飇	biao	12
+c	飈	biao	13
+c	飉	liao	4
+c	飋	se	2
+c	飍	xiu	3
+c	风	feng	3572
+c	飏	yang	37
+c	飐	zhan	16
+c	飑	biao	5
+c	飒	sa	47
+c	飓	ju	7
+c	飔	si	18
+c	飕	sou	27
+c	飖	yao	6
+c	飗	liu	5
+c	飘	piao	244
+c	飙	biao	108
+c	飜	fan	18
+c	飞	fei	1027
+c	食	shi	1354
+c	食	si	20
+c	食	yi	2
+c	飡	can	25
+c	飧	sun	41
+c	飨	xiang	91
+c	飰	fan	6
+c	飱	sun	14
+c	飱	can	1
+c	飶	bi	2
+c	餂	tian	2
+c	餈	ci	9
+c	餍	yan	18
+c	餐	can	261
+c	餔	bu	28
+c	餗	su	14
+c	餙	shi	2
+c	餟	zhui	5
+c	餤	dan	4
+c	餦	zhang	3
+c	餧	wei	14
+c	餩	e	2
+c	餪	nuan	4
+c	餫	yun	9
+c	餬	hu	7
+c	餭	huang	2
+c	餮	tie	7
+c	餰	jian	3
+c	餲	ai	2
+c	餹	tang	6
+c	餻	gao	10
+c	餽	kui	4
+c	饆	bi	3
+c	饍	shan	9
+c	饎	chi	7
+c	饐	yi	6
+c	饔	yong	32
+c	饕	tao	30
+c	饘	zhan	16
+c	饙	fen	3
+c	饟	xiang	11
+c	饠	luo	3
+c	饡	zan	2
+c	饤	ding	19
+c	饥	ji	194
+c	饦	tuo	5
+c	饧	xing	35
+c	饧	tang	2
+c	饨	tun	13
+c	饩	xi	41
+c	饪	ren	11
+c	饫	yu	35
+c	饬	chi	98
+c	饭	fan	554
+c	饮	yin	470
+c	饯	jian	50
+c	饰	shi	370
+c	饱	bao	189
+c	饲	si	37
+c	饳	duo	3
+c	饴	yi	21
+c	饵	er	76
+c	饶	rao	132
+c	饷	xiang	112
+c	饸	he	4
+c	饹	le	4
+c	饹	ge	1
+c	饺	jiao	13
+c	饼	bing	185
+c	饽	bo	13
+c	饾	dou	5
+c	饿	e	100
+c	馀	yu	12
+c	馁	nei	47
+c	馂	jun	9
+c	馃	guo	2
+c	馄	hun	15
+c	馅	xian	29
+c	馆	guan	395
+c	馈	kui	106
+c	馉	gu	4
+c	馊	sou	5
+c	馋	chan	53
+c	馌	ye	14
+c	馍	mo	8
+c	馎	bo	5
+c	馏	liu	17
+c	馐	xiu	8
+c	馑	jin	11
+c	馒	man	14
+c	馓	san	2
+c	馔	zhuan	80
+c	馕	nang	3
+c	首	shou	802
+c	馗	kui	11
+c	馘	guo	17
+c	馘	xu	2
+c	香	xiang	1090
+c	馛	bo	2
+c	馝	bi	2
+c	馞	bo	5
+c	馡	fei	2
+c	馣	an	2
+c	馤	ai	2
+c	馥	fu	34
+c	馧	yun	2
+c	馨	xin	38
+c	馲	tuo	2
+c	馺	sa	8
+c	馽	zhi	5
+c	駃	kuai	12
+c	駃	jue	1
+c	駈	qu	3
+c	駉	jiong	4
+c	駍	peng	2
+c	駏	ju	7
+c	駓	pi	4
+c	駖	ling	3
+c	駚	yang	2
+c	駞	tuo	14
+c	駧	dong	2
+c	駪	shen	3
+c	駫	jiong	2
+c	駬	er	3
+c	駴	hai	6
+c	駵	liu	6
+c	駶	ju	2
+c	駷	song	2
+c	駹	mang	2
+c	駻	han	6
+c	駼	tu	6
+c	駾	tui	2
+c	騀	e	3
+c	騃	ai	52
+c	騃	si	2
+c	騄	lu	10
+c	騉	kun	2
+c	騊	tao	2
+c	騋	lai	2
+c	騑	fei	13
+c	騕	yao	3
+c	騘	cong	2
+c	騝	qian	2
+c	騞	huo	7
+c	騟	yu	2
+c	騠	ti	2
+c	騧	gua	10
+c	騬	cheng	2
+c	騯	peng	2
+c	驉	xu	2
+c	驎	lin	12
+c	驐	dun	2
+c	驒	tuo	5
+c	驔	dian	3
+c	驝	tuo	2
+c	驩	huan	60
+c	马	ma	2551
+c	驭	yu	113
+c	驮	tuo	44
+c	驮	duo	10
+c	驯	xun	90
+c	驰	chi	268
+c	驱	qu	263
+c	驲	ri	13
+c	驳	bo	179
+c	驴	lv	140
+c	驵	zang	32
+c	驶	shi	68
+c	驷	si	73
+c	驸	fu	7
+c	驹	ju	101
+c	驺	zou	62
+c	驻	zhu	129
+c	驼	tuo	118
+c	驽	nu	71
+c	驾	jia	319
+c	驿	yi	151
+c	骀	dai	20
+c	骀	tai	3
+c	骁	xiao	51
+c	骂	ma	186
+c	骃	yin	2
+c	骄	jiao	266
+c	骅	hua	8
+c	骆	luo	38
+c	骇	hai	197
+c	骈	pian	132
+c	骉	biao	5
+c	骊	li	67
+c	骋	cheng	91
+c	验	yan	278
+c	骍	xing	32
+c	骎	qin	5
+c	骏	jun	119
+c	骐	qi	27
+c	骑	qi	301
+c	骒	ke	5
+c	骓	zhui	8
+c	骔	zong	2
+c	骕	su	4
+c	骖	can	61
+c	骗	pian	102
+c	骘	zhi	5
+c	骙	kui	3
+c	骚	sao	147
+c	骛	wu	64
+c	骜	ao	56
+c	骝	liu	16
+c	骞	qian	44
+c	骟	shan	4
+c	骠	biao	10
+c	骠	piao	9
+c	骡	luo	34
+c	骢	cong	42
+c	骣	chan	3
+c	骤	zhou	97
+c	骥	ji	103
+c	骧	xiang	25
+c	骨	gu	1202
+c	骩	wei	2
+c	骫	wei	10
+c	骭	gan	5
+c	骯	ang	2
+c	骰	tou	19
+c	骲	bao	3
+c	骳	bei	2
+c	骴	ci	4
+c	骶	di	4
+c	骷	ku	3
+c	骸	hai	64
+c	骹	xiao	4
+c	骺	hou	3
+c	骼	ge	17
+c	骽	tui	2
+c	骿	pian	3
+c	髀	bi	29
+c	髁	ke	3
+c	髂	qia	3
+c	髅	lou	6
+c	髇	xiao	5
+c	髋	kuan	5
+c	髌	bin	4
+c	髑	du	4
+c	髓	sui	110
+c	體	ti	2
+c	髗	lu	2
+c	高	gao	1896
+c	髟	biao	3
+c	髠	kun	2
+c	髡	kun	41
+c	髢	di	10
+c	髣	fang	4
+c	髥	ran	3
+c	髦	mao	66
+c	髧	dan	4
+c	髩	bin	9
+c	髫	tiao	33
+c	髬	pi	2
+c	髭	zi	31
+c	髯	ran	68
+c	髲	bi	6
+c	髳	mao	2
+c	髴	fei	6
+c	髵	er	3
+c	髶	er	2
+c	髹	xiu	24
+c	髺	kuo	3
+c	髻	ji	118
+c	髼	peng	7
+c	髽	zhua	12
+c	髾	shao	4
+c	髿	suo	6
+c	鬀	ti	7
+c	鬃	zong	22
+c	鬄	di	3
+c	鬅	peng	7
+c	鬇	zheng	2
+c	鬈	quan	12
+c	鬉	zong	5
+c	鬋	jian	10
+c	鬌	duo	5
+c	鬎	la	2
+c	鬏	jiu	3
+c	鬐	qi	16
+c	鬑	lian	4
+c	鬒	zhen	16
+c	鬓	bin	135
+c	鬖	san	6
+c	鬘	man	10
+c	鬙	seng	7
+c	鬝	qian	4
+c	鬟	huan	69
+c	鬡	ning	4
+c	鬣	lie	51
+c	鬪	dou	4
+c	鬯	chang	48
+c	鬲	ge	35
+c	鬴	fu	2
+c	鬷	zong	4
+c	鬺	shang	3
+c	鬻	yu	106
+c	鬼	gui	789
+c	鬽	mei	6
+c	鬾	ji	2
+c	鬿	qi	3
+c	魀	ga	2
+c	魁	kui	181
+c	魂	hun	395
+c	魃	ba	12
+c	魄	po	245
+c	魄	tuo	2
+c	魅	mei	47
+c	魆	xu	15
+c	魇	yan	30
+c	魈	xiao	5
+c	魉	liang	6
+c	魋	tui	7
+c	魌	qi	2
+c	魍	wang	9
+c	魏	wei	109
+c	魑	chi	7
+c	魔	mo	201
+c	魖	xu	3
+c	魣	yu	2
+c	魧	hang	2
+c	魪	jie	2
+c	魫	shen	6
+c	魮	bi	6
+c	魱	hu	2
+c	鮀	tuo	4
+c	鮆	ji	6
+c	鮝	xiang	9
+c	鮥	luo	2
+c	鮧	yi	3
+c	鮬	ku	3
+c	鮯	ge	2
+c	鮹	shao	2
+c	鯆	pu	2
+c	鯈	tiao	4
+c	鯋	sha	2
+c	鯞	zhou	2
+c	鯣	yi	2
+c	鯶	huan	3
+c	鯸	hou	3
+c	鯹	xing	4
+c	鰅	yu	2
+c	鰕	xia	28
+c	鰗	hu	2
+c	鰞	wu	3
+c	鱊	yu	2
+c	鱍	bo	5
+c	鱏	xun	2
+c	鱐	su	2
+c	鱓	tuo	3
+c	鱥	gui	2
+c	鱬	ru	3
+c	鱻	xian	2
+c	鱼	yu	1383
+c	鱽	dao	2
+c	鱿	you	3
+c	鲀	tun	3
+c	鲁	lu	303
+c	鲂	fang	12
+c	鲅	ba	8
+c	鲆	ping	2
+c	鲇	nian	13
+c	鲈	lu	36
+c	鲊	zha	33
+c	鲋	fu	17
+c	鲍	bao	56
+c	鲎	hou	12
+c	鲏	pi	5
+c	鲐	tai	14
+c	鲑	gui	16
+c	鲑	xie	1
+c	鲔	wei	6
+c	鲕	er	4
+c	鲗	zei	13
+c	鲙	kuai	26
+c	鲚	ji	3
+c	鲛	jiao	36
+c	鲜	xian	390
+c	鲞	xiang	3
+c	鲟	xun	5
+c	鲠	geng	74
+c	鲡	li	3
+c	鲢	lian	7
+c	鲣	jian	5
+c	鲤	li	53
+c	鲦	tiao	2
+c	鲧	gun	2
+c	鲨	sha	17
+c	鲫	ji	12
+c	鲭	qing	8
+c	鲭	zheng	1
+c	鲮	ling	7
+c	鲰	zou	10
+c	鲱	fei	3
+c	鲲	kun	27
+c	鲳	chang	5
+c	鲴	gu	2
+c	鲵	ni	15
+c	鲷	diao	3
+c	鲸	jing	107
+c	鲻	zi	4
+c	鲼	fen	2
+c	鲽	die	13
+c	鲿	chang	2
+c	鳀	ti	8
+c	鳁	wen	2
+c	鳃	sai	14
+c	鳄	e	21
+c	鳅	qiu	22
+c	鳇	huang	5
+c	鳊	bian	8
+c	鳌	ao	64
+c	鳍	qi	17
+c	鳏	guan	35
+c	鳐	yao	3
+c	鳑	pang	9
+c	鳔	biao	6
+c	鳕	xue	2
+c	鳖	bie	86
+c	鳗	man	17
+c	鳙	yong	5
+c	鳛	xi	2
+c	鳝	shan	14
+c	鳞	lin	277
+c	鳟	zun	4
+c	鳢	li	10
+c	鳣	zhan	13
+c	鳦	yi	3
+c	鳬	fu	3
+c	鳱	gan	3
+c	鳷	zhi	4
+c	鳸	hu	5
+c	鳻	ban	3
+c	鳿	yu	2
+c	鴂	jue	11
+c	鴃	jue	5
+c	鴅	huan	2
+c	鴈	yan	41
+c	鴘	bian	2
+c	鴠	dan	4
+c	鴡	ju	3
+c	鴳	yan	14
+c	鴶	jia	3
+c	鴺	yi	2
+c	鴾	mou	3
+c	鵀	ren	2
+c	鵁	jiao	4
+c	鵄	chi	4
+c	鵊	jia	4
+c	鵍	huan	2
+c	鵕	jun	5
+c	鵖	bi	2
+c	鵙	ju	3
+c	鵩	fu	12
+c	鵫	zhuo	2
+c	鵰	diao	23
+c	鵳	jian	2
+c	鵹	li	3
+c	鵻	zhui	2
+c	鵽	duo	5
+c	鶂	yi	7
+c	鶄	jing	3
+c	鶆	lai	2
+c	鶈	qi	2
+c	鶋	ju	3
+c	鶌	jue	4
+c	鶒	chi	3
+c	鶗	ti	4
+c	鶝	fu	2
+c	鶠	yan	2
+c	鶪	ju	3
+c	鶱	xian	15
+c	鶵	chu	3
+c	鶽	sun	2
+c	鷃	yan	8
+c	鷅	li	2
+c	鷇	kou	13
+c	鷉	ti	2
+c	鷒	tuan	2
+c	鷕	yao	4
+c	鷞	shuang	3
+c	鷟	zhuo	5
+c	鷩	bi	8
+c	鷰	yan	9
+c	鷽	xue	2
+c	鷾	yi	2
+c	鸀	zhu	2
+c	鸁	luo	2
+c	鸂	xi	5
+c	鸃	yi	3
+c	鸅	ze	2
+c	鸆	yu	2
+c	鸊	bi	6
+c	鸊	pi	1
+c	鸐	di	5
+c	鸑	yue	6
+c	鸓	lei	3
+c	鸖	he	2
+c	鸟	niao	725
+c	鸟	diao	4
+c	鸠	jiu	147
+c	鸡	ji	767
+c	鸢	yuan	36
+c	鸣	ming	441
+c	鸤	shi	3
+c	鸥	ou	88
+c	鸦	ya	189
+c	鸧	cang	16
+c	鸨	bao	20
+c	鸩	zhen	27
+c	鸪	gu	26
+c	鸫	dong	53
+c	鸬	lu	19
+c	鸭	ya	209
+c	鸮	xiao	55
+c	鸯	yang	66
+c	鸰	ling	17
+c	鸱	chi	70
+c	鸲	qu	51
+c	鸳	yuan	119
+c	鸴	xue	2
+c	鸵	tuo	5
+c	鸶	si	2
+c	鸷	zhi	70
+c	鸸	er	3
+c	鸹	gua	6
+c	鸺	xiu	6
+c	鸻	heng	22
+c	鸼	zhou	3
+c	鸽	ge	47
+c	鸾	luan	341
+c	鸿	hong	508
+c	鹀	wu	33
+c	鹁	bo	8
+c	鹂	li	14
+c	鹃	juan	52
+c	鹄	hu	151
+c	鹄	gu	3
+c	鹅	e	200
+c	鹆	yu	9
+c	鹇	xian	3
+c	鹈	ti	17
+c	鹉	wu	44
+c	鹊	que	182
+c	鹋	miao	2
+c	鹌	an	8
+c	鹍	kun	15
+c	鹎	bei	31
+c	鹏	peng	83
+c	鹑	chun	66
+c	鹒	geng	3
+c	鹓	yuan	41
+c	鹔	su	5
+c	鹕	hu	7
+c	鹖	he	14
+c	鹗	e	38
+c	鹘	hu	67
+c	鹘	gu	5
+c	鹙	qiu	8
+c	鹚	ci	16
+c	鹛	mei	144
+c	鹜	wu	38
+c	鹞	yao	31
+c	鹟	weng	57
+c	鹠	liu	7
+c	鹡	ji	13
+c	鹢	yi	30
+c	鹣	jian	10
+c	鹤	he	590
+c	鹥	yi	8
+c	鹦	ying	67
+c	鹧	zhe	24
+c	鹨	liu	24
+c	鹩	liao	17
+c	鹪	jiao	31
+c	鹫	jiu	33
+c	鹬	yu	71
+c	鹭	lu	75
+c	鹮	huan	5
+c	鹯	zhan	6
+c	鹰	ying	198
+c	鹱	hu	9
+c	鹲	meng	3
+c	鹳	guan	30
+c	鹴	shuang	4
+c	鹻	jian	2
+c	鹾	cuo	25
+c	鹿	lu	342
+c	麀	you	3
+c	麂	ji	9
+c	麃	biao	5
+c	麄	cu	5
+c	麆	zhu	2
+c	麇	jun	16
+c	麇	qun	3
+c	麈	zhu	24
+c	麊	mi	2
+c	麋	mi	62
+c	麌	yu	2
+c	麑	ni	10
+c	麒	qi	30
+c	麓	lu	26
+c	麕	jun	4
+c	麚	jia	2
+c	麛	mi	9
+c	麝	she	48
+c	麞	zhang	16
+c	麟	lin	172
+c	麡	qi	2
+c	麤	cu	148
+c	麦	mai	313
+c	麨	chao	7
+c	麰	mou	9
+c	麴	qu	8
+c	麸	fu	13
+c	麹	qu	2
+c	麻	ma	540
+c	麼	me	2
+c	麽	mo	4
+c	麽	me	2
+c	麾	hui	70
+c	黂	fen	4
+c	黄	huang	1629
+c	黅	jin	3
+c	黆	guang	2
+c	黈	tou	3
+c	黉	hong	15
+c	黍	shu	99
+c	黎	li	172
+c	黏	nian	110
+c	黐	chi	7
+c	黑	hei	979
+c	黓	yi	2
+c	黔	qian	54
+c	黕	dan	10
+c	黖	xi	2
+c	默	mo	281
+c	黛	dai	84
+c	黜	chu	125
+c	黝	you	39
+c	黟	yi	6
+c	黠	xia	85
+c	黡	yan	6
+c	黢	qu	3
+c	黣	mei	3
+c	黤	yan	7
+c	黥	qing	25
+c	黦	yue	6
+c	黧	li	16
+c	黩	du	66
+c	黪	can	12
+c	黬	yan	2
+c	黭	yan	9
+c	黮	dan	21
+c	黯	an	67
+c	黰	zhen	3
+c	黳	yi	5
+c	黵	dan	3
+c	黹	zhi	3
+c	黻	fu	28
+c	黼	fu	45
+c	黾	mian	21
+c	黾	meng	2
+c	黾	min	2
+c	鼃	wa	19
+c	鼄	zhu	2
+c	鼈	bie	12
+c	鼊	bi	2
+c	鼋	yuan	26
+c	鼍	tuo	27
+c	鼎	ding	405
+c	鼐	nai	6
+c	鼓	gu	785
+c	鼔	gu	2
+c	鼖	fen	4
+c	鼗	tao	15
+c	鼘	yuan	3
+c	鼙	pi	20
+c	鼚	chang	2
+c	鼛	gao	4
+c	鼜	qi	3
+c	鼟	teng	2
+c	鼠	shu	430
+c	鼢	fen	2
+c	鼩	qu	4
+c	鼪	sheng	9
+c	鼬	you	20
+c	鼯	wu	17
+c	鼱	jing	2
+c	鼲	hun	5
+c	鼷	xi	10
+c	鼹	yan	7
+c	鼻	bi	355
+c	鼽	qiu	8
+c	鼾	han	23
+c	齁	hou	13
+c	齃	e	3
+c	齄	zha	5
+c	齅	xiu	4
+c	齆	weng	3
+c	齇	zha	4
+c	齉	nang	2
+c	齍	zi	6
+c	齐	qi	602
+c	齐	ji	9
+c	齑	ji	35
+c	齓	chen	5
+c	齖	ya	2
+c	齘	xie	4
+c	齚	ze	7
+c	齝	chi	2
+c	齞	yan	2
+c	齩	yao	5
+c	齮	yi	5
+c	齯	ni	2
+c	齰	ze	7
+c	齱	chuo	2
+c	齱	zou	1
+c	齴	yan	4
+c	齵	ou	3
+c	齵	yu	1
+c	齼	chu	3
+c	齾	ya	8
+c	齿	chi	531
+c	龀	chen	11
+c	龁	he	20
+c	龂	yin	7
+c	龃	ju	7
+c	龄	ling	111
+c	龅	bao	2
+c	龆	tiao	16
+c	龇	zi	6
+c	龈	yin	36
+c	龉	yu	10
+c	龊	chuo	20
+c	龋	qu	12
+c	龌	wo	9
+c	龎	pang	2
+c	龙	long	1674
+c	龚	gong	18
+c	龛	kan	51
+c	龟	gui	353
+c	龟	qiu	5
+c	龟	jun	3
+c	龠	yue	13
+c	龢	he	20
+b	一	了	liao	6
+b	一	刹	cha	4
+b	一	刹	sha	1
+b	一	地	di	6
+b	一	宿	xiu	6
+b	一	弹	tan	3
+b	一	弹	dan	2
+b	一	扎	za	3
+b	一	攒	zan	3
+b	一	暴	bao	2
+b	一	暴	pu	2
+b	一	朝	zhao	17
+b	一	朝	chao	4
+b	一	模	mu	3
+b	一	模	mo	2
+b	一	沓	da	5
+b	一	着	zhao	7
+b	一	觉	jiao	6
+b	一	驮	duo	3
+b	三	地	di	4
+b	三	地	de	1
+b	三	宿	xiu	3
+b	三	省	xing	6
+b	三	省	sheng	2
+b	三	落	la	3
+b	三	藏	zang	5
+b	三	重	chong	9
+b	上	大	dai	2
+b	上	大	da	1
+b	上	着	zhao	3
+b	上	着	zhe	1
+b	上	着	zhuo	1
+b	下	乘	sheng	3
+b	下	调	tiao	2
+b	下	调	diao	1
+b	不	了	liao	59
+b	不	了	le	4
+b	不	曾	ceng	5
+b	不	校	jiao	3
+b	不	省	xing	8
+b	不	着	zhao	46
+b	不	着	zhuo	14
+b	不	着	zhe	4
+b	不	称	chen	2
+b	不	称	cheng	1
+b	不	调	tiao	6
+b	不	还	huan	5
+b	不	重	chong	11
+b	不	重	zhong	9
+b	不	长	zhang	7
+b	不	长	chang	5
+b	不	阿	e	17
+b	不	阿	a	4
+b	东	地	di	3
+b	东	莞	guan	3
+b	东	阿	e	3
+b	两	地	di	4
+b	两	重	chong	6
+b	中	折	she	3
+b	中	的	di	5
+b	中	的	de	3
+b	中	都	du	3
+b	中	都	dou	1
+b	为	什	shen	4
+b	为	什	shi	1
+b	为	朴	pu	4
+b	为	朴	piao	2
+b	主	角	jue	8
+b	义	薄	bo	4
+b	义	薄	bao	2
+b	之	地	di	74
+b	之	的	di	4
+b	之	的	de	1
+b	之	貉	he	4
+b	乐	都	du	3
+b	乖	露	lou	2
+b	乖	露	lu	1
+b	九	地	di	3
+b	九	行	hang	3
+b	九	重	chong	24
+b	也	么	mo	5
+b	也	似	shi	5
+b	也	似	si	1
+b	习	地	de	2
+b	习	地	di	2
+b	书	长	zhang	3
+b	乱	弹	tan	6
+b	乳	臭	xiu	10
+b	乳	臭	chou	2
+b	了	了	liao	12
+b	争	朝	zhao	3
+b	事	重	chong	4
+b	事	长	zhang	5
+b	二	地	di	4
+b	二	行	hang	3
+b	二	重	chong	14
+b	于	思	sai	3
+b	于	思	si	2
+b	云	朝	zhao	4
+b	五	石	dan	4
+b	五	石	shi	2
+b	五	藏	zang	4
+b	五	行	hang	16
+b	五	行	xing	6
+b	产	地	di	6
+b	京	都	du	6
+b	亭	长	chang	2
+b	亭	长	zhang	2
+b	人	参	shen	4
+b	人	模	mu	3
+b	人	给	ji	3
+b	仆	射	ye	3
+b	今	朝	zhao	6
+b	仓	卒	cu	6
+b	以	不	bu	2
+b	以	不	fou	2
+b	以	塞	se	4
+b	价	还	huan	5
+b	仿	佛	fu	3
+b	伎	俩	liang	6
+b	伏	地	di	7
+b	伏	地	de	1
+b	众	恶	wu	3
+b	会	长	zhang	5
+b	似	曾	ceng	5
+b	低	地	di	4
+b	体	胖	pan	4
+b	余	地	di	12
+b	余	地	de	2
+b	作	么	mo	3
+b	佝	偻	lou	6
+b	供	给	ji	8
+b	依	阿	e	3
+b	侵	牟	mou	2
+b	侵	牟	mu	1
+b	便	便	pian	7
+b	便	便	bian	2
+b	保	长	chang	2
+b	保	长	zhang	2
+b	俭	朴	pu	5
+b	倏	地	de	2
+b	倏	地	di	2
+b	倒	地	di	5
+b	倔	强	jiang	6
+b	偿	还	huan	3
+b	像	模	mu	2
+b	像	模	mo	1
+b	儿	騃	ai	2
+b	儿	騃	si	2
+b	先	朝	zhao	4
+b	先	朝	chao	1
+b	先	着	zhao	4
+b	先	著	zhuo	4
+b	党	参	shen	3
+b	兜	率	shuai	3
+b	入	地	di	11
+b	入	地	de	7
+b	入	行	hang	3
+b	八	埏	yan	2
+b	八	埏	shan	1
+b	八	宿	su	2
+b	八	宿	xiu	2
+b	八	行	hang	4
+b	公	地	di	6
+b	六	行	hang	3
+b	兰	若	re	4
+b	内	乐	yue	2
+b	内	乐	le	1
+b	内	地	de	3
+b	内	地	di	3
+b	内	省	xing	6
+b	内	行	hang	6
+b	冒	没	mo	3
+b	军	乐	yue	6
+b	军	地	di	2
+b	军	地	de	1
+b	冠	地	di	3
+b	凤	觜	zui	3
+b	出	差	chai	4
+b	出	差	cha	2
+b	出	没	mo	7
+b	击	乐	yue	4
+b	凿	坏	pi	5
+b	刀	削	xiao	4
+b	分	行	hang	4
+b	列	传	zhuan	5
+b	创	艾	yi	3
+b	判	长	zhang	4
+b	刮	削	xiao	3
+b	刮	地	di	4
+b	刻	薄	bo	10
+b	削	地	di	3
+b	割	地	di	6
+b	力	薄	bo	5
+b	力	薄	bao	4
+b	务	长	zhang	8
+b	动	弹	tan	4
+b	助	长	zhang	7
+b	匀	称	chen	3
+b	包	扎	za	3
+b	匝	地	di	8
+b	匝	地	de	1
+b	十	行	hang	13
+b	千	乘	sheng	5
+b	千	乘	cheng	2
+b	千	了	liao	4
+b	千	了	le	2
+b	千	石	dan	3
+b	午	觉	jiao	3
+b	协	调	tiao	11
+b	单	薄	bo	3
+b	卖	解	xie	3
+b	南	乐	yue	2
+b	南	乐	le	1
+b	南	地	di	7
+b	南	无	mo	3
+b	南	藏	zang	3
+b	卜	地	di	3
+b	卜	地	de	1
+b	占	地	di	5
+b	占	地	de	1
+b	印	地	di	4
+b	危	地	di	2
+b	危	地	de	1
+b	卷	地	di	2
+b	卷	地	de	1
+b	厂	长	zhang	3
+b	压	地	de	2
+b	压	地	di	2
+b	厌	恶	wu	7
+b	厚	薄	bo	3
+b	原	地	di	5
+b	县	地	di	3
+b	参	差	ci	11
+b	参	差	cha	1
+b	双	重	chong	9
+b	反	弹	tan	3
+b	反	弹	dan	2
+b	反	朴	pu	8
+b	反	朴	piao	1
+b	反	省	xing	5
+b	受	禅	shan	3
+b	受	降	xiang	4
+b	古	地	di	3
+b	古	大	da	2
+b	古	大	dai	2
+b	古	薄	bo	4
+b	古	都	du	3
+b	叫	地	di	4
+b	叫	地	de	3
+b	可	恶	wu	4
+b	可	的	di	4
+b	可	长	zhang	8
+b	台	地	di	4
+b	台	地	de	2
+b	司	长	zhang	3
+b	司	长	chang	1
+b	吁	吁	xu	9
+b	吁	地	di	3
+b	吁	地	de	1
+b	吃	着	zhuo	5
+b	吃	着	zhe	2
+b	各	地	di	4
+b	合	从	zong	3
+b	吉	地	di	3
+b	吉	地	de	1
+b	同	行	hang	3
+b	同	行	xing	1
+b	名	角	jue	3
+b	吐	蕃	bo	3
+b	吴	堡	bu	3
+b	吹	弹	tan	7
+b	呜	咽	ye	5
+b	呢	呢	ni	2
+b	呢	呢	ne	1
+b	周	内	na	3
+b	呱	呱	gu	9
+b	呱	呱	gua	7
+b	呼	地	di	5
+b	呼	地	de	1
+b	命	薄	bao	2
+b	命	薄	bo	2
+b	咀	嚼	jue	7
+b	咀	徵	zheng	4
+b	咽	咽	ye	4
+b	哀	的	di	2
+b	哀	的	de	1
+b	响	乐	yue	5
+b	哭	地	di	2
+b	哭	地	de	1
+b	唤	地	di	2
+b	唤	地	de	1
+b	商	贾	gu	3
+b	善	恶	wu	4
+b	善	恶	e	2
+b	善	贾	gu	7
+b	喊	地	di	4
+b	喘	吁	xu	5
+b	喷	薄	bo	4
+b	嘴	地	di	3
+b	嘴	薄	bo	6
+b	四	行	hang	3
+b	四	重	chong	3
+b	因	地	di	5
+b	因	地	de	3
+b	团	长	zhang	3
+b	园	地	di	4
+b	国	地	di	7
+b	国	地	de	4
+b	圈	地	di	4
+b	土	地	di	29
+b	土	长	zhang	7
+b	圣	地	di	7
+b	在	地	di	8
+b	在	地	de	1
+b	在	行	hang	4
+b	地	嚼	jue	4
+b	地	壳	qiao	6
+b	地	窨	yin	3
+b	地	落	la	3
+b	地	落	luo	2
+b	地	藏	zang	8
+b	地	藏	cang	1
+b	地	重	chong	4
+b	地	重	zhong	2
+b	场	地	di	4
+b	场	调	tiao	3
+b	场	调	diao	1
+b	均	地	de	2
+b	均	地	di	2
+b	坏	裳	shang	2
+b	坏	裳	chang	1
+b	坐	地	di	8
+b	坠	地	di	4
+b	坡	地	di	4
+b	坤	角	jue	3
+b	坦	率	shuai	8
+b	垫	圈	juan	2
+b	垫	圈	quan	1
+b	埋	没	mo	3
+b	城	地	di	4
+b	基	地	di	16
+b	堂	地	de	2
+b	堂	地	di	2
+b	堕	地	di	4
+b	堵	塞	se	5
+b	塌	地	di	5
+b	塌	地	de	1
+b	填	塞	se	3
+b	境	地	di	5
+b	墓	地	di	5
+b	增	长	zhang	26
+b	士	乐	yue	3
+b	声	乐	yue	5
+b	声	屏	bing	4
+b	处	着	zhuo	4
+b	处	长	zhang	4
+b	复	辟	bi	4
+b	复	还	huan	3
+b	外	传	zhuan	3
+b	外	传	chuan	1
+b	外	行	hang	8
+b	多	重	chong	5
+b	大	嚼	jue	7
+b	大	嚼	jiao	4
+b	大	埔	bu	3
+b	大	埔	pu	1
+b	大	模	mu	5
+b	大	率	lv	2
+b	大	率	shuai	2
+b	大	藏	zang	7
+b	大	贾	gu	3
+b	大	都	du	8
+b	大	都	dou	2
+b	大	长	chang	3
+b	大	长	zhang	3
+b	天	地	di	48
+b	天	地	de	4
+b	天	姥	mu	3
+b	天	率	shuai	4
+b	天	钥	yao	2
+b	天	钥	yue	1
+b	太	行	hang	4
+b	太	阿	e	6
+b	太	阿	a	2
+b	夫	长	zhang	3
+b	失	调	tiao	10
+b	头	地	di	12
+b	头	地	de	6
+b	头	强	jiang	3
+b	头	强	qiang	1
+b	奏	乐	yue	3
+b	奥	地	di	6
+b	奥	地	de	1
+b	女	长	zhang	4
+b	好	还	huan	3
+b	如	朝	zhao	4
+b	姑	射	she	2
+b	姑	射	ye	2
+b	委	蛇	yi	6
+b	娜	娜	nuo	2
+b	娜	娜	na	1
+b	婀	娜	nuo	7
+b	婑	媠	tuo	2
+b	婑	媠	duo	1
+b	嫌	恶	wu	3
+b	嫡	长	chang	2
+b	嫡	长	zhang	2
+b	子	似	shi	6
+b	子	参	shen	2
+b	子	参	can	1
+b	宁	地	di	3
+b	宁	地	de	2
+b	宅	地	di	2
+b	宅	地	de	1
+b	安	地	di	9
+b	安	地	de	8
+b	安	的	di	2
+b	安	的	de	1
+b	定	省	xing	6
+b	宝	藏	zang	3
+b	审	度	duo	3
+b	家	给	ji	9
+b	家	长	zhang	11
+b	家	长	chang	6
+b	家	雀	qiao	4
+b	富	贾	gu	4
+b	寒	地	di	3
+b	寒	颤	zhan	3
+b	寞	地	di	2
+b	寞	地	de	1
+b	寸	地	di	4
+b	寸	度	duo	2
+b	寸	度	du	1
+b	对	称	chen	22
+b	寻	行	hang	2
+b	寻	行	xing	2
+b	封	地	di	3
+b	封	地	de	1
+b	封	禅	shan	6
+b	将	将	qiang	4
+b	尊	长	zhang	3
+b	小	传	zhuan	3
+b	小	差	chai	3
+b	就	地	di	10
+b	就	地	de	1
+b	尸	还	huan	4
+b	尺	地	di	4
+b	尾	地	di	3
+b	尾	地	de	2
+b	局	地	di	6
+b	局	地	de	1
+b	局	长	zhang	4
+b	层	地	di	4
+b	层	地	de	2
+b	居	地	di	3
+b	居	地	de	1
+b	屈	折	she	2
+b	屈	折	zhe	1
+b	履	薄	bo	6
+b	履	薄	bao	1
+b	山	地	di	10
+b	岂	弟	ti	3
+b	崆	峒	tong	7
+b	崩	地	di	20
+b	川	地	di	3
+b	州	地	di	7
+b	州	地	de	1
+b	州	长	zhang	3
+b	工	地	di	4
+b	工	地	de	1
+b	工	尺	che	3
+b	左	传	zhuan	3
+b	巨	贾	gu	6
+b	差	什	shen	2
+b	差	什	shi	1
+b	差	地	di	3
+b	己	度	duo	4
+b	市	长	zhang	4
+b	师	长	zhang	4
+b	席	地	di	10
+b	帷	薄	bo	3
+b	幢	幢	chuang	3
+b	干	什	shen	3
+b	干	咳	ke	2
+b	干	咳	hai	1
+b	干	着	zhao	2
+b	干	着	zhe	1
+b	平	地	di	34
+b	平	地	de	14
+b	年	家	jie	3
+b	年	长	zhang	3
+b	广	乐	yue	3
+b	广	地	di	2
+b	广	地	de	1
+b	庄	地	di	2
+b	庄	地	de	1
+b	庆	地	di	2
+b	庆	地	de	1
+b	异	地	di	7
+b	异	地	de	4
+b	引	吭	hang	9
+b	弦	乐	yue	10
+b	强	劲	jing	4
+b	强	识	zhi	3
+b	强	识	shi	2
+b	归	还	huan	3
+b	当	着	zhuo	3
+b	当	着	zhe	2
+b	当	行	hang	6
+b	彻	地	di	3
+b	彻	地	de	2
+b	往	还	huan	3
+b	徒	长	zhang	4
+b	得	着	zhao	13
+b	德	地	di	4
+b	德	地	de	3
+b	德	度	duo	2
+b	德	度	du	1
+b	德	薄	bo	11
+b	德	薄	bao	4
+b	忽	地	di	2
+b	忽	地	de	1
+b	急	景	ying	3
+b	急	景	jing	2
+b	怨	地	de	4
+b	怨	地	di	4
+b	总	长	zhang	4
+b	恁	地	di	3
+b	恐	吓	he	4
+b	悬	石	dan	3
+b	情	度	du	2
+b	情	度	duo	2
+b	情	脉	mo	5
+b	情	脉	mai	2
+b	惨	緑	lu	4
+b	惨	緑	lv	1
+b	愁	地	di	2
+b	愁	地	de	1
+b	憎	恶	wu	3
+b	憎	恶	e	1
+b	懒	觉	jiao	4
+b	成	行	hang	5
+b	成	行	xing	2
+b	成	都	du	9
+b	成	都	dou	2
+b	成	长	zhang	11
+b	战	地	de	2
+b	战	地	di	2
+b	截	了	liao	4
+b	户	长	zhang	2
+b	户	长	chang	1
+b	房	地	di	8
+b	房	地	de	1
+b	扑	地	di	9
+b	扣	地	di	4
+b	执	着	zhuo	4
+b	扪	参	shen	3
+b	扪	钥	yao	4
+b	扫	地	di	32
+b	扯	地	di	3
+b	批	吭	hang	4
+b	扼	吭	hang	7
+b	扼	吭	keng	2
+b	抑	塞	se	3
+b	抓	地	di	2
+b	抓	地	de	1
+b	投	传	zhuan	2
+b	投	传	chuan	1
+b	投	地	di	3
+b	投	降	xiang	5
+b	抢	地	di	11
+b	抢	地	de	1
+b	抱	朴	pu	5
+b	抱	朴	piao	1
+b	抱	蔓	man	2
+b	抱	蔓	wan	2
+b	抹	摋	sa	2
+b	抹	摋	sha	1
+b	拉	纤	qian	5
+b	拓	地	di	3
+b	拓	地	de	1
+b	拔	地	di	14
+b	拖	地	di	4
+b	招	降	xiang	4
+b	拾	地	di	7
+b	换	血	xie	4
+b	据	地	di	7
+b	捷	了	liao	4
+b	捷	给	ji	3
+b	排	行	hang	7
+b	排	长	zhang	2
+b	排	长	chang	1
+b	掘	地	di	2
+b	掘	地	de	1
+b	掠	地	di	5
+b	接	了	liao	3
+b	接	地	di	3
+b	掩	地	di	3
+b	掷	地	di	11
+b	掷	地	de	1
+b	揆	度	duo	3
+b	揣	称	chen	3
+b	揭	地	di	5
+b	搪	塞	se	4
+b	搭	地	di	3
+b	摇	地	di	5
+b	摇	地	de	1
+b	摩	挲	sa	3
+b	摸	地	di	4
+b	摸	地	de	1
+b	攒	攒	zan	4
+b	支	着	zhao	4
+b	故	地	di	3
+b	故	地	de	2
+b	散	朴	pu	4
+b	散	朴	piao	1
+b	数	奇	ji	3
+b	数	行	hang	4
+b	斗	地	di	3
+b	断	还	huan	3
+b	新	都	du	4
+b	旋	地	de	2
+b	旋	地	di	2
+b	无	地	di	17
+b	无	地	de	1
+b	无	着	zhuo	3
+b	无	臭	xiu	8
+b	日	省	xing	7
+b	旦	角	jue	4
+b	旧	地	di	4
+b	旧	地	de	1
+b	时	了	liao	3
+b	时	度	duo	6
+b	时	度	du	5
+b	明	了	liao	5
+b	明	了	le	2
+b	明	塞	se	4
+b	昏	地	di	4
+b	昏	地	de	1
+b	易	地	de	4
+b	易	地	di	4
+b	星	地	di	2
+b	星	地	de	1
+b	星	宿	xiu	6
+b	昧	地	di	8
+b	昧	地	de	6
+b	晨	省	xing	3
+b	暇	给	ji	4
+b	暖	和	huo	3
+b	暗	地	di	8
+b	暗	地	de	4
+b	暮	折	she	4
+b	曳	地	di	2
+b	曳	地	de	1
+b	曾	参	shen	3
+b	月	地	di	6
+b	月	地	de	1
+b	月	氏	zhi	4
+b	月	重	chong	2
+b	月	重	zhong	1
+b	有	朝	zhao	4
+b	朝	朝	zhao	6
+b	未	了	liao	7
+b	未	曾	ceng	4
+b	末	了	liao	3
+b	本	地	di	8
+b	本	地	de	2
+b	本	塞	se	4
+b	本	行	hang	8
+b	本	还	huan	6
+b	朴	还	huan	6
+b	机	长	zhang	4
+b	杂	和	huo	2
+b	杂	和	he	1
+b	杜	塞	se	2
+b	杜	塞	sai	1
+b	束	藴	wen	2
+b	束	藴	yun	1
+b	来	否	pi	4
+b	杼	柚	zhou	6
+b	极	地	di	9
+b	极	地	de	7
+b	林	地	di	5
+b	枯	折	she	5
+b	枯	折	zhe	2
+b	查	查	zha	5
+b	柱	地	di	5
+b	柳	緑	lu	3
+b	柳	緑	lv	1
+b	标	地	de	2
+b	标	地	di	2
+b	栋	折	she	5
+b	栋	折	zhe	2
+b	栓	塞	se	5
+b	栖	栖	xi	4
+b	栖	栖	qi	2
+b	校	长	zhang	6
+b	桂	折	she	5
+b	桂	折	zhe	2
+b	梗	塞	se	7
+b	棘	地	di	5
+b	次	长	zhang	3
+b	止	咳	ke	3
+b	正	传	zhuan	7
+b	正	着	zhao	3
+b	正	着	zhe	1
+b	此	地	di	5
+b	武	行	hang	3
+b	武	行	xing	2
+b	武	都	du	3
+b	死	了	liao	2
+b	死	了	le	1
+b	死	劲	jin	2
+b	死	劲	jing	2
+b	死	地	di	11
+b	死	地	de	2
+b	段	长	zhang	2
+b	段	长	chang	1
+b	毛	地	de	2
+b	毛	地	di	2
+b	民	乐	yue	3
+b	民	地	di	8
+b	民	地	de	2
+b	水	和	huo	4
+b	水	和	he	2
+b	水	地	di	5
+b	水	地	de	4
+b	江	地	di	9
+b	江	都	du	4
+b	汤	汤	shang	10
+b	汪	濊	hui	2
+b	汪	濊	wei	1
+b	沉	没	mo	3
+b	沉	着	zhuo	9
+b	沙	参	shen	3
+b	沙	地	di	5
+b	没	了	liao	9
+b	没	了	le	1
+b	没	什	shen	3
+b	没	什	shi	1
+b	没	地	di	3
+b	没	没	mo	2
+b	没	没	mei	1
+b	没	长	zhang	2
+b	没	长	chang	1
+b	沦	没	mo	3
+b	泄	露	lou	4
+b	泄	露	lu	2
+b	泊	地	di	3
+b	泊	地	de	2
+b	波	属	shu	2
+b	波	属	zhu	2
+b	泰	阿	e	3
+b	泽	地	de	3
+b	泽	地	di	3
+b	洋	参	shen	3
+b	洋	纚	sa	2
+b	洋	纚	li	1
+b	洋	行	hang	3
+b	活	剥	bo	5
+b	活	地	de	4
+b	活	地	di	4
+b	洼	地	di	3
+b	流	氓	mang	13
+b	浅	薄	bo	3
+b	浇	地	di	4
+b	浇	地	de	1
+b	测	地	di	5
+b	测	地	de	2
+b	浮	薄	bo	3
+b	海	参	shen	4
+b	海	地	di	6
+b	涂	地	di	17
+b	涂	地	de	1
+b	消	长	chang	2
+b	消	长	zhang	2
+b	淡	薄	bo	3
+b	深	恶	wu	8
+b	深	省	xing	4
+b	淹	没	mo	3
+b	游	说	shui	5
+b	湖	泊	po	3
+b	湮	没	mo	4
+b	湿	地	di	5
+b	源	地	di	12
+b	源	地	de	1
+b	滇	藏	zang	3
+b	滋	长	zhang	3
+b	滋	长	chang	1
+b	澄	澄	deng	4
+b	澄	澄	cheng	2
+b	澈	地	di	2
+b	澈	地	de	1
+b	火	齐	ji	5
+b	灭	景	ying	3
+b	灵	长	zhang	3
+b	灵	长	chang	1
+b	灾	地	di	6
+b	烧	地	di	3
+b	热	地	de	7
+b	热	地	di	7
+b	烹	调	tiao	4
+b	煤	核	hu	3
+b	熟	地	di	2
+b	熟	地	de	1
+b	物	降	xiang	2
+b	物	降	jiang	1
+b	特	地	di	4
+b	犯	得	de	2
+b	犯	得	dei	2
+b	狄	忒	te	3
+b	狗	血	xie	4
+b	狗	血	xue	4
+b	狼	藉	ji	21
+b	献	血	xie	2
+b	献	血	xue	2
+b	玉	贾	gu	4
+b	玉	贾	jia	2
+b	现	地	di	2
+b	现	地	de	1
+b	珠	弹	tan	8
+b	珠	弹	dan	1
+b	珠	还	huan	6
+b	班	行	hang	3
+b	班	长	zhang	3
+b	琅	嬛	huan	3
+b	琴	调	tiao	2
+b	琴	调	diao	1
+b	瑟	调	tiao	4
+b	瓜	蔓	wan	5
+b	甚	么	mo	7
+b	甚	么	me	2
+b	生	恶	wu	4
+b	生	角	jue	4
+b	生	角	jiao	3
+b	生	还	huan	4
+b	生	长	zhang	12
+b	用	地	di	3
+b	田	地	di	4
+b	甲	壳	qiao	6
+b	甲	壳	ke	1
+b	画	地	di	18
+b	画	地	de	1
+b	界	地	di	2
+b	界	地	de	1
+b	疼	着	zhao	4
+b	癞	蛤	ha	4
+b	白	了	le	2
+b	白	了	liao	2
+b	百	了	liao	6
+b	的	地	di	3
+b	的	的	di	4
+b	皮	着	zhuo	2
+b	皮	着	zhe	1
+b	盆	地	di	19
+b	盐	角	jue	2
+b	盐	角	jiao	1
+b	盖	地	di	15
+b	盖	地	de	1
+b	盘	乐	yue	2
+b	盘	乐	le	1
+b	目	了	liao	3
+b	目	塞	se	4
+b	目	塞	sai	2
+b	目	的	di	14
+b	直	率	shuai	4
+b	相	呴	xu	5
+b	相	属	shu	4
+b	相	属	zhu	4
+b	相	称	chen	9
+b	真	率	shuai	4
+b	睁	着	zhuo	2
+b	睁	着	zhe	1
+b	睡	着	zhao	3
+b	睡	觉	jiao	4
+b	知	地	de	5
+b	知	地	di	5
+b	知	着	zhuo	3
+b	矩	地	di	2
+b	矩	地	de	1
+b	矩	重	chong	4
+b	破	的	di	4
+b	硬	着	zhuo	2
+b	硬	着	zhe	1
+b	碱	地	di	5
+b	礼	乐	yue	3
+b	礼	乐	le	2
+b	社	长	zhang	2
+b	社	长	chang	1
+b	神	差	chai	4
+b	神	差	cha	2
+b	神	荼	shu	3
+b	禁	地	de	2
+b	禁	地	di	2
+b	禁	脔	ji	3
+b	禁	脔	luan	2
+b	禄	大	da	2
+b	禄	大	dai	2
+b	福	地	di	10
+b	福	地	de	1
+b	种	地	di	2
+b	种	地	de	1
+b	种	薄	bo	3
+b	租	地	di	4
+b	空	地	di	7
+b	空	地	de	2
+b	空	调	tiao	8
+b	穿	着	zhuo	4
+b	穿	着	zhe	3
+b	突	地	di	3
+b	突	地	de	2
+b	立	传	zhuan	4
+b	立	地	di	12
+b	立	地	de	7
+b	竹	弹	tan	4
+b	竹	弹	dan	3
+b	竹	调	diao	2
+b	竹	调	tiao	2
+b	管	乐	yue	12
+b	箪	食	si	7
+b	箪	食	shi	4
+b	粗	挟	xie	3
+b	精	覃	tan	4
+b	纚	纚	sa	2
+b	纚	纚	li	1
+b	红	着	zhe	2
+b	红	着	zhuo	2
+b	红	苕	shao	3
+b	纪	传	zhuan	2
+b	纪	传	chuan	1
+b	纬	地	di	3
+b	纳	地	de	3
+b	纳	地	di	3
+b	组	长	zhang	3
+b	经	传	zhuan	7
+b	经	地	di	5
+b	经	地	de	2
+b	绝	地	di	4
+b	绝	地	de	2
+b	绳	系	ji	6
+b	绳	系	xi	3
+b	绸	缪	mou	8
+b	绸	缪	miu	7
+b	缩	地	de	5
+b	缩	地	di	5
+b	罔	地	di	4
+b	罗	刹	cha	10
+b	罗	地	di	7
+b	罗	的	di	3
+b	罗	的	de	1
+b	罚	没	mo	4
+b	美	差	chai	3
+b	翻	地	di	4
+b	老	地	di	3
+b	老	地	de	1
+b	老	还	huan	10
+b	耕	地	di	7
+b	耳	掴	guai	2
+b	耳	掴	guo	1
+b	肉	薄	bo	3
+b	肤	剥	bo	4
+b	胆	薄	bo	3
+b	背	地	di	7
+b	背	地	de	2
+b	胜	地	de	3
+b	胜	地	di	3
+b	胡	地	di	3
+b	胳	臂	bei	5
+b	胶	着	zhuo	2
+b	胶	着	zhe	1
+b	胸	脯	pu	3
+b	脉	脉	mo	10
+b	脉	脉	mai	4
+b	脖	颈	geng	5
+b	腹	便	pian	5
+b	腹	地	di	4
+b	臧	否	pi	6
+b	自	省	xing	4
+b	自	给	ji	4
+b	自	艾	yi	3
+b	自	艾	ai	1
+b	自	见	xian	3
+b	舆	地	di	3
+b	舌	调	tiao	2
+b	舌	调	diao	1
+b	舍	重	chong	4
+b	般	若	re	5
+b	船	长	zhang	4
+b	良	贾	gu	3
+b	花	呢	ni	5
+b	花	地	di	5
+b	花	地	de	2
+b	花	朝	zhao	11
+b	苦	差	chai	4
+b	茅	塞	se	5
+b	草	地	di	4
+b	草	地	de	2
+b	草	率	shuai	9
+b	草	率	lv	2
+b	草	长	zhang	4
+b	草	长	chang	2
+b	荒	地	di	6
+b	荒	地	de	1
+b	莫	邪	ye	3
+b	菲	薄	bo	6
+b	萝	卜	bo	33
+b	落	参	shen	2
+b	落	参	can	1
+b	落	地	di	24
+b	落	地	de	1
+b	落	色	shai	3
+b	落	色	se	2
+b	葭	莩	fu	3
+b	蒙	着	zhao	2
+b	蒙	着	zhe	2
+b	蓦	地	di	4
+b	藉	藉	ji	7
+b	虚	猲	ge	2
+b	虚	猲	he	1
+b	蚰	蜒	dan	6
+b	蚰	蜒	yan	2
+b	蝎	螫	zhe	2
+b	蝎	螫	shi	1
+b	螵	蛸	xiao	3
+b	行	行	hang	7
+b	行	行	xing	3
+b	行	长	zhang	6
+b	衣	裳	shang	15
+b	衣	裳	chang	3
+b	补	给	ji	10
+b	表	率	shuai	3
+b	袅	娜	nuo	8
+b	裂	地	di	4
+b	裂	地	de	1
+b	装	模	mu	4
+b	装	模	mo	1
+b	裸	地	de	2
+b	裸	地	di	2
+b	褪	色	shai	3
+b	西	藏	zang	5
+b	西	藏	cang	2
+b	覆	地	di	7
+b	覆	地	de	1
+b	覆	没	mo	4
+b	见	了	le	2
+b	见	了	liao	2
+b	见	血	xie	6
+b	见	血	xue	5
+b	见	长	zhang	2
+b	见	长	chang	1
+b	规	重	chong	2
+b	规	重	zhong	2
+b	解	调	tiao	4
+b	触	地	de	4
+b	触	地	di	4
+b	言	数	shuo	2
+b	言	数	shu	1
+b	议	长	zhang	4
+b	诗	行	hang	3
+b	语	塞	se	4
+b	说	地	di	6
+b	说	地	de	5
+b	调	重	chong	6
+b	谋	重	chong	2
+b	谋	重	zhong	1
+b	谋	长	zhang	4
+b	谢	地	di	2
+b	谢	地	de	1
+b	谷	地	di	4
+b	负	地	de	2
+b	负	地	di	2
+b	贤	传	zhuan	3
+b	质	地	di	3
+b	质	地	de	2
+b	质	的	di	2
+b	质	的	de	1
+b	贪	惏	lin	3
+b	贰	地	di	3
+b	赤	地	di	4
+b	赫	地	di	4
+b	趄	趄	qie	3
+b	趔	趄	qie	4
+b	足	屏	bing	4
+b	足	重	chong	4
+b	足	重	zhong	2
+b	踏	地	di	6
+b	蹋	地	di	2
+b	蹋	地	de	1
+b	蹐	地	di	11
+b	身	解	xie	4
+b	躬	率	shuai	2
+b	躬	率	lv	1
+b	轧	轧	ya	3
+b	转	行	hang	2
+b	转	行	xing	1
+b	转	辗	zhan	2
+b	转	辗	nian	1
+b	软	和	huo	3
+b	轻	率	shuai	4
+b	辟	地	di	5
+b	辟	地	de	1
+b	辟	蹊	xi	4
+b	达	地	di	5
+b	达	地	de	2
+b	过	都	du	2
+b	过	都	dou	1
+b	返	朴	pu	10
+b	返	朴	piao	1
+b	返	还	huan	6
+b	进	给	ji	4
+b	迹	地	di	2
+b	迹	地	de	1
+b	造	地	di	6
+b	造	地	de	4
+b	遍	地	di	10
+b	遍	地	de	2
+b	道	地	di	4
+b	道	地	de	2
+b	遮	地	di	4
+b	避	地	de	2
+b	避	地	di	2
+b	部	长	zhang	13
+b	酋	长	zhang	6
+b	配	给	ji	4
+b	酒	地	di	4
+b	酒	地	de	1
+b	里	行	hang	2
+b	里	行	xing	1
+b	重	弹	tan	6
+b	重	重	chong	11
+b	重	重	zhong	4
+b	金	匮	gui	5
+b	金	匮	kui	4
+b	金	地	di	3
+b	金	行	hang	2
+b	金	行	xing	1
+b	钥	匙	shi	16
+b	钦	差	chai	4
+b	铃	铛	dang	5
+b	铛	铛	dang	2
+b	铛	铛	cheng	1
+b	铜	臭	xiu	3
+b	铜	臭	chou	2
+b	银	行	hang	59
+b	锒	铛	dang	4
+b	锦	地	di	3
+b	锦	还	huan	2
+b	锦	还	hai	1
+b	镜	重	chong	9
+b	长	吁	xu	7
+b	长	絜	xie	6
+b	长	薄	bo	2
+b	长	薄	bao	1
+b	门	塞	se	5
+b	门	塞	sai	1
+b	闭	塞	se	6
+b	闭	塞	sai	2
+b	阔	地	de	3
+b	阔	地	di	3
+b	队	长	zhang	4
+b	防	地	di	2
+b	防	地	de	1
+b	阳	似	shi	2
+b	阳	似	si	1
+b	阳	地	di	18
+b	阳	地	de	1
+b	阴	地	di	2
+b	阴	地	de	1
+b	阵	地	di	7
+b	阶	地	di	2
+b	阶	地	de	1
+b	阻	塞	se	6
+b	阿	什	shen	2
+b	阿	什	shi	1
+b	阿	房	pang	5
+b	阿	的	di	3
+b	阿	阇	she	3
+b	附	着	zhuo	5
+b	际	地	di	5
+b	际	地	de	3
+b	陆	地	di	5
+b	陆	地	de	1
+b	院	长	zhang	6
+b	随	地	di	6
+b	随	地	de	2
+b	隔	行	hang	5
+b	雄	传	zhuan	4
+b	雅	乐	yue	3
+b	雪	地	di	6
+b	雪	茄	jia	4
+b	震	地	di	6
+b	霍	地	di	2
+b	霍	地	de	1
+b	露	地	di	3
+b	青	藏	zang	7
+b	面	埶	shi	2
+b	面	埶	yi	1
+b	面	折	she	5
+b	面	折	zhe	4
+b	鞭	辟	bi	5
+b	鞭	辟	pi	4
+b	音	乐	yue	61
+b	顾	景	ying	3
+b	领	地	di	4
+b	频	数	shuo	2
+b	频	数	shu	1
+b	风	劲	jing	6
+b	风	裳	shang	2
+b	风	裳	chang	1
+b	风	调	tiao	4
+b	风	调	diao	1
+b	食	地	di	3
+b	食	地	de	1
+b	食	薄	bo	4
+b	食	蛤	ha	3
+b	食	蛤	ge	2
+b	首	都	du	10
+b	马	圈	juan	2
+b	马	圈	quan	1
+b	骨	殖	shi	3
+b	高	句	gou	3
+b	高	地	di	12
+b	高	地	de	4
+b	高	着	zhao	3
+b	高	着	zhuo	1
+b	魆	地	di	3
+b	鲁	藏	zang	3
+b	鲁	藏	cang	1
+b	鸡	爪	zhao	2
+b	鸡	爪	zhua	2
+b	鸡	血	xie	3
+b	鸡	血	xue	3
+b	鸣	乐	yue	3
+b	鸣	地	di	2
+b	鸣	地	de	1
+b	鸭	緑	lu	3
+b	鸭	绿	lu	2
+b	鸭	绿	lv	1
+b	麦	地	di	2
+b	麦	地	de	1
+b	黄	陂	pi	3
+b	黏	着	zhuo	5
+b	黑	地	di	9
+b	鼎	折	she	5
+b	鼓	乐	yue	7
+b	齿	耙	ba	2
+b	齿	耙	pa	1
+b	龟	兹	ci	5
+n	乐	器	yue	21
+n	乐	团	yue	8
+n	乐	学	yue	5
+n	乐	学	le	1
+n	乐	官	yue	4
+n	乐	崩	yue	4
+n	乐	府	yue	12
+n	乐	手	yue	3
+n	乐	曲	yue	3
+n	乐	歌	yue	3
+n	乐	歌	le	1
+n	乐	毅	le	2
+n	乐	毅	yue	2
+n	乐	清	yue	3
+n	乐	界	yue	2
+n	乐	界	le	1
+n	乐	老	yue	3
+n	乐	舞	yue	4
+n	乐	谱	yue	3
+n	乐	队	yue	16
+n	乘	舆	sheng	3
+n	乘	舆	cheng	2
+n	了	不	liao	15
+n	了	不	le	1
+n	了	之	liao	9
+n	了	了	liao	12
+n	了	事	liao	11
+n	了	事	le	3
+n	了	却	liao	4
+n	了	台	liao	3
+n	了	如	liao	4
+n	了	当	liao	18
+n	了	得	liao	4
+n	了	断	liao	3
+n	了	无	liao	6
+n	了	无	le	2
+n	了	望	liao	3
+n	了	然	liao	11
+n	了	百	liao	8
+n	了	结	liao	3
+n	了	解	liao	6
+n	了	身	liao	5
+n	了	近	liao	4
+n	亲	家	qing	11
+n	亲	家	qin	3
+n	什	么	shen	32
+n	什	么	shi	3
+n	仔	细	zi	24
+n	仡	佬	ge	4
+n	仿	徨	pang	2
+n	仿	徨	fang	1
+n	会	箕	kuai	4
+n	会	计	kuai	10
+n	传	记	zhuan	6
+n	伯	子	bai	4
+n	伺	候	ci	4
+n	似	地	shi	59
+n	似	地	si	3
+n	似	火	shi	2
+n	似	火	si	1
+n	似	的	shi	5
+n	伽	蓝	qie	5
+n	伽	陀	qie	3
+n	伽	马	ga	6
+n	伽	马	jia	1
+n	佛	洛	fu	2
+n	佛	洛	fo	1
+n	侥	幸	jiao	7
+n	便	便	pian	6
+n	便	便	bian	3
+n	便	宜	pian	18
+n	便	宜	bian	10
+n	俛	拾	fu	4
+n	俛	首	fu	3
+n	信	眉	shen	3
+n	傀	儡	kui	12
+n	六	安	lu	5
+n	冯	河	ping	4
+n	冯	河	feng	2
+n	刨	根	pao	7
+n	刹	那	cha	8
+n	削	球	xiao	3
+n	削	铅	xiao	3
+n	削	面	xiao	4
+n	剡	溪	shan	4
+n	剥	削	bo	8
+n	剥	夺	bo	3
+n	剥	床	bo	3
+n	剥	极	bo	7
+n	剥	离	bo	3
+n	剥	肤	bo	9
+n	剥	茧	bo	4
+n	劲	节	jing	6
+n	劲	节	jin	1
+n	劲	草	jing	8
+n	勒	紧	lei	3
+n	卒	之	cu	2
+n	卒	之	zu	1
+n	单	于	chan	5
+n	南	无	na	3
+n	卜	地	bo	3
+n	卜	地	bu	1
+n	卡	子	qia	3
+n	卡	子	ka	2
+n	厦	门	xia	4
+n	参	伍	cen	3
+n	参	伍	can	2
+n	参	商	shen	6
+n	参	回	shen	3
+n	参	差	cen	11
+n	参	差	can	1
+n	参	横	shen	9
+n	参	辰	shen	7
+n	句	骊	gou	3
+n	句	骊	ju	1
+n	叨	陪	tao	4
+n	吁	吁	xu	9
+n	吁	咈	xu	4
+n	吁	咈	yu	1
+n	吁	短	xu	4
+n	否	往	pi	4
+n	否	极	pi	8
+n	否	终	pi	4
+n	否	终	fou	1
+n	吭	高	hang	6
+n	告	朔	gu	3
+n	呢	呢	ni	2
+n	呢	呢	ne	1
+n	呢	喃	ni	4
+n	呱	呱	gu	9
+n	呱	呱	gua	7
+n	呲	牙	zi	3
+n	咋	舌	ze	4
+n	咋	舌	za	3
+n	和	丸	huo	3
+n	和	泥	huo	4
+n	和	药	huo	4
+n	和	面	huo	6
+n	咖	喱	ga	3
+n	咳	唾	ke	3
+n	咳	嗽	ke	6
+n	咽	咽	ye	4
+n	嗒	然	ta	4
+n	囤	积	tun	4
+n	圈	牢	juan	2
+n	圈	牢	quan	1
+n	地	丁	di	4
+n	地	上	di	15
+n	地	上	de	1
+n	地	下	di	45
+n	地	下	de	3
+n	地	不	de	5
+n	地	不	di	5
+n	地	丑	di	4
+n	地	中	di	6
+n	地	为	di	6
+n	地	为	de	3
+n	地	主	di	19
+n	地	久	di	7
+n	地	义	di	3
+n	地	书	di	6
+n	地	亚	di	6
+n	地	产	di	8
+n	地	人	di	4
+n	地	价	di	4
+n	地	位	di	4
+n	地	作	di	4
+n	地	作	de	1
+n	地	倚	di	2
+n	地	倚	de	1
+n	地	儿	di	4
+n	地	公	di	5
+n	地	冻	di	2
+n	地	冻	de	1
+n	地	利	di	13
+n	地	制	di	3
+n	地	制	de	1
+n	地	力	di	3
+n	地	动	di	15
+n	地	动	de	1
+n	地	势	di	4
+n	地	勤	di	3
+n	地	北	di	4
+n	地	区	di	185
+n	地	区	de	2
+n	地	厚	di	4
+n	地	参	di	2
+n	地	参	de	1
+n	地	可	di	3
+n	地	名	di	3
+n	地	呼	di	7
+n	地	呼	de	2
+n	地	图	di	18
+n	地	土	di	5
+n	地	址	di	20
+n	地	块	di	4
+n	地	坼	di	7
+n	地	域	di	4
+n	地	塌	di	8
+n	地	壳	di	6
+n	地	头	di	10
+n	地	妖	di	3
+n	地	学	di	4
+n	地	安	di	3
+n	地	安	de	1
+n	地	层	di	4
+n	地	带	di	18
+n	地	幔	di	3
+n	地	平	di	11
+n	地	广	di	4
+n	地	府	di	4
+n	地	式	di	2
+n	地	式	de	1
+n	地	形	di	7
+n	地	心	di	8
+n	地	心	de	1
+n	地	志	di	3
+n	地	成	di	10
+n	地	成	de	6
+n	地	户	di	3
+n	地	扣	di	3
+n	地	掀	di	4
+n	地	摊	di	6
+n	地	支	di	3
+n	地	方	di	37
+n	地	方	de	4
+n	地	无	di	10
+n	地	机	di	3
+n	地	权	di	4
+n	地	板	di	9
+n	地	栗	di	3
+n	地	根	di	2
+n	地	根	de	1
+n	地	棘	di	4
+n	地	正	di	4
+n	地	步	di	3
+n	地	段	di	3
+n	地	毯	di	6
+n	地	气	di	3
+n	地	求	di	3
+n	地	求	de	1
+n	地	沟	di	3
+n	地	洞	di	5
+n	地	测	di	3
+n	地	漫	di	4
+n	地	灵	di	5
+n	地	点	di	12
+n	地	热	di	7
+n	地	牛	di	3
+n	地	物	di	2
+n	地	物	de	1
+n	地	狱	di	30
+n	地	球	di	28
+n	地	球	de	1
+n	地	理	di	38
+n	地	瓜	di	3
+n	地	生	di	5
+n	地	生	de	3
+n	地	皮	di	14
+n	地	盘	di	3
+n	地	盘	de	1
+n	地	相	de	2
+n	地	相	di	2
+n	地	知	di	7
+n	地	知	de	3
+n	地	磁	di	5
+n	地	祇	di	3
+n	地	神	di	3
+n	地	租	di	7
+n	地	租	de	1
+n	地	秤	di	3
+n	地	积	di	3
+n	地	称	di	2
+n	地	称	de	1
+n	地	税	di	4
+n	地	窨	di	3
+n	地	级	di	3
+n	地	线	di	5
+n	地	经	di	5
+n	地	缘	di	5
+n	地	网	di	6
+n	地	老	di	11
+n	地	而	di	18
+n	地	自	di	11
+n	地	芥	di	8
+n	地	花	di	2
+n	地	花	de	1
+n	地	莺	di	3
+n	地	莺	de	1
+n	地	藏	di	9
+n	地	衣	di	3
+n	地	补	di	2
+n	地	补	de	1
+n	地	表	di	6
+n	地	表	de	3
+n	地	裂	di	5
+n	地	覆	di	4
+n	地	角	di	7
+n	地	设	di	6
+n	地	设	de	1
+n	地	证	di	3
+n	地	证	de	2
+n	地	诛	di	4
+n	地	貌	di	12
+n	地	负	di	4
+n	地	质	di	19
+n	地	起	di	11
+n	地	起	de	2
+n	地	远	di	2
+n	地	远	de	1
+n	地	道	di	8
+n	地	里	di	20
+n	地	里	de	2
+n	地	重	di	4
+n	地	重	de	2
+n	地	金	di	3
+n	地	钱	di	5
+n	地	铁	di	5
+n	地	铺	di	3
+n	地	锦	di	3
+n	地	长	di	2
+n	地	长	de	1
+n	地	门	di	3
+n	地	闭	di	2
+n	地	闭	de	1
+n	地	陷	di	8
+n	地	陷	de	1
+n	地	雷	di	6
+n	地	震	di	42
+n	地	面	di	21
+n	地	面	de	1
+n	地	革	di	3
+n	地	风	di	6
+n	地	马	di	3
+n	地	骨	di	3
+n	地	鸦	di	3
+n	地	鸫	di	7
+n	地	黄	di	7
+n	地	龙	di	3
+n	埋	怨	man	4
+n	堡	礁	pu	2
+n	堡	礁	bao	1
+n	塞	哥	se	2
+n	塞	哥	sai	1
+n	塞	海	sai	2
+n	塞	海	se	2
+n	塞	窦	se	3
+n	塞	聪	se	5
+n	塞	聪	sai	2
+n	塞	责	se	8
+n	塞	路	sai	2
+n	塞	路	se	2
+n	塞	违	sai	2
+n	塞	违	se	2
+n	塞	音	se	4
+n	大	夫	dai	41
+n	大	夫	da	13
+n	大	王	dai	8
+n	大	王	da	4
+n	奇	偶	ji	3
+n	奇	数	ji	3
+n	娜	娜	nuo	2
+n	娜	娜	na	1
+n	媮	食	tou	3
+n	宿	儒	xiu	2
+n	宿	儒	su	1
+n	宿	德	xiu	2
+n	宿	德	su	1
+n	宿	水	xiu	6
+n	宿	水	su	4
+n	宿	雨	xiu	4
+n	宿	雨	su	3
+n	寻	思	xin	3
+n	将	伯	qiang	5
+n	将	将	qiang	4
+n	尉	犁	yu	3
+n	尉	迟	yu	6
+n	尨	眉	mang	2
+n	尨	眉	meng	1
+n	尿	泡	sui	4
+n	尿	脬	sui	3
+n	屏	声	bing	6
+n	屏	息	bing	7
+n	屏	气	bing	22
+n	屏	迹	bing	2
+n	屏	迹	ping	2
+n	属	垣	zhu	3
+n	属	词	shu	2
+n	属	词	zhu	2
+n	属	辞	zhu	2
+n	属	辞	shu	1
+n	岂	弟	kai	3
+n	差	事	chai	7
+n	差	事	cha	2
+n	差	人	chai	5
+n	差	使	chai	4
+n	差	役	chai	5
+n	差	拨	chai	3
+n	差	旅	chai	4
+n	差	鬼	cha	2
+n	差	鬼	chai	2
+n	幢	幢	chuang	3
+n	度	人	duo	10
+n	度	人	du	4
+n	度	力	duo	3
+n	度	力	du	2
+n	度	己	duo	3
+n	度	德	duo	4
+n	弄	口	long	2
+n	弄	口	nong	2
+n	弄	堂	long	3
+n	弹	丝	tan	9
+n	弹	丝	dan	2
+n	弹	冠	tan	11
+n	弹	冠	dan	2
+n	弹	剑	tan	2
+n	弹	剑	dan	1
+n	弹	力	tan	3
+n	弹	劾	tan	4
+n	弹	唱	tan	3
+n	弹	射	tan	6
+n	弹	性	tan	11
+n	弹	拨	tan	3
+n	弹	指	tan	7
+n	弹	歌	tan	2
+n	弹	歌	dan	1
+n	弹	琴	tan	9
+n	弹	簧	tan	11
+n	弹	词	tan	4
+n	弹	跳	tan	5
+n	弹	雀	tan	9
+n	强	嘴	jiang	6
+n	强	脑	jiang	3
+n	恶	劳	wu	4
+n	恶	恶	wu	6
+n	恶	恶	e	2
+n	恶	死	wu	4
+n	恶	痛	wu	6
+n	房	宫	pang	3
+n	扁	舟	pian	7
+n	扒	鸡	pa	4
+n	扛	鼎	gang	10
+n	扞	格	han	3
+n	折	一	she	4
+n	折	兰	she	3
+n	折	巾	she	3
+n	折	庭	she	3
+n	折	本	she	4
+n	折	榱	she	2
+n	折	榱	zhe	2
+n	折	箭	she	3
+n	折	腐	she	2
+n	折	腐	zhe	2
+n	折	过	she	2
+n	折	过	zhe	2
+n	拂	士	bi	3
+n	拗	口	ao	6
+n	拾	级	she	3
+n	挟	势	xie	5
+n	挟	天	xie	4
+n	挟	嫌	xie	4
+n	挟	山	xie	3
+n	挟	持	xie	4
+n	挟	细	xie	5
+n	捋	虎	luo	3
+n	捋	袖	luo	6
+n	掞	藻	shan	2
+n	掞	藻	yan	1
+n	提	溜	di	4
+n	提	防	di	3
+n	搥	胸	dui	3
+n	搥	胸	chui	1
+n	摩	挲	ma	3
+n	擘	海	bai	2
+n	擘	海	bo	2
+n	擿	埴	zhai	4
+n	擿	埴	zhi	2
+n	攒	攒	zan	4
+n	暴	十	pu	4
+n	暴	衣	pu	5
+n	曝	光	bao	6
+n	曾	相	ceng	3
+n	曾	经	ceng	5
+n	朝	一	zhao	5
+n	朝	三	zhao	7
+n	朝	不	zhao	10
+n	朝	之	zhao	4
+n	朝	之	chao	1
+n	朝	乾	zhao	6
+n	朝	云	zhao	6
+n	朝	令	zhao	4
+n	朝	前	chao	2
+n	朝	前	zhao	2
+n	朝	华	zhao	2
+n	朝	华	chao	1
+n	朝	发	zhao	4
+n	朝	夕	zhao	15
+n	朝	夕	chao	1
+n	朝	奏	zhao	4
+n	朝	奏	chao	1
+n	朝	思	zhao	4
+n	朝	成	zhao	8
+n	朝	日	chao	4
+n	朝	日	zhao	4
+n	朝	晖	zhao	3
+n	朝	暮	zhao	4
+n	朝	月	zhao	4
+n	朝	朝	zhao	6
+n	朝	来	zhao	3
+n	朝	梁	zhao	6
+n	朝	梁	chao	1
+n	朝	歌	zhao	6
+n	朝	歌	chao	1
+n	朝	气	zhao	5
+n	朝	生	zhao	4
+n	朝	生	chao	2
+n	朝	红	zhao	2
+n	朝	红	chao	1
+n	朝	经	zhao	3
+n	朝	荣	zhao	2
+n	朝	荣	chao	1
+n	朝	菌	zhao	3
+n	朝	锺	zhao	2
+n	朝	锺	chao	1
+n	朝	闻	zhao	7
+n	朝	雨	zhao	3
+n	朝	露	zhao	19
+n	朝	露	chao	2
+n	朝	食	zhao	3
+n	朝	饔	zhao	2
+n	朝	饔	chao	1
+n	朝	齑	zhao	4
+n	朴	地	piao	2
+n	朴	地	pu	2
+n	朴	子	pu	3
+n	朴	实	pu	8
+n	朴	归	pu	4
+n	朴	素	pu	9
+n	朴	讷	pu	3
+n	朴	质	pu	3
+n	朴	还	pu	6
+n	枞	阳	zong	3
+n	柏	拉	bo	4
+n	柏	林	bo	14
+n	查	头	zha	3
+n	查	子	zha	3
+n	查	查	zha	5
+n	查	梨	zha	3
+n	查	理	zha	3
+n	查	理	cha	2
+n	栅	门	zha	3
+n	栖	栖	xi	4
+n	栖	栖	qi	2
+n	校	书	jiao	4
+n	校	书	xiao	2
+n	校	勘	jiao	3
+n	校	对	jiao	4
+n	校	正	jiao	3
+n	校	验	jiao	3
+n	核	儿	hu	5
+n	桔	槔	jie	3
+n	棬	枢	juan	2
+n	棬	枢	quan	1
+n	椎	埋	chui	6
+n	椎	心	chui	9
+n	椎	牛	chui	6
+n	椎	牛	zhui	2
+n	椎	肤	chui	4
+n	椎	胸	chui	4
+n	椎	胸	zhui	2
+n	椎	锋	chui	4
+n	椎	锋	zhui	1
+n	椎	鲁	chui	3
+n	槟	榔	bing	5
+n	模	一	mu	3
+n	模	作	mu	3
+n	模	作	mo	2
+n	模	大	mu	3
+n	模	大	mo	1
+n	模	子	mu	6
+n	模	样	mu	6
+n	模	狗	mu	3
+n	汤	汤	shang	10
+n	沈	博	chen	2
+n	沈	博	shen	1
+n	没	不	mo	2
+n	没	不	mei	1
+n	没	世	mo	14
+n	没	世	mei	1
+n	没	乱	mo	9
+n	没	入	mo	3
+n	没	地	mo	3
+n	没	收	mo	4
+n	没	无	mo	6
+n	没	没	mo	2
+n	没	没	mei	1
+n	没	落	mo	3
+n	没	齿	mo	10
+n	泊	地	po	3
+n	泊	地	bo	2
+n	泌	阳	bi	3
+n	澄	沙	deng	4
+n	澄	澄	deng	4
+n	澄	澄	cheng	2
+n	燋	釜	zhuo	2
+n	燋	釜	jiao	1
+n	爪	子	zhua	15
+n	牟	取	mou	3
+n	犍	为	qian	3
+n	率	下	shuai	2
+n	率	下	lv	1
+n	率	从	shuai	2
+n	率	从	lv	1
+n	率	先	shuai	3
+n	率	土	shuai	13
+n	率	地	shuai	11
+n	率	地	lv	4
+n	率	尔	shuai	6
+n	率	尔	lv	1
+n	率	性	shuai	3
+n	率	意	shuai	3
+n	率	物	shuai	2
+n	率	物	lv	1
+n	率	由	shuai	4
+n	率	由	lv	1
+n	率	直	shuai	3
+n	率	舞	shuai	3
+n	率	领	shuai	3
+n	畜	产	xu	3
+n	畜	妻	xu	2
+n	畜	妻	chu	1
+n	畜	牧	xu	7
+n	畜	锐	xu	2
+n	畜	锐	chu	1
+n	番	禺	pan	3
+n	疟	子	yao	6
+n	的	列	di	2
+n	的	列	de	1
+n	的	地	di	3
+n	的	士	di	4
+n	的	放	di	5
+n	的	确	di	6
+n	的	美	di	2
+n	的	美	de	1
+n	的	论	di	2
+n	的	论	de	1
+n	省	不	xing	2
+n	省	不	sheng	1
+n	省	人	xing	2
+n	省	人	sheng	1
+n	省	悟	xing	4
+n	省	月	xing	6
+n	眴	目	shun	3
+n	着	三	zhao	2
+n	着	三	zhe	1
+n	着	不	zhuo	5
+n	着	不	zhao	2
+n	着	不	zhe	1
+n	着	两	zhao	5
+n	着	书	zhuo	4
+n	着	人	zhuo	4
+n	着	人	zhao	1
+n	着	人	zhe	1
+n	着	体	zhuo	4
+n	着	儿	zhao	6
+n	着	儿	zhe	1
+n	着	凉	zhao	3
+n	着	力	zhuo	8
+n	着	墨	zhuo	4
+n	着	头	zhao	2
+n	着	头	zhe	2
+n	着	头	zhuo	1
+n	着	急	zhao	9
+n	着	想	zhuo	3
+n	着	意	zhuo	3
+n	着	意	zhe	1
+n	着	手	zhuo	7
+n	着	手	zhe	6
+n	着	火	zhao	5
+n	着	痛	zhuo	2
+n	着	痛	zhe	1
+n	着	眼	zhuo	13
+n	着	眼	zhe	2
+n	着	绿	zhuo	3
+n	着	色	zhuo	2
+n	着	色	zhe	1
+n	着	落	zhuo	5
+n	着	边	zhuo	7
+n	着	边	zhao	1
+n	着	迷	zhao	4
+n	着	重	zhuo	8
+n	着	陆	zhuo	10
+n	着	鞭	zhuo	3
+n	矜	寡	guan	3
+n	石	程	dan	2
+n	石	程	shi	2
+n	碌	碡	liu	3
+n	磅	礴	pang	8
+n	秘	鲁	bi	3
+n	称	体	chen	5
+n	称	地	chen	4
+n	称	地	cheng	2
+n	称	多	chen	3
+n	称	家	chen	2
+n	称	家	cheng	2
+n	称	心	chen	9
+n	称	心	cheng	1
+n	称	性	chen	3
+n	稽	首	qi	4
+n	粘	合	nian	3
+n	粘	液	nian	3
+n	粘	糊	nian	3
+n	系	绳	ji	4
+n	系	足	ji	4
+n	系	足	xi	2
+n	絜	短	xie	4
+n	緑	叶	lu	2
+n	緑	叶	lv	2
+n	緑	林	lu	8
+n	緑	水	lu	3
+n	緑	水	lv	1
+n	緑	酒	lu	2
+n	緑	酒	lv	1
+n	緑	鬓	lu	2
+n	緑	鬓	lv	1
+n	纚	纚	sa	2
+n	纚	纚	li	1
+n	纤	夫	qian	3
+n	纶	巾	guan	6
+n	给	予	ji	3
+n	给	事	ji	6
+n	给	事	gei	1
+n	给	付	ji	4
+n	给	养	ji	4
+n	给	制	ji	4
+n	给	水	ji	14
+n	络	子	lao	3
+n	绿	林	lu	13
+n	绿	林	lv	2
+n	缩	砂	su	5
+n	缪	帷	mou	2
+n	缪	帷	miu	1
+n	脉	脉	mo	10
+n	脉	脉	mai	4
+n	脚	儿	jue	4
+n	脚	儿	jiao	3
+n	脚	色	jue	4
+n	腊	毒	xi	3
+n	腌	臜	a	3
+n	膀	胱	pang	4
+n	臭	未	chou	2
+n	臭	未	xiu	2
+n	般	若	bo	5
+n	色	子	se	2
+n	色	子	shai	2
+n	芫	荽	yan	4
+n	荥	阳	xing	4
+n	莘	庄	xin	3
+n	菀	枯	yu	3
+n	落	下	la	5
+n	落	下	luo	4
+n	落	儿	lao	2
+n	落	儿	la	1
+n	落	四	la	3
+n	落	子	lao	3
+n	落	色	lao	3
+n	落	色	luo	2
+n	薄	云	bo	4
+n	薄	云	bao	2
+n	薄	今	bo	4
+n	薄	利	bo	6
+n	薄	命	bo	9
+n	薄	地	bo	4
+n	薄	寡	bo	3
+n	薄	弱	bo	4
+n	薄	情	bo	5
+n	薄	才	bao	2
+n	薄	才	bo	2
+n	薄	技	bo	7
+n	薄	技	bao	2
+n	薄	收	bo	3
+n	薄	暮	bo	4
+n	薄	材	bo	4
+n	薄	皮	bo	2
+n	薄	皮	bao	1
+n	薄	能	bo	4
+n	薄	舌	bo	8
+n	薄	荷	bo	10
+n	薄	葬	bo	3
+n	藉	藉	ji	7
+n	藏	人	zang	3
+n	藏	六	zang	2
+n	藏	六	cang	1
+n	藏	寺	cang	2
+n	藏	寺	zang	2
+n	藏	布	zang	3
+n	藏	布	cang	1
+n	藏	府	cang	2
+n	藏	府	zang	2
+n	藏	族	zang	13
+n	藏	经	zang	7
+n	藏	菩	zang	3
+n	藏	青	zang	4
+n	虾	蟆	ha	28
+n	虾	蟆	xia	2
+n	蚌	埠	beng	4
+n	蛤	蟆	ha	12
+n	蜎	飞	xuan	4
+n	蝤	蛴	qiu	4
+n	血	晕	xie	3
+n	血	石	xie	2
+n	血	石	xue	1
+n	血	糊	xie	4
+n	行	业	hang	12
+n	行	俱	hang	4
+n	行	俱	xing	2
+n	行	八	hang	5
+n	行	出	hang	4
+n	行	出	xing	2
+n	行	列	hang	5
+n	行	大	hang	3
+n	行	子	hang	6
+n	行	家	hang	13
+n	行	山	hang	3
+n	行	山	xing	1
+n	行	情	hang	4
+n	行	榜	hang	3
+n	行	行	hang	6
+n	行	行	xing	4
+n	行	诗	hang	2
+n	行	诗	xing	1
+n	行	话	hang	4
+n	行	货	hang	5
+n	行	长	hang	5
+n	行	长	xing	1
+n	行	间	hang	6
+n	被	发	pi	6
+n	被	甲	pi	8
+n	被	褐	pi	5
+n	被	褐	bei	2
+n	裳	为	shang	2
+n	裳	为	chang	1
+n	裳	衣	chang	2
+n	裳	衣	shang	2
+n	褚	小	zhu	4
+n	褪	色	tui	3
+n	覃	思	tan	5
+n	见	力	xian	2
+n	见	力	jian	1
+n	见	势	jian	2
+n	见	势	xian	2
+n	角	儿	jue	19
+n	角	力	jue	3
+n	角	抵	jue	4
+n	角	斗	jue	4
+n	角	斗	jiao	2
+n	角	色	jue	9
+n	角	逐	jue	4
+n	解	数	xie	6
+n	谁	无	shei	3
+n	谁	知	shei	3
+n	调	三	tiao	6
+n	调	丝	tiao	5
+n	调	人	tiao	4
+n	调	侃	tiao	5
+n	调	停	tiao	5
+n	调	元	tiao	3
+n	调	光	tiao	3
+n	调	制	tiao	6
+n	调	剂	tiao	3
+n	调	味	tiao	8
+n	调	和	tiao	18
+n	调	唇	tiao	5
+n	调	嘴	tiao	8
+n	调	器	tiao	2
+n	调	器	diao	1
+n	调	控	tiao	4
+n	调	整	tiao	7
+n	调	料	tiao	3
+n	调	朱	tiao	4
+n	调	朱	diao	2
+n	调	理	tiao	4
+n	调	琴	tiao	3
+n	调	瑟	tiao	3
+n	调	皮	tiao	8
+n	调	笑	tiao	3
+n	调	羹	tiao	4
+n	调	舌	tiao	3
+n	调	舌	diao	2
+n	调	良	tiao	3
+n	调	色	tiao	4
+n	调	节	tiao	11
+n	调	解	tiao	4
+n	调	词	tiao	3
+n	调	试	tiao	3
+n	调	谐	tiao	3
+n	调	酒	tiao	3
+n	调	频	tiao	5
+n	调	风	tiao	7
+n	谜	儿	mei	2
+n	谜	儿	mi	1
+n	谷	浑	yu	3
+n	贲	临	bi	3
+n	贾	石	gu	4
+n	贾	石	jia	2
+n	贾	祸	gu	4
+n	贾	而	gu	2
+n	贾	而	jia	2
+n	贾	马	gu	4
+n	趄	趄	qie	3
+n	趵	突	bao	2
+n	趵	突	bo	1
+n	踧	踖	cu	3
+n	蹊	径	xi	7
+n	车	保	ju	3
+n	轧	轧	ya	3
+n	辗	转	zhan	5
+n	辟	谷	bi	2
+n	辟	谷	pi	1
+n	还	一	huan	4
+n	还	丹	huan	7
+n	还	乡	huan	12
+n	还	价	huan	7
+n	还	元	huan	8
+n	还	原	huan	13
+n	还	口	huan	3
+n	还	家	huan	3
+n	还	师	huan	2
+n	还	师	hai	1
+n	还	年	huan	6
+n	还	年	hai	2
+n	还	归	huan	2
+n	还	归	hai	1
+n	还	愿	huan	3
+n	还	淳	huan	15
+n	还	清	huan	3
+n	还	源	huan	3
+n	还	珠	huan	15
+n	还	真	huan	2
+n	还	真	hai	1
+n	还	童	huan	8
+n	还	阳	huan	4
+n	还	魂	huan	8
+n	迫	击	pai	6
+n	都	中	du	2
+n	都	中	dou	1
+n	都	会	du	8
+n	都	俞	du	4
+n	都	俞	dou	1
+n	都	区	du	10
+n	都	县	du	8
+n	都	县	dou	2
+n	都	城	du	4
+n	都	头	du	4
+n	都	尉	du	4
+n	都	市	du	15
+n	都	御	du	4
+n	都	护	du	6
+n	都	江	du	3
+n	都	统	du	6
+n	重	一	chong	2
+n	重	一	zhong	2
+n	重	三	chong	4
+n	重	三	zhong	2
+n	重	九	chong	6
+n	重	九	zhong	2
+n	重	人	chong	4
+n	重	人	zhong	4
+n	重	修	chong	4
+n	重	光	chong	7
+n	重	关	chong	4
+n	重	关	zhong	2
+n	重	出	chong	3
+n	重	叠	chong	5
+n	重	合	chong	5
+n	重	味	chong	3
+n	重	唱	chong	8
+n	重	围	chong	6
+n	重	国	chong	3
+n	重	国	zhong	1
+n	重	圆	chong	5
+n	重	垣	chong	4
+n	重	垣	zhong	1
+n	重	城	chong	2
+n	重	城	zhong	1
+n	重	复	chong	14
+n	重	天	chong	4
+n	重	天	zhong	1
+n	重	头	chong	2
+n	重	头	zhong	2
+n	重	奏	chong	7
+n	重	婚	chong	3
+n	重	孙	chong	6
+n	重	孙	zhong	1
+n	重	宫	chong	2
+n	重	宫	zhong	1
+n	重	山	chong	7
+n	重	岩	chong	5
+n	重	岩	zhong	3
+n	重	峦	chong	10
+n	重	峦	zhong	1
+n	重	席	chong	5
+n	重	庆	chong	5
+n	重	庆	zhong	2
+n	重	床	chong	8
+n	重	建	chong	3
+n	重	弹	chong	6
+n	重	性	chong	5
+n	重	性	zhong	1
+n	重	振	chong	3
+n	重	提	chong	7
+n	重	播	chong	3
+n	重	数	chong	3
+n	重	整	chong	4
+n	重	整	zhong	1
+n	重	新	chong	13
+n	重	明	chong	4
+n	重	明	zhong	3
+n	重	来	chong	5
+n	重	根	chong	3
+n	重	根	zhong	1
+n	重	泉	chong	2
+n	重	泉	zhong	1
+n	重	洋	chong	5
+n	重	温	chong	6
+n	重	游	chong	3
+n	重	演	chong	7
+n	重	熙	chong	8
+n	重	熙	zhong	1
+n	重	现	chong	5
+n	重	珪	chong	4
+n	重	生	chong	7
+n	重	申	chong	3
+n	重	矩	chong	2
+n	重	矩	zhong	2
+n	重	组	chong	5
+n	重	茧	chong	7
+n	重	茵	chong	2
+n	重	茵	zhong	1
+n	重	葩	chong	2
+n	重	葩	zhong	1
+n	重	裀	chong	3
+n	重	裘	chong	3
+n	重	规	chong	15
+n	重	足	chong	10
+n	重	足	zhong	1
+n	重	趼	chong	3
+n	重	蹈	chong	3
+n	重	返	chong	3
+n	重	述	chong	3
+n	重	迹	chong	2
+n	重	迹	zhong	1
+n	重	逢	chong	6
+n	重	重	chong	11
+n	重	重	zhong	4
+n	重	门	chong	4
+n	重	门	zhong	1
+n	重	闺	chong	2
+n	重	闺	zhong	1
+n	重	阳	chong	10
+n	重	霄	chong	4
+n	钥	匙	yao	16
+n	铅	山	yan	3
+n	铛	铛	dang	2
+n	铛	铛	cheng	1
+n	铤	鹿	ding	3
+n	长	上	zhang	3
+n	长	会	zhang	3
+n	长	傲	zhang	3
+n	长	出	zhang	2
+n	长	出	chang	1
+n	长	制	zhang	2
+n	长	制	chang	1
+n	长	卿	zhang	3
+n	长	史	zhang	4
+n	长	国	zhang	4
+n	长	大	zhang	5
+n	长	子	zhang	6
+n	长	子	chang	1
+n	长	孙	zhang	5
+n	长	官	zhang	8
+n	长	幼	zhang	8
+n	长	成	zhang	2
+n	长	成	chang	1
+n	长	房	zhang	3
+n	长	民	zhang	2
+n	长	民	chang	1
+n	长	满	zhang	3
+n	长	点	zhang	5
+n	长	率	zhang	5
+n	长	率	chang	1
+n	长	目	chang	2
+n	长	目	zhang	2
+n	长	相	zhang	6
+n	长	相	chang	1
+n	长	眼	zhang	4
+n	长	老	zhang	4
+n	长	者	zhang	5
+n	长	脸	chang	2
+n	长	脸	zhang	2
+n	长	辈	zhang	4
+n	长	进	zhang	5
+n	阿	世	e	7
+n	阿	世	a	2
+n	阿	党	e	5
+n	阿	其	e	3
+n	阿	堵	e	4
+n	阿	弥	e	7
+n	阿	意	e	4
+n	阿	房	e	5
+n	阿	旁	e	3
+n	阿	时	e	3
+n	阿	胶	e	4
+n	阿	谀	e	13
+n	阿	贵	e	2
+n	阿	贵	a	1
+n	降	妖	xiang	3
+n	降	服	xiang	3
+n	降	纳	xiang	2
+n	降	纳	jiang	1
+n	降	魔	xiang	3
+n	降	龙	xiang	7
+n	隽	永	juan	3
+n	露	丑	lou	4
+n	露	白	lou	3
+n	露	白	lu	2
+n	露	相	lou	4
+n	露	脸	lou	3
+n	露	面	lou	5
+n	露	面	lu	4
+n	露	馅	lou	4
+n	鞞	鼓	pi	2
+n	鞞	鼓	bi	1
+n	颈	子	geng	2
+n	颈	子	jing	1
+n	食	壶	si	4
+n	驮	子	duo	4
+n	骠	骑	piao	3
+n	麇	至	qun	2
+n	麇	至	jun	1
+n	龟	兹	qiu	5

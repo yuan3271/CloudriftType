@@ -45,7 +45,15 @@
   等级给保底分，HSK 2.0 的语料频次，以及本项目自撰的日常语料）加权——成语表一概不用，
   词表要的是"人们天天打的词"。读音用 pinyin-data 的逐字读音打底、**pypinyin 的词条读音定音**，
   **Unihan 的读音频率决定一个字挂在哪些音节下**（`shei → 谁`、`dei → 得`、`yue → 乐`、
-  `hang → 行`、`xie → 血`，Unicode License v3），并用两张 MIT 表补**专名**——全国高校名单
+  `hang → 行`、`xie → 血`，Unicode License v3），**没有词级读音的词再用一份自训练的拼音对应
+  逐字定音**——把仓库里几张 MIT 的词→拼音对齐表（pypinyin 4.7 万 ＋ phrase-pinyin-data 41 万
+  ＋ HSK 2.0）训练成 `P(读音｜字)` 与 `P(读音｜字, 前/后字)`，替掉原来的笛卡尔积猜音
+  （`一幢` 不再拼成 `yichuang`、`长安` 不再拼成 `zhangan`；不重叠留出集上词级读音
+  94.9% → 97.3%，`python3 tools/tune/everyday.py --split-eval` 可复跑，见
+  `tools/dictgen/train_readings.py`）。它同时让词表从 18.8 万词涨到 20.0 万词。词库的**第三层**
+  是 Tatoeba 的 8.9 万句日常话：凡是真有人写进句子的词都给一道保底分，把日常词层从 HSK 的
+  4,283 个扩到两万多个（日常词可打性 72.6% → 84.4%），代价是全拼广谱台 453 → 412——全部实测
+  写在 `build_dict.py` 的 `TATOEBA_FLOOR_BASE` 一节。并用两张 MIT 表补**专名**——全国高校名单
   （2,631 条）与省市区县（3,433 条），`qinghuadaxue → 清华大学`、`yueyanglouqu → 岳阳楼区`
   都在词表里，专名只用本音拼读（`中国人民大学` 不会被拆成 dàixué）。所以
   `xian → 西安`、`beijing → 北京`、`meishi → 没事`（而不是新闻语料更偏爱的`美食`）都在

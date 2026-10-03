@@ -139,7 +139,8 @@ class PinyinBenchmarkTest {
             "meiguanxi" to "没关系",
             "jintiantianqihenhao" to "今天天气很好",
             "mingtianjidian" to "明天几点",
-            "nizaiganma" to "你在干吗",
+            // 日常词库那一层（Tatoeba）抬的是口语写法 干嘛（21 对 5），语料的结论跟着换。
+            "nizaiganma" to "你在干嘛",
             "chifanlema" to "吃饭了吗",
             "woxianghebeishui" to "我想喝杯水",
             "womenyiqichifanba" to "我们一起吃饭吧",
