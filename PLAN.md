@@ -145,6 +145,7 @@
 | 141 | 数字页 `00` 与 `0` 换位（四行五列那张图里现在是 `00 0 .`） | 完成 |
 | 142 | 符号表逐字复算：全角 95 键（10 对 + 85 单）与半角 75 键（6 对 + 69 单）全部正确；**成对键（两字键）此前漏在"全角表不许混半角"那条测试之外**，现在补上逐字对账与清单钉子。用户报的"「（」等全角成对键是半角"在 0.2.38 的源码与安装包里都复现不出来，**待用户给出复现路径** | 部分（待复现） |
 | 143 | 本地构建 0.2.39（versionCode 43）：154 个用例全绿 + assembleRelease 产物落 `dist/`；广谱台与改前逐字一致（全拼 496/573、首字母 82/573、九键二字词 458/634、46 字母缓冲 0.4 ms） | 完成 |
+| 144 | 发布 0.2.39（versionCode 43）：tag `v0.2.39`、[Release 云隙输入 0.2.39](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.39) 已上传资产 `cloudrift-type-0.2.39-release.apk`（4,153,504 字节，sha256 `c11bd98e…`，与本地逐字节一致） | 完成 |
 
 ## 0.2.39：候选一颗单字都不省、中文模式下的英文词、`Z` 旁边改成大小写
 
@@ -235,8 +236,18 @@
 
 （改前的数字是临时 `git stash` 掉本轮改动后实测的，不是凭记忆。）
 
-**产物**：`dist/cloudrift-type-0.2.39-release.apk`（本地 `assembleRelease`，versionCode 43）。
-**未推 tag / GitHub Release**，也没有提交 —— 等用户确认第五条之后一起走发布流程。
+### 发布
+
+commit `ed4a2ce`、tag `v0.2.39`、[Release 云隙输入 0.2.39](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.39)
+已上传资产 `cloudrift-type-0.2.39-release.apk`（4,153,504 字节，签名 `CN=yuan3271`，versionCode 43）。
+回验用 GitHub 资产 API 的 `digest` 字段：`sha256:c11bd98e818d1be103c5a739d34685dc2b87f9db942a514e2ec7eafc2fffa8a5`，
+与本地 `dist/` 里那一个 **逐字节一致**。
+
+这一轮 `github.com:443` 又是**直连超时**（`curl` 20 s 无响应；`api.github.com` 与
+`uploads.github.com` 正常），所以提交、标签、Release、资产都走 **REST / Git Data API**，
+判据仍是"远端 tree 与本地 tree 完全相同"（`541f5f53`），并且把 GitHub 给提交信息补的那个换行
+也算进去，让**本地与远端的 commit sha 都是 `ed4a2ce`**——下次 `github.com` 通了直接 `git push`
+就是 no-op，不会有分叉。
 
 ## 0.2.38：整体优化（发布包体、输入热路径、构建与文档）
 
