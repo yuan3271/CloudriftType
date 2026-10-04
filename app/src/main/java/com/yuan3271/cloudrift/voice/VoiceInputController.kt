@@ -61,6 +61,11 @@ class VoiceInputController(
     val state: StateFlow<VoiceState> = _state.asStateFlow()
 
     private var recorder: AudioRecorder? = null
+    /**
+     * 录音期间对别的媒体声音的处理（静音 / 压低 / 不管，见 [VoiceAudioFocus]）。跟麦克风一样，
+     * 只挂在"离开 Recording"那一条出口上释放。
+     */
+    private val audioFocus = VoiceAudioFocus(context)
     private var ticker: Job? = null
     private var work: Job? = null
     private var startedAt = 0L
@@ -116,6 +121,8 @@ class VoiceInputController(
             publish(VoiceState.Failed(e.message ?: "无法访问麦克风"))
             return
         }
+        // 麦克风已经拿稳了才去动别人的声音：录音都没起来就把音乐按下去，是最让人恼火的一种失败。
+        audioFocus.acquire(settings.voiceMediaBehavior)
         ticker = scope.launch {
             while (true) {
                 delay(TICK_MS)
@@ -201,6 +208,7 @@ class VoiceInputController(
     private fun stopCapture() {
         ticker?.cancel()
         ticker = null
+        audioFocus.release()
         recorder?.cancel()
         recorder = null
     }

@@ -69,6 +69,50 @@ enum class KeyboardFrame {
     }
 }
 
+/**
+ * 外接键鼠（蓝牙键盘、桌面模式 / Chromebook 自带的键盘、鼠标或触控板）在场时，输入法窗口画什么。
+ *
+ * 这**不是**"要不要显示输入法"——两种选择都会显示窗口，区别只在窗口里的东西：一种是照旧整块
+ * 虚拟键盘，另一种只留候选词栏与工具栏（键鼠兼容面板）。物理键鼠在手时，屏上的按键既用不上，
+ * 又会把应用顶掉小半屏，所以默认选面板；想边看边点虚拟键盘的用户可以在设置里切回来。
+ */
+enum class ExternalInputMode {
+    /** 键鼠兼容面板：候选词栏 + 工具栏，一条圆角浮条。 */
+    CompatPanel,
+
+    /** 虚拟键盘：和没有外接键鼠时完全一样。 */
+    VirtualKeyboard,
+    ;
+
+    companion object {
+        fun fromKey(key: String?): ExternalInputMode =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: CompatPanel
+    }
+}
+
+/**
+ * 语音输入录音期间，外面正在放的声音怎么办。
+ *
+ * 录音要把人声收干净，而手机可能正在放歌 / 播视频。三种选择对应 Android 的三种音频焦点：
+ * 有的用户愿意让音乐先停一下（静音），有的只希望它小下去（压低），也有人就是要它照常放。
+ */
+enum class VoiceMediaBehavior {
+    /** 不管别人：不发音频焦点请求。 */
+    LeaveAlone,
+
+    /** 压低：`AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`，别人把音量降下来继续放。 */
+    Duck,
+
+    /** 静音：`AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE`，别人停下播放。 */
+    Mute,
+    ;
+
+    companion object {
+        fun fromKey(key: String?): VoiceMediaBehavior =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: Duck
+    }
+}
+
 enum class SymbolWidth {
     Full,
     Half,
@@ -198,6 +242,18 @@ data class AppSettings(
      */
     val japaneseEnabled: Boolean = false,
 
+    /**
+     * 外接键鼠接入时显示虚拟键盘还是键鼠兼容面板（见 [ExternalInputMode]）。没有外接键鼠时
+     * 这项设置不参与任何判断。
+     */
+    val externalInputMode: ExternalInputMode = ExternalInputMode.CompatPanel,
+    /**
+     * 键鼠兼容面板里工具面板的位置（屏幕百分比，左上角）。负数＝用户还没拖过，交给服务放在
+     * 默认位置（底部居中）；拖过之后就按这里记住，下次插上键鼠还在原地。
+     */
+    val compatToolbarXPercent: Int = UNSET_POSITION,
+    val compatToolbarYPercent: Int = UNSET_POSITION,
+
     /** How often to look for a newer release; Never turns the check off completely. */
     val updateCheckInterval: UpdateInterval = UpdateInterval.Daily,
     /** The small yellow mark next to the theme key when an update is waiting. */
@@ -215,6 +271,10 @@ data class AppSettings(
     ),
     /** The chat endpoint is only ever asked to fix recognition slips, never to rewrite. */
     val voiceCorrection: Boolean = true,
+    /**
+     * 录音时对别的媒体声音做什么：压低（默认）/ 静音 / 不管。见 [VoiceMediaBehavior]。
+     */
+    val voiceMediaBehavior: VoiceMediaBehavior = VoiceMediaBehavior.Duck,
     /**
      * How long a finished transcript waits before it is applied on its own, in milliseconds.
      * The pause is what makes the automatic behaviour safe: the result is on screen long enough
@@ -245,6 +305,9 @@ data class AppSettings(
         /** 百炼 / DashScope speaks the OpenAI protocol for chat, and only for chat. */
         const val DASHSCOPE_COMPATIBLE_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
         const val DASHSCOPE_DEFAULT_CHAT_MODEL = "qwen-plus"
+
+        /** "工具面板还没被拖过"的哨兵值：0..100 都是合法位置，所以只能用负数表示"没设过"。 */
+        const val UNSET_POSITION = -1
 
         fun openAiSpeechPreset() = ApiEndpoint(
             baseUrl = DEFAULT_SPEECH_BASE_URL,

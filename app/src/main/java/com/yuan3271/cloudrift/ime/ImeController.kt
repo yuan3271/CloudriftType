@@ -18,6 +18,7 @@ import com.yuan3271.cloudrift.engine.EngineKind
 import com.yuan3271.cloudrift.engine.InputEngine
 import com.yuan3271.cloudrift.engine.emoji.EmojiGroup
 import com.yuan3271.cloudrift.input.EditorProxy
+import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.input.KeyboardLayouts
@@ -84,6 +85,12 @@ class ImeController(
     private var autoApplyJob: Job? = null
     /** True while the editor reports a selection rather than a plain caret. */
     private var hasSelection: Boolean = false
+
+    /**
+     * 外接键鼠把这次会话的布局从 9 键临时换成 26 键了吗（见 [onExternalInputs]）。只活在内存里：
+     * 用户自己选的布局还在设置里躺着，拔掉键鼠就还回去。
+     */
+    private var layoutSwitchedForHardware = false
 
     /**
      * 屏幕上那条联想候选是替哪个词做的预测（见 [showAssociations]）。null 表示当前没有联想条。
@@ -371,6 +378,115 @@ class ImeController(
         voice.setCancelArmed(armed)
     }
 
+    /**
+     * 物理键盘上的一颗键。返回 true 表示输入法把它消化了——应用不会再收到这颗键。
+     *
+     * 只在真的有外接键鼠时才接管（和面板同为 [ExternalInputSnapshot.present] 这一个条件）：没有
+     * 外接设备时这条路一个键都不碰，行为与从前逐字节相同。这颗键"是什么意思"由
+     * [hardwareKeyAction] 判定（纯函数，可单测），这里只决定按下之后发生什么。
+     */
+    fun onHardwareKeyDown(
+        keyCode: Int,
+        unicode: Int,
+        ctrlPressed: Boolean,
+        altPressed: Boolean,
+    ): Boolean {
+        if (!_state.value.externalInputs.present) return false
+        return when (val action = hardwareKeyAction(keyCode, unicode, ctrlPressed, altPressed)) {
+            null -> false
+            is HardwareKeyAction.Type -> {
+                typeFromHardware(action.text)
+                true
+            }
+
+            HardwareKeyAction.Backspace -> {
+                backspace()
+                true
+            }
+
+            HardwareKeyAction.Enter -> {
+                enter()
+                true
+            }
+
+            HardwareKeyAction.Space -> {
+                hardwareSpace()
+                true
+            }
+
+            // 没在拼写的时候 Esc 不是输入法的键（应用可能拿它关弹窗），原样放行。
+            HardwareKeyAction.Cancel -> if (_state.value.isComposing) {
+                clearBuffer()
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    /**
+     * 物理键盘上的空格。
+     *
+     * 屏上空格在拼写中只选首选词、不补空格（手还要回去点候选），但物理键盘上空格就是词与词
+     * 之间的分隔符：选完首选词再补一个空格，手指不停接着打下个词。
+     */
+    private fun hardwareSpace() {
+        if (_state.value.isComposing) {
+            selectCandidate(0)
+            commitText(" ")
+            return
+        }
+        space()
+    }
+
+    /**
+     * 物理键盘打出来的一个字符。
+     *
+     * 字母进读音缓冲：拼音、罗马音、英文补全都靠它拼。数字与标点直接上屏——它们不参与拼写，
+     * 走缓冲只会让用户多按一次空格（"2026" 变成要按四下空格）。有正在拼的内容时，直接上屏
+     * 会先把拼写定下来（[commitLiteral] 自己处理），这和屏上从符号页打字是同一个规矩。
+     */
+    private fun typeFromHardware(text: String) {
+        val letter = text.length == 1 && text[0].isAsciiLetter()
+        if (!letter) {
+            commitLiteral(text)
+            return
+        }
+        // 符号页上敲字母 = 回到字母页继续拼（屏上做不到这件事，物理键盘做得到）。
+        if (_state.value.page != KeyboardPage.Letters) showPage(KeyboardPage.Letters)
+        appendReading(text)
+    }
+
+    // ---- 外接键鼠 ---------------------------------------------------------------------
+
+    /**
+     * 设备表或系统配置变了（插入/拔出键盘鼠标、切到桌面模式）。
+     *
+     * 除了"9 键例外"以外什么都不改：键鼠兼容面板与虚拟键盘读的是同一份状态、同一套引擎，所以
+     * 插拔键鼠不会打断正在打的东西，也不会丢掉候选。
+     *
+     * 9 键例外：九宫格是给手指的布局，物理键盘打出来的是字母，喂给 T9 引擎一个字都出不来
+     * （用户看到的是"打字没反应"）。所以面板生效时把**这次会话**的布局换成 26 键，但不写设置——
+     * 拔掉键鼠时 [restoreLayout] 会把用户原来选的 9 键还回来。
+     */
+    fun onExternalInputs(inputs: ExternalInputSnapshot) {
+        if (_state.value.externalInputs != inputs) {
+            _state.value = _state.value.copy(externalInputs = inputs)
+        }
+        val panel = _state.value.showsCompatPanel
+        when {
+            panel && !layoutSwitchedForHardware && _state.value.layout == LayoutId.Pinyin9 -> {
+                layoutSwitchedForHardware = true
+                applyLayout(LayoutId.Pinyin26, persist = false)
+            }
+
+            !panel && layoutSwitchedForHardware -> {
+                layoutSwitchedForHardware = false
+                restoreLayout()
+            }
+        }
+    }
+
     /** Quick settings edits the same store the full settings screen writes to. */
     fun updateSettings(transform: (AppSettings) -> AppSettings) = settings.update(transform)
 
@@ -412,6 +528,22 @@ class ImeController(
     fun setEmojiGroup(key: String) {
         if (_state.value.emojiGroup == key) return
         _state.value = _state.value.copy(emojiGroup = key)
+    }
+
+    /**
+     * 键鼠兼容面板上的「符号」：在这一页与字母页之间来回。
+     *
+     * 面板上没有 `123` 也没有 `符` 那两个键，符号页就是它的第二条界——再点一次回到字母页，
+     * 和屏上那颗 `符` 的进出方式一致。
+     */
+    fun toggleSymbolPage() {
+        showPage(
+            if (_state.value.page == KeyboardPage.Symbols) {
+                KeyboardPage.Letters
+            } else {
+                KeyboardPage.Symbols
+            },
+        )
     }
 
     /** Landscape framing, decided by the UI (it knows the orientation) and applied by the service. */
@@ -461,6 +593,60 @@ class ImeController(
     /** Drag delta from the floating keyboard's handle, in pixels. */
     fun moveFloatingKeyboard(dx: Float, dy: Float) {
         windowHost?.moveInputWindowBy(dx, dy)
+    }
+
+    // ---- 键鼠兼容面板的两个窗口 ---------------------------------------------------------
+
+    /**
+     * 告诉服务"工具面板现在该不该出现、在哪儿"。工具面板是**另一个窗口**（候选词面板是输入法自己
+     * 那个窗口），所以它的显隐与位置要单独同步一次。
+     *
+     * @return 第二个窗口开出来了没有；false 时界面把工具面板画进候选词那个窗口（退路）。
+     */
+    fun syncToolbarWindow(): Boolean {
+        val host = windowHost ?: return false
+        val current = _state.value
+        val available = host.applyToolbarWindow(
+            visible = current.showsCompatPanel,
+            xPercent = current.compatToolbarXPercent,
+            yPercent = current.compatToolbarYPercent,
+        )
+        if (current.compatToolbarInMainWindow != !available) {
+            _state.value = current.copy(compatToolbarInMainWindow = !available)
+        }
+        return available
+    }
+
+    /**
+     * 键鼠兼容面板出现 / 消失时，把两个窗口的规矩一起同步：工具面板该不该出现、候选词面板要不要
+     * 跟着光标走（见 [InputWindowHost.setCaretFollowing]）。
+     */
+    fun syncCompatWindows(): Boolean {
+        val panel = _state.value.showsCompatPanel
+        windowHost?.setCaretFollowing(panel)
+        return syncToolbarWindow()
+    }
+
+    /** Drag delta from the tool panel's grip. */
+    fun moveCompatToolbar(dx: Float, dy: Float) {
+        windowHost?.moveToolbarWindowBy(dx, dy)
+    }
+
+    fun commitCompatToolbarPosition() {
+        windowHost?.commitToolbarWindowPosition()
+    }
+
+    /** 服务把工具面板拖完之后的落点写回来（屏幕百分比）。 */
+    fun onCompatToolbarMoved(xPercent: Int, yPercent: Int) {
+        val current = _state.value
+        if (current.compatToolbarXPercent == xPercent && current.compatToolbarYPercent == yPercent) {
+            return
+        }
+        _state.value = current.copy(
+            compatToolbarXPercent = xPercent,
+            compatToolbarYPercent = yPercent,
+        )
+        settings.update { it.copy(compatToolbarXPercent = xPercent, compatToolbarYPercent = yPercent) }
     }
 
     /** The toolbar's yellow mark opens the settings screen, where the release is described. */
@@ -606,6 +792,14 @@ class ImeController(
     }
 
     fun selectLayout(layout: LayoutId) {
+        applyLayout(layout, persist = true)
+    }
+
+    /**
+     * @param persist 用户自己选的布局要记住（写进设置）；外接键鼠下的临时切换不写，拔掉之后
+     *   用户原来选的布局还在（见 [onExternalInputs]）。
+     */
+    private fun applyLayout(layout: LayoutId, persist: Boolean) {
         if (layout == _state.value.layout) return
         commitBuffer()
         _state.value = _state.value.copy(
@@ -619,7 +813,7 @@ class ImeController(
         )
         engine = AppGraph.engines.engineFor(layout.engine)
         voice.layoutHint = layout
-        settings.update { it.copy(lastLayout = layout.name) }
+        if (persist) settings.update { it.copy(lastLayout = layout.name) }
         updateEnterLabel()
         if (layout == LayoutId.Pinyin9) warmUpNineKey()
     }
@@ -993,6 +1187,9 @@ class ImeController(
             floatingWidthPercent = snapshot.floatingWidthPercent,
             floatingKeyHeightDp = snapshot.floatingKeyHeightDp,
             japaneseEnabled = snapshot.japaneseEnabled,
+            externalInputMode = snapshot.externalInputMode,
+            compatToolbarXPercent = snapshot.compatToolbarXPercent,
+            compatToolbarYPercent = snapshot.compatToolbarYPercent,
             showUpdateDot = snapshot.showUpdateDot,
             showNumberRow = snapshot.showNumberRow,
             swipeUpSymbols = snapshot.swipeUpSymbols,
@@ -1043,3 +1240,9 @@ class ImeController(
         const val MAX_FLOATING_KEY_HEIGHT = 72
     }
 }
+
+/**
+ * A-Z / a-z。用 ASCII 判断而不是 `Char.isLetter()`：后者对汉字、假名也为真，而那些字符从物理
+ * 键盘打出来时应当直接上屏，不该被塞进拼音缓冲。
+ */
+private fun Char.isAsciiLetter(): Boolean = this in 'a'..'z' || this in 'A'..'Z'

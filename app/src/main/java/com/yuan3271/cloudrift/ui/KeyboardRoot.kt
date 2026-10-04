@@ -87,18 +87,35 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
     val view = LocalView.current
     val configuration = LocalConfiguration.current
     // Landscape framing: the UI knows the orientation, the service owns the window.
-    val floating = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
-        state.landscapeFrame == KeyboardFrame.Floating
+    //
+    // 键鼠兼容面板走的也是这条悬浮框：它本来就是一块"能拖到任何地方"的卡片（外接键鼠多半在平板上，
+    // 面板要能跟着光标、也能被拖走），所以它**总是**用悬浮框，不看横竖屏、也不看横屏那项设置，
+    // 宽度沿用同一个"悬浮宽度"。
+    val floating = state.showsCompatPanel ||
+        (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
+            state.landscapeFrame == KeyboardFrame.Floating)
 
     LaunchedEffect(floating, state.floatingWidthPercent) {
         controller.applyInputFrame(floating = floating, widthPercent = state.floatingWidthPercent)
     }
 
+    // 工具面板是**另一个窗口**（见 CloudriftImeService.applyToolbarWindow）：它该不该出现、在哪儿，
+    // 要单独同步一次；开不出来时会退回画在候选词那个窗口里。
+    LaunchedEffect(state.showsCompatPanel, state.compatToolbarXPercent, state.compatToolbarYPercent) {
+        controller.syncCompatWindows()
+    }
+
     // The appearance sliders change the content height, and an IME window is not always
     // re-measured just because its content shrank or grew. Asking for a layout keeps the
     // window in step with the slider instead of only catching up after the keyboard has been
-    // hidden and shown again.
-    LaunchedEffect(state.keyHeightDp, state.bottomGapDp, state.keyCornerRadiusDp) {
+    // hidden and shown again. 换到键鼠兼容面板（或换回来）是一次更大的高度变化，同样要主动
+    // 请求一次布局，否则窗口会留着上一个形态的高度。
+    LaunchedEffect(
+        state.keyHeightDp,
+        state.bottomGapDp,
+        state.keyCornerRadiusDp,
+        state.showsCompatPanel,
+    ) {
         view.requestLayout()
         (view.parent as? View)?.requestLayout()
     }
@@ -123,27 +140,39 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
                     translationY = (1f - appear.value) * 28.dp.toPx()
                 },
         ) {
-            KeyboardSurface(
-                state = state,
-                controller = controller,
-                floating = floating,
-                onOpenLayoutPicker = {
-                    controller.setQuickSettingsVisible(false)
-                    layoutPickerVisible = true
-                },
-                onOpenClipboard = {
-                    layoutPickerVisible = false
-                    controller.toggleClipboard()
-                },
-                onToggleQuickSettings = {
-                    layoutPickerVisible = false
-                    // 悬浮卡片是按按键尺寸开的窗，快捷设置那张整宽面板在它里面既放不下也点不准，
-                    // 所以悬浮模式下齿轮改成直接进完整设置页（内容只多不少）。
-                    if (floating) controller.openFullSettings() else controller.toggleQuickSettings()
-                },
-            )
+            // 外接键鼠在场且设置选了兼容面板时，窗口里只有候选词栏 + 工具栏；否则就是原来那
+            // 整块键盘。两条路读的是同一份状态、同一套引擎，插上键鼠不会打断正在打的东西。
+            if (state.showsCompatPanel) {
+                CompatPanel(
+                    state = state,
+                    controller = controller,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                KeyboardSurface(
+                    state = state,
+                    controller = controller,
+                    floating = floating,
+                    onOpenLayoutPicker = {
+                        controller.setQuickSettingsVisible(false)
+                        layoutPickerVisible = true
+                    },
+                    onOpenClipboard = {
+                        layoutPickerVisible = false
+                        controller.toggleClipboard()
+                    },
+                    onToggleQuickSettings = {
+                        layoutPickerVisible = false
+                        // 悬浮卡片是按按键尺寸开的窗，快捷设置那张整宽面板在它里面既放不下也点不准，
+                        // 所以悬浮模式下齿轮改成直接进完整设置页（内容只多不少）。
+                        if (floating) controller.openFullSettings() else controller.toggleQuickSettings()
+                    },
+                )
+            }
 
-            if (layoutPickerVisible) {
+            // 布局面板只属于按键那一侧：面板上没有按键，9 键这种手指布局也没意义（控制器在
+            // 外接键鼠下会把 9 键临时换成 26 键），所以面板里不挂它。
+            if (layoutPickerVisible && !state.showsCompatPanel) {
                 LayoutPickerOverlay(
                     current = state.layout,
                     available = LayoutId.enabled(state.japaneseEnabled),
@@ -405,88 +434,6 @@ private fun KeyboardSurface(
 }
 
 /**
- * 悬浮卡片顶部的那一条。左边整块空白按住就是把卡片拖着走，右端那颗小图标是缩放手柄。
- *
- * 这一条的前身是 18dp 的拖拽粗边 **加上**一行为缩放手柄单独留的 26dp 空行——工具栏上方于是
- * 白留了一条差不多与工具栏等高的空白，里面一个工具都没有。现在两行并成一条
- * [GRIP_STRIP_HEIGHT]：中间那根小白条就是唯一的"这里能拖"提示，缩放手柄缩到右端一颗小图标。
- */
-@Composable
-private fun FloatingGripStrip(
-    onMove: (Float, Float) -> Unit,
-    onResize: (Float, Float) -> Unit,
-    onResizeCommitted: () -> Unit,
-) {
-    // pointerInput 里的手势协程只启动一次：直接用它捕获的 lambda，会一直用**第一次组合时**的
-    // 那份（缩放要用的行数一开始还没量到，是 1，于是又变成 4 倍不跟手）。rememberUpdatedState
-    // 让协程每次事件读到的都是最新的 lambda。
-    val currentMove by rememberUpdatedState(onMove)
-    val currentResize by rememberUpdatedState(onResize)
-    val currentCommit by rememberUpdatedState(onResizeCommitted)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(GRIP_STRIP_HEIGHT),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .pointerInput(Unit) {
-                    detectDragGestures { change, dragAmount ->
-                        change.consume()
-                        currentMove(dragAmount.x, dragAmount.y)
-                    }
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 40.dp, height = 4.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.92f))
-                    .border(
-                        width = 0.5.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
-                        shape = RoundedCornerShape(50),
-                    ),
-            )
-        }
-        // 缩放手柄：抓住它等于抓住卡片的右下角，被拖的边跟着手指走（换算在 KeyboardSurface）。
-        // 松手（或被系统抢走）才落盘，拖动过程中只改内存里的值。
-        Box(
-            modifier = Modifier
-                .width(34.dp)
-                .fillMaxHeight()
-                .pointerInput(Unit) {
-                    detectDragGestures(
-                        onDragEnd = { currentCommit() },
-                        onDragCancel = { currentCommit() },
-                    ) { change, dragAmount ->
-                        change.consume()
-                        currentResize(dragAmount.x, dragAmount.y)
-                    }
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = CloudriftIcons.More,
-                contentDescription = "拖动调整大小",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier
-                    .size(14.dp)
-                    .rotate(90f),
-            )
-        }
-    }
-}
-
-/** 悬浮卡片顶部把手的窄条高度。 */
-private val GRIP_STRIP_HEIGHT = 20.dp
-
-/**
  * Shown in place of the candidate strip while backspace is held and slid up: the option is lit, and
  * letting go clears the field. Drawn in the strip's own height, so lighting it up never moves the
  * keys that are still under the finger.
@@ -529,7 +476,7 @@ private fun ClearAllStrip() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ExpandedCandidates(
+internal fun ExpandedCandidates(
     state: ImeUiState,
     onCandidate: (Int) -> Unit,
     onCollapse: () -> Unit,
@@ -592,7 +539,7 @@ private fun ExpandedCandidates(
 }
 
 @Composable
-private fun NoticeStrip(
+internal fun NoticeStrip(
     message: String,
     actionLabel: String?,
     onAction: () -> Unit,

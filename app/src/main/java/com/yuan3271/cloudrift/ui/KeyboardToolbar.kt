@@ -207,11 +207,17 @@ private fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
 /** 「有更新」长条在键盘上停留的时间。 */
 private const val UpdateMarkPillMs = 1200L
 
+/**
+ * 工具栏上的胶囊键：语言那颗是「地球 + 当前语言」，符号那颗没有图标，只有一个字（`符` /
+ * `?123`）。两颗共用同一个壳：同一个圆角、同一档底色、同一个内边距——工具栏里出现两个尺寸不一的
+ * 胶囊，看起来就像两套控件。
+ */
 @Composable
-private fun LanguageChip(
+internal fun ToolbarChip(
     label: String,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    icon: ImageVector? = null,
 ) {
     Row(
         modifier = Modifier
@@ -222,12 +228,14 @@ private fun LanguageChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Icon(
-            imageVector = CloudriftIcons.Globe,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp),
-        )
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+        }
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
@@ -237,12 +245,26 @@ private fun LanguageChip(
     }
 }
 
+/** 语言那颗：地球图标 + 当前语言（中 / En / 日）。 */
 @Composable
-private fun SmallIconButton(
-    icon: ImageVector,
+internal fun LanguageChip(
+    label: String,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    ToolbarChip(label = label, onClick = onClick, onLongClick = onLongClick, icon = CloudriftIcons.Globe)
+}
+
+/**
+ * 工具栏上一颗圆按钮的外壳：38dp、圆形、选中时 `primaryContainer` 底。图标键与文字键（符号那颗
+ * 写的是「符」）共用它，免得同一个工具栏里出现两种按钮尺寸。
+ */
+@Composable
+internal fun ToolbarButton(
     description: String,
     onClick: () -> Unit,
     active: Boolean = false,
+    content: @Composable (Color) -> Unit,
 ) {
     IconButton(
         onClick = onClick,
@@ -253,14 +275,29 @@ private fun SmallIconButton(
                 if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
             ),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = description,
-            tint = if (active) {
+        content(
+            if (active) {
                 MaterialTheme.colorScheme.onPrimaryContainer
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
             },
+        )
+    }
+}
+
+@Composable
+internal fun SmallIconButton(
+    icon: ImageVector,
+    description: String,
+    onClick: () -> Unit,
+    active: Boolean = false,
+) {
+    // description 同时当无障碍标签与图标的替代文字：这一颗在哪儿都是"按下去做什么"。
+    ToolbarButton(description = description, onClick = onClick, active = active) { tint ->
+        Icon(
+            imageVector = icon,
+            contentDescription = description,
+            tint = tint,
             modifier = Modifier.size(20.dp),
         )
     }

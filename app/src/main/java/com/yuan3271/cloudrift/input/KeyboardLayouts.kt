@@ -72,6 +72,14 @@ object KeyboardLayouts {
         LayoutId.JapaneseRomaji -> "日"
     }
 
+    /**
+     * 符号键上写的字。中文是「符」，英文布局是 `?123`——那是英文键盘上这个位置本来的写法。
+     *
+     * 26 键、9 键与键鼠兼容面板的工具栏都读这一处：同一个键在三个地方不能有三种写法。
+     */
+    fun symbolKeyLabel(layout: LayoutId): String =
+        if (layout == LayoutId.English) "?123" else "符"
+
     // ---- Latin style layouts ------------------------------------------------------
 
     private fun qwertyRows(
@@ -107,7 +115,7 @@ object KeyboardLayouts {
         }
         // Ten units wide, like the letter rows, so every key on the page is the same size.
         val function = listOf(
-            KeyDef.modifier(KeyCode.Symbols, if (en) "?123" else "符", weight = 1.3f),
+            KeyDef.modifier(KeyCode.Symbols, symbolKeyLabel(layout), weight = 1.3f),
             KeyDef.immediate(comma, weight = 0.9f),
             KeyDef.space.copy(weight = 5.1f),
             KeyDef.immediate(period, weight = 0.9f),
@@ -150,7 +158,7 @@ object KeyboardLayouts {
      */
     private fun nineKeyRows(enterLabel: String): List<List<KeyDef>> = listOf(
         listOf(
-            KeyDef.modifier(KeyCode.Symbols, "符", weight = 1f),
+            KeyDef.modifier(KeyCode.Symbols, symbolKeyLabel(LayoutId.Pinyin9), weight = 1f),
             digit("1", ""),
             digit("2", "ABC"),
             digit("3", "DEF"),

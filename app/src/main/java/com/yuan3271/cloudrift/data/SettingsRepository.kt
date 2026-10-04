@@ -51,12 +51,26 @@ class SettingsRepository(context: Context) {
             spaceCursorControl = prefs.getBoolean(KEY_SPACE_CURSOR, defaults.spaceCursorControl),
             learningEnabled = prefs.getBoolean(KEY_LEARNING, defaults.learningEnabled),
             japaneseEnabled = prefs.getBoolean(KEY_JAPANESE, defaults.japaneseEnabled),
+            externalInputMode = ExternalInputMode.fromKey(
+                prefs.getString(KEY_EXTERNAL_INPUT_MODE, null),
+            ),
+            compatToolbarXPercent = prefs.getInt(
+                KEY_COMPAT_TOOLBAR_X,
+                defaults.compatToolbarXPercent,
+            ),
+            compatToolbarYPercent = prefs.getInt(
+                KEY_COMPAT_TOOLBAR_Y,
+                defaults.compatToolbarYPercent,
+            ),
             updateCheckInterval = UpdateInterval.fromKey(prefs.getString(KEY_UPDATE_INTERVAL, null)),
             showUpdateDot = prefs.getBoolean(KEY_UPDATE_DOT, defaults.showUpdateDot),
             candidateOrder = CandidateOrder.fromKey(prefs.getString(KEY_CANDIDATE_ORDER, null)),
             speech = migrateLegacyNls(readEndpoint(KEY_SPEECH_PREFIX, defaults.speech)),
             chat = readEndpoint(KEY_CHAT_PREFIX, defaults.chat),
             voiceCorrection = prefs.getBoolean(KEY_VOICE_CORRECTION, defaults.voiceCorrection),
+            voiceMediaBehavior = VoiceMediaBehavior.fromKey(
+                prefs.getString(KEY_VOICE_MEDIA, null),
+            ),
             voiceAutoApplyDelayMs = prefs.getInt(
                 KEY_VOICE_AUTO_APPLY,
                 defaults.voiceAutoApplyDelayMs,
@@ -89,6 +103,9 @@ class SettingsRepository(context: Context) {
             putBoolean(KEY_SPACE_CURSOR, settings.spaceCursorControl)
             putBoolean(KEY_LEARNING, settings.learningEnabled)
             putBoolean(KEY_JAPANESE, settings.japaneseEnabled)
+            putString(KEY_EXTERNAL_INPUT_MODE, settings.externalInputMode.name)
+            putInt(KEY_COMPAT_TOOLBAR_X, settings.compatToolbarXPercent)
+            putInt(KEY_COMPAT_TOOLBAR_Y, settings.compatToolbarYPercent)
             putString(KEY_UPDATE_INTERVAL, settings.updateCheckInterval.name)
             putBoolean(KEY_UPDATE_DOT, settings.showUpdateDot)
             putString(KEY_CANDIDATE_ORDER, settings.candidateOrder.name)
@@ -103,6 +120,7 @@ class SettingsRepository(context: Context) {
             putString(KEY_CHAT_PREFIX + KEY_SUFFIX_LANGUAGE, settings.chat.languageHint)
             putString(KEY_CHAT_PREFIX + KEY_SUFFIX_STYLE, settings.chat.style.name)
             putBoolean(KEY_VOICE_CORRECTION, settings.voiceCorrection)
+            putString(KEY_VOICE_MEDIA, settings.voiceMediaBehavior.name)
             putInt(KEY_VOICE_AUTO_APPLY, settings.voiceAutoApplyDelayMs)
             putBoolean(KEY_AUTO_PUNCTUATION, settings.autoPunctuation)
             putString(KEY_HOT_WORDS, settings.hotWords)
@@ -157,10 +175,14 @@ class SettingsRepository(context: Context) {
         private const val KEY_SPACE_CURSOR = "space_cursor_control"
         private const val KEY_LEARNING = "learning_enabled"
         private const val KEY_JAPANESE = "japanese_enabled"
+        private const val KEY_EXTERNAL_INPUT_MODE = "external_input_mode"
+        private const val KEY_COMPAT_TOOLBAR_X = "compat_toolbar_x_percent"
+        private const val KEY_COMPAT_TOOLBAR_Y = "compat_toolbar_y_percent"
         private const val KEY_UPDATE_INTERVAL = "update_check_interval"
         private const val KEY_UPDATE_DOT = "update_dot"
         private const val KEY_CANDIDATE_ORDER = "candidate_order"
         private const val KEY_VOICE_CORRECTION = "voice_correction"
+        private const val KEY_VOICE_MEDIA = "voice_media_behavior"
         private const val KEY_VOICE_AUTO_APPLY = "voice_auto_apply_delay_ms"
         private const val KEY_AUTO_PUNCTUATION = "auto_punctuation"
         private const val KEY_HOT_WORDS = "hot_words"

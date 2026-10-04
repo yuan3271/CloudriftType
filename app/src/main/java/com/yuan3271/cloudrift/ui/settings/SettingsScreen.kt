@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +66,7 @@ import com.yuan3271.cloudrift.data.ApiEndpoint
 import com.yuan3271.cloudrift.data.ApiStyle
 import com.yuan3271.cloudrift.data.CandidateOrder
 import com.yuan3271.cloudrift.data.AppSettings
+import com.yuan3271.cloudrift.data.ExternalInputMode
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.data.ThemeMode
@@ -72,6 +74,9 @@ import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.data.UserStats
 import com.yuan3271.cloudrift.data.UpdateInfo
 import com.yuan3271.cloudrift.data.UpdateInterval
+import com.yuan3271.cloudrift.data.VoiceMediaBehavior
+import com.yuan3271.cloudrift.input.ExternalInputMonitor
+import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
@@ -352,6 +357,58 @@ fun SettingsScreen(
                 )
             }
 
+            SectionTitle("外接键鼠", CloudriftIcons.Keyboard)
+            SettingsCard {
+                Text(
+                    text = "接上蓝牙键盘、平板的键盘壳或鼠标时，屏上的虚拟按键通常用不上，却还是把" +
+                        "应用顶掉小半屏。选「键鼠兼容面板」就只留两行：候选词栏，以及语音 / 剪贴板 / " +
+                        "语言转换 / 符号四颗工具键；打字直接用外接键盘，中文候选会照常出现在面板上。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val modes = listOf(
+                        ExternalInputMode.CompatPanel to "键鼠兼容面板",
+                        ExternalInputMode.VirtualKeyboard to "虚拟键盘",
+                    )
+                    modes.forEachIndexed { index, (mode, label) ->
+                        SegmentedButton(
+                            selected = settings.externalInputMode == mode,
+                            onClick = { onUpdate { it.copy(externalInputMode = mode) } },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = when (settings.externalInputMode) {
+                        ExternalInputMode.CompatPanel ->
+                            "没有外接键鼠时两种选择完全一样：都弹虚拟键盘。"
+                        ExternalInputMode.VirtualKeyboard ->
+                            "外接键鼠在场时也照旧弹出整块虚拟键盘。"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // 检测状态摆在这儿，是因为这条设置只对外接键鼠生效：看得见"现在有没有检测到"，
+                // 才知道刚才的选择到底会不会起作用。
+                val externalInputs = rememberExternalInputs()
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = externalInputs.describe.ifEmpty { "当前没有检测到外接键盘或鼠标" },
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (externalInputs.present) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            }
+
             SectionTitle("候选词顺序", CloudriftIcons.Spellcheck)
             SettingsCard {
                 Text(
@@ -475,6 +532,45 @@ fun SettingsScreen(
                     text = "纠错完成后停顿这么久再自动上屏；期间点「取消 / 重说 / 上屏」都会接管。" +
                         "选「手动」则一直等确认。",
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    text = "录音时其他声音",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val behaviors = listOf(
+                        VoiceMediaBehavior.Duck to "压低",
+                        VoiceMediaBehavior.Mute to "静音",
+                        VoiceMediaBehavior.LeaveAlone to "不处理",
+                    )
+                    behaviors.forEachIndexed { index, (behavior, label) ->
+                        SegmentedButton(
+                            selected = settings.voiceMediaBehavior == behavior,
+                            onClick = { onUpdate { it.copy(voiceMediaBehavior = behavior) } },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = behaviors.size,
+                            ),
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = when (settings.voiceMediaBehavior) {
+                        VoiceMediaBehavior.Duck ->
+                            "录音期间正在放的歌 / 视频把音量降下来继续放，说完自动恢复。"
+                        VoiceMediaBehavior.Mute ->
+                            "录音期间正在放的歌 / 视频先停下，说完自动恢复播放位置（部分应用会停在原地）。"
+                        VoiceMediaBehavior.LeaveAlone ->
+                            "不动别人的声音，录音里可能把外放的声音一起收进去。"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -779,6 +875,25 @@ private fun SectionTitle(title: String, icon: ImageVector) {
             color = MaterialTheme.colorScheme.primary,
         )
     }
+}
+
+/**
+ * 设置页里的外接键鼠状态：进来先读一次，然后挂着设备监听跟着变。
+ *
+ * 用的是和输入法服务同一个 [ExternalInputMonitor]，所以"这一页说检测到了键盘"与"键盘上真的
+ * 会弹面板"是同一个判据，不会出现两处说法对不上的情况。
+ */
+@Composable
+private fun rememberExternalInputs(): ExternalInputSnapshot {
+    val context = LocalContext.current
+    var snapshot by remember { mutableStateOf(ExternalInputSnapshot()) }
+    DisposableEffect(context) {
+        val monitor = ExternalInputMonitor(context) { next -> snapshot = next }
+        snapshot = monitor.refresh(notify = false)
+        monitor.start()
+        onDispose { monitor.stop() }
+    }
+    return snapshot
 }
 
 @Composable

@@ -3,12 +3,14 @@ package com.yuan3271.cloudrift.ime
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.data.ClipEntry
+import com.yuan3271.cloudrift.data.ExternalInputMode
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.data.SymbolWidth
 import com.yuan3271.cloudrift.data.UpdateInfo
 import com.yuan3271.cloudrift.data.UserStats
 import com.yuan3271.cloudrift.engine.Candidate
+import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.voice.VoiceState
@@ -103,6 +105,18 @@ data class ImeUiState(
     /** 语音结果是否再过一遍文本修正 API；关掉就完全不发这个请求。快速设置里有开关。 */
     val voiceCorrection: Boolean = true,
 
+    /** 外接键鼠接入时显示什么（用户设置）。 */
+    val externalInputMode: ExternalInputMode = ExternalInputMode.CompatPanel,
+    /** 场上有没有外接键鼠；由服务的设备监听推过来（见 ExternalInputMonitor）。 */
+    val externalInputs: ExternalInputSnapshot = ExternalInputSnapshot(),
+    /** 工具面板的位置（屏幕百分比）；负数＝用户还没拖过，服务会放在默认位置。 */
+    val compatToolbarXPercent: Int = -1,
+    val compatToolbarYPercent: Int = -1,
+    /**
+     * 第二个窗口开不出来时的退路：工具面板画进候选词那个窗口里（见 InputWindowHost.applyToolbarWindow）。
+     */
+    val compatToolbarInMainWindow: Boolean = false,
+
     /** True while the in-keyboard quick settings sheet is open. */
     val quickSettingsVisible: Boolean = false,
 
@@ -124,4 +138,13 @@ data class ImeUiState(
     val primaryCandidate: Candidate? get() = candidates.firstOrNull()
 
     val isVoiceActive: Boolean get() = voice !is VoiceState.Idle
+
+    /**
+     * 键盘窗口里画"键鼠兼容面板"（候选词栏 + 工具栏）而不是整块按键。
+     *
+     * 默认的 [ExternalInputMode.CompatPanel] 只在真的有外接键鼠时生效：没有外接设备的话，两种
+     * 设置都走原来的虚拟键盘，路径一字不差。
+     */
+    val showsCompatPanel: Boolean
+        get() = externalInputMode == ExternalInputMode.CompatPanel && externalInputs.present
 }

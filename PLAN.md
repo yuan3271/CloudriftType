@@ -164,6 +164,112 @@
 | 160 | 许可：新增来源与中文那边的 Tatoeba 层同源同许可，**只发布词与次数、句子原文不入库**；项目本体仍是 MIT，`NOTICE.md` 记了来源、口径与实测数字 | 完成 |
 | 161 | 本地构建 0.2.41（versionCode 45）：167 个用例全绿 + `assembleRelease`，`dist/cloudrift-type-0.2.41-release.apk`（4,186,528 字节，sha256 `966ed288…`，比 0.2.40 大 16 KB） | 完成 |
 | 162 | 发布 0.2.41（versionCode 45）：tag `v0.2.41`、[Release 云隙输入 0.2.41](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.41) 已上传资产 `cloudrift-type-0.2.41-release.apk`（4,186,528 字节，资产 API 的 `digest` `sha256:966ed288…` 与本地逐字节一致） | 完成 |
+| 163 | 键鼠兼容面板：外接键鼠在场时不再弹整块键盘，只留**两块分开的窗口**——候选词面板（跟着光标）与工具面板（自己一个窗口，可以单独拖到任何地方） | 完成 |
+| 164 | 面板的框就是横屏悬浮键盘那套：24dp 圆角、10dp / 6dp 外边距、顶部 20dp 把手（一条横条，拖它＝移动整块）。没有阴影，也没有缩放手柄（按用户逐条点名） | 完成 |
+| 165 | 设置项「外接键鼠」：显示**键鼠兼容面板**（默认）还是**虚拟键盘**；卡片里实时显示"现在检测到了什么" | 完成 |
+| 166 | 外接键鼠检测：`Configuration.keyboard` + `InputManager` 设备表（字母键盘 / 鼠标 / 触控板 / 轨迹球）+ `InputDeviceListener` 热插拔 + 服务 `onConfigurationChanged` 兜底；触摸屏不算鼠标、遥控器与手柄不算键盘 | 完成 |
+| 167 | 物理键盘接管：字母进拼写缓冲（中文照常出候选）、数字与标点直接上屏、退格 / 回车 / 空格 / Esc 走与屏上键同一条链路，Ctrl / Alt 组合与 Tab / 方向键 / 功能键原样交回系统 | 完成 |
+| 168 | 外接键鼠下的 9 键回退：面板生效时把**这次会话**的布局换成 26 键（不写设置），拔掉键鼠再把用户原来选的布局还回来 | 完成 |
+| 169 | 候选词面板**跟随光标**：向编辑器要 `CursorAnchorInfo`（`CURSOR_UPDATE_MONITOR`），按官方文档先用 `getMatrix()` 把编辑器局部坐标换算到屏幕，再把窗口摆到光标那一行下面；下面放不下就翻到光标上面。拿不到矩阵或换算后落在屏幕外，就退回贴屏幕底部并打一条日志 | 完成 |
+| 170 | 工具面板＝**第二个窗口**：`TYPE_INPUT_METHOD_DIALOG` → 带输入法窗口 token → `TYPE_APPLICATION_OVERLAY` 逐级尝试；开不出来就退回画进候选词那个窗口（功能不缺，只是不能各拖各的）。位置按屏幕百分比拖完落盘 | 完成 |
+| 171 | 语音录音期间压低 / 静音别的媒体：音频焦点 `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` / `AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE`，设置里三选一（压低默认 / 静音 / 不处理） | 完成 |
+| 172 | 视觉按用户点名的四条收尾：**不要阴影**；把手改成随主题的 `onSurfaceVariant` 45%（原来那条白条压在浅色卡片上等于看不见）；**去掉右上角三点**缩放手柄；工具面板改成**紧凑**排布（不留空） | 完成 |
+| 173 | 只复用、不新造：工具栏沿用 `LanguageChip` / `SmallIconButton` / `FilledIconButton`，符号那颗用键盘上同一个键的字（`KeyboardLayouts.symbolKeyLabel`：中文 `符`、英文 `?123`）；候选栏抽成共享的 `CandidateStrip`；我上一轮自造的 `Symbols` 图标已撤回，`build_icons.py` 与 `CloudriftIcons.kt` 与 HEAD 逐字节一致 | 完成 |
+| 174 | 设计示意图 `tools/design/render_compat_panel.py`：图标几何直接从 `tools/icons/build_icons.py` 取来栅格化（不是手绘），产出 `tools/design/compat-panel-preview.png`（浅色 / 深色展开符号页 / 工具窗口拖出） | 完成 |
+| 175 | 修复长期失败的 `NoticeAssetTest`：仓库 `NOTICE.md`（0.2.41 之后新增了英文 Tatoeba 那一层）与 `app/src/main/assets/NOTICE.md` 漂移，按测试自己给出的修法同步，发布包内的第三方声明与仓库一致 | 完成 |
+| 176 | 发布 0.2.42（versionCode 46）：tag `v0.2.42` + Release，资产 `cloudrift-type-0.2.42-release.apk` 与设计图 `compat-panel-preview.png`；179 个用例全绿（本轮新增 12 个：外接设备判定 6 + 硬件键位翻译 6） | 完成 |
+
+## 外接键鼠：候选词面板 + 工具面板（0.2.42）
+
+用户的要求原话拆成五条：外接键鼠时只留两件东西——**候选词框**和**输入法工具栏**（语音 / 剪贴板 /
+语言转换 / 符号输入）；候选词框照虚拟键盘那条候选栏画、外框改圆角；设置里选显示虚拟键盘还是这套
+面板；还要做系统兼容适配。随后又补了四条修正：**不要阴影**、**两块是分开的窗口**、**工具栏紧凑
+不留空**、**去掉右上角三点**；以及"参考悬浮键盘怎么设计的"。
+
+### 两块面板，两个窗口
+
+```
+  ╭──────────────────────────────────────────╮
+  │            ▬▬▬▬                          │  把手：拖它移动整块
+  │  [你好][拟合][你][内][拟]            ⌄   │  候选词面板（虚拟键盘那条候选栏）
+  ╰──────────────────────────────────────────╯
+             ↑ 跟随光标（编辑器报来光标位置就贴在那一行下面）
+  ╭──────────────────────────────────────────╮
+  │            ▬▬▬▬                          │  把手
+  │  [🌐 中][符]        [🎤] [📋]            │  工具面板（紧凑排布，不留空）
+  ╰──────────────────────────────────────────╯
+             ↑ 独立窗口，可以拖到屏幕任何角落，位置记住
+```
+
+候选词面板在输入法自己的那个窗口里；工具面板是服务另开的第二个窗口。这样两块面板各有各的位置：
+候选词跟光标，工具面板停在用户拖到的地方。第二个窗口按 `TYPE_INPUT_METHOD_DIALOG` → 带输入法
+窗口 token → `TYPE_APPLICATION_OVERLAY` 的顺序试，都不行就退回把工具面板画进候选词窗口（功能
+一件不少，只是不能各拖各的）。
+
+### 跟随光标
+
+`CursorAnchorInfo` 的坐标空间这次是查了官方文档才写死的（`developer.android.google.cn` 打得开，
+国外源站被墙）：
+
+- `getInsertionMarkerBottom()` / `getInsertionMarkerHorizontal()`：**"in the local coordinates
+  that will be transformed with `getMatrix()` when rendered on the screen"**；
+- `getMatrix()`："the transformation matrix that is to be applied [to] other positional data in
+  this class"。
+
+所以代码是"先 `matrix.mapPoints(...)` 换算、再按屏幕坐标摆窗口"，不是我原先猜的"直接当屏幕坐标
+用"。顺带纠正了一处我自己的错误猜测：`EditorBoundsInfo.getEditorBounds()` 同样是局部坐标，不能
+拿它当屏幕尺子。两种失败情况都有明确退路：编辑器没给矩阵 → 不跟随并记一条日志；换算后锚点仍在
+屏幕外 → 不跟随并记一条日志。任何时候都不会把面板丢到屏幕外。
+
+### 视觉与系统兼容
+
+| 维度 | 做法 |
+| --- | --- |
+| 框 | 与横屏悬浮键盘同一套：24dp 圆角卡片、10dp / 6dp 外边距、顶部 20dp 把手（`FloatingGripStrip`）。两种形态都用同一个组件，用户不用学两遍 |
+| 把手 | 一条 40×4 的横条，`onSurfaceVariant` 45%。原来那条"白色 92%"压在浅色 `surfaceContainer` 上几乎看不见，浅色模式等于没有提示——顺手把悬浮键盘那条也一起修了 |
+| 阴影 / 手柄 | 全部去掉。面板按内容排好，缩放手柄没有意义（`showResizeHandle = false` 时横条居中占满整条） |
+| 窗口 | 候选词窗口是输入法窗口本身（`MATCH_PARENT` 宽或悬浮宽度）；工具窗口 `WRAP_CONTENT` 收紧到那一排 |
+| 系统栏 | 窗口透明 + `decorFitsSystemWindows=false`（既有约定），面板自己 `windowInsetsPadding` 吃系统栏左右与下边距 |
+| 高度变化 | `showsCompatPanel` 进 `requestLayout` 名单，面板 ⇄ 键盘互换时窗口重算高度 |
+| 检测 | `Configuration.keyboard` + 设备表 + 热插拔监听 + `onConfigurationChanged` 兜底；读不到设备表就退化成只看系统配置，功能不塌 |
+| 物理键盘 | 只有真的有外接键鼠时才接管按键；字母进拼写缓冲、数字标点直接上屏、Ctrl / Alt / Tab / 方向键 / 功能键一律交回系统 |
+
+### 语音录音时的媒体声音
+
+录音期间对外面的声音按设置处理，走系统音频焦点这条正规路径，而不是自己去改别人的音量：
+
+| 设置 | 焦点请求 | 别人的表现 |
+| --- | --- | --- |
+| 压低（默认） | `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` | 音量降下来继续放 |
+| 静音 | `AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE` | 停下播放（专为录音准备的那一档） |
+| 不处理 | 不发请求 | 照常放 |
+
+焦点挂在"离开 Recording 状态"那一条唯一出口上（`VoiceInputController.stopCapture`），所以"录音停
+了音乐还哑着"这种漏掉不会发生。
+
+### 复用清单（"先找复用，再写新代码"）
+
+| 文件 | 内容 |
+| --- | --- |
+| `ui/CompatPanel.kt` | 候选词窗口 + 工具窗口两块面板的组合，第二层（语音 / 剪贴板 / 更多候选 / 符号页 / 数字页） |
+| `ui/FloatingGrip.kt` | 从 `KeyboardRoot` 搬出来的把手（悬浮键盘与面板共用），加一个 `showResizeHandle` |
+| `input/ExternalInputs.kt` | 设备判定（纯函数）+ `ExternalInputMonitor` |
+| `ime/HardwareKeys.kt` | 物理键位翻译（纯函数） |
+| `voice/VoiceAudioFocus.kt` | 录音期间的音频焦点 |
+| `ui/CandidateBar.kt` | 抽出 `CandidateStrip`，面板与虚拟键盘共用同一条候选栏 |
+| `ui/KeyboardToolbar.kt` | `LanguageChip` / `ToolbarChip` / `ToolbarButton` / `SmallIconButton` 改成 internal 复用 |
+| `ime/CloudriftImeService.kt` | 第二个窗口、跟随光标、物理键接管、设备监听 |
+
+### 验证
+
+- `./gradlew testDebugUnitTest`：**179 个用例全绿**（本轮新增 12 个——外接设备判定 6、硬件键位
+  翻译 6）。此前长期失败的 `NoticeAssetTest` 已按测试自己给出的修法修好（同步 assets 里的
+  NOTICE.md），不再是"已知失败"。
+- `./gradlew assembleRelease`（含 R8 与 `lintVitalRelease`）通过。
+- 图标集与生成器零改动：`git diff` 对 `tools/icons/build_icons.py` 与 `CloudriftIcons.kt` 为空——
+  工具栏用的就是仓库里现成的 Mic / Clipboard / Globe，符号那颗是键盘上同一个键的字。
+- **未验证**：真机。两块面板的位置与手感、第二个窗口在具体 ROM 上开不开得出来、跟随光标在各家
+  App 里落点准不准，都只能在真机上核对（按约定不使用模拟器）。
 
 ## 0.2.41：中英共用自我训练、9 键两列互换与键面重叠、剪贴板提示只出现一次、英文日常词表
 
