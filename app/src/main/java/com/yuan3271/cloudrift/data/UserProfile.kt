@@ -52,6 +52,14 @@ data class ImportOutcome(
  *  - **invented words**: typing 张, 伟, 来 one single character at a time teaches the keyboard
  *    张伟来 (reading zhangweilai) even though no dictionary ships it - and every prefix of the run
  *    (张伟) with it, so the shorter reading stays typeable too. See `ime.CharacterChain`.
+ *  - **learned words**: every commit, in any language, also counts how often that exact word went
+ *    in. For English that is the whole point: the alphabet layout has no dictionary to promote a
+ *    word within, so [learnedWords] is how a name, a piece of jargon or an abbreviation the built
+ *    in list has never heard of ("cloudrift") becomes a completion the second time it is typed.
+ *
+ * Codes and words are stored lower cased. Chinese is unaffected (lower casing 你好 is 你好), and
+ * for English it is what keeps "Tomorrow" typed at the start of a sentence and "tomorrow" typed in
+ * the middle of one on the same count.
  *
  * The profile never leaves the device (its preferences file is excluded from backup and device
  * transfer) and can be cleared from the settings screen. Everything here is plain deterministic
@@ -97,9 +105,11 @@ class UserProfile(
      */
     fun recordChoice(code: String, text: String, reading: String) {
         if (code.isEmpty() || text.isEmpty()) return
-        choices.getOrPut(code.take(MAX_CODE_CHARS)) { HashMap(4) }
-            .merge(text, 1, Int::plus)
-        wordCounts.merge(text, 1, Int::plus)
+        val key = normalize(code.take(MAX_CODE_CHARS))
+        val word = normalize(text)
+        choices.getOrPut(key) { HashMap(4) }
+            .merge(word, 1, Int::plus)
+        wordCounts.merge(word, 1, Int::plus)
         schedulePersist()
         publish()
     }
@@ -123,10 +133,12 @@ class UserProfile(
      */
     fun habit(code: String, text: String): Int {
         if (code.isEmpty()) return 0
+        val key = normalize(code)
+        val word = normalize(text)
         var total = 0
-        var end = minOf(code.length, MAX_CODE_CHARS)
+        var end = minOf(key.length, MAX_CODE_CHARS)
         while (end > 0) {
-            total += choices[code.substring(0, end)]?.get(text) ?: 0
+            total += choices[key.substring(0, end)]?.get(word) ?: 0
             end--
         }
         return total
@@ -142,15 +154,16 @@ class UserProfile(
     fun habitCounts(code: String, texts: List<String>): IntArray {
         val counts = IntArray(texts.size)
         if (code.isEmpty() || texts.isEmpty()) return counts
+        val key = normalize(code)
         val buckets = ArrayList<Map<String, Int>>(MAX_CODE_CHARS)
-        var end = minOf(code.length, MAX_CODE_CHARS)
+        var end = minOf(key.length, MAX_CODE_CHARS)
         while (end > 0) {
-            choices[code.substring(0, end)]?.let(buckets::add)
+            choices[key.substring(0, end)]?.let(buckets::add)
             end--
         }
         if (buckets.isEmpty()) return counts
         for (index in texts.indices) {
-            val text = texts[index]
+            val text = normalize(texts[index])
             var total = 0
             for (bucket in buckets) total += bucket[text] ?: 0
             counts[index] = total
@@ -158,10 +171,34 @@ class UserProfile(
         return counts
     }
 
+    /**
+     * 用户自己打过的英文词里以 [prefix] 开头的那些，最常用的在前。
+     *
+     * 记的是**每一次上屏**（任何语言），拿出来当候选则要两次以上——和习惯同一个门槛：打一次
+     * 多半是巧合，打两次才是这个人日常真的在用的词。英文补全词表里没有的名字、术语与缩写
+     * （`cloudrift`、`astrearc`）就是从这里进候选的。
+     */
+    fun learnedWords(prefix: String, limit: Int): List<String> {
+        if (prefix.isEmpty() || limit <= 0) return emptyList()
+        val lower = normalize(prefix)
+        return wordCounts.entries.asSequence()
+            .filter { (word, count) ->
+                count >= HABIT_THRESHOLD && word != lower && isLatinWord(word) && word.startsWith(lower)
+            }
+            .sortedWith(
+                compareByDescending<Map.Entry<String, Int>> { it.value }
+                    .thenBy { it.key.length }
+                    .thenBy { it.key },
+            )
+            .take(limit)
+            .map { it.key }
+            .toList()
+    }
+
     /** Words this user assembled themselves whose reading matches the code exactly. */
     fun inventedWord(reading: String): String? = invented[reading]
 
-    fun timesUsed(text: String): Int = wordCounts[text] ?: 0
+    fun timesUsed(text: String): Int = wordCounts[normalize(text)] ?: 0
 
     fun clear() {
         choices.clear()
@@ -211,13 +248,14 @@ class UserProfile(
         incomingChoices?.let { choiceJson ->
             for (code in choiceJson.keys()) {
                 val bucket = choiceJson.optJSONObject(code) ?: continue
-                val target = choices.getOrPut(code.take(MAX_CODE_CHARS)) { HashMap(4) }
+                val target = choices.getOrPut(normalize(code.take(MAX_CODE_CHARS))) { HashMap(4) }
                 for (text in bucket.keys()) {
                     val count = bucket.optInt(text)
                     if (count <= 0) continue
-                    val merged = maxOf(target[text] ?: 0, count)
-                    if (merged != (target[text] ?: 0)) {
-                        target[text] = merged
+                    val word = normalize(text)
+                    val merged = maxOf(target[word] ?: 0, count)
+                    if (merged != (target[word] ?: 0)) {
+                        target[word] = merged
                         habits++
                     }
                 }
@@ -237,9 +275,10 @@ class UserProfile(
             for (word in countJson.keys()) {
                 val count = countJson.optInt(word)
                 if (count <= 0) continue
-                val merged = maxOf(wordCounts[word] ?: 0, count)
-                if (merged > (wordCounts[word] ?: 0) && wordCounts.size < MAX_WORDS) {
-                    wordCounts[word] = merged
+                val key = normalize(word)
+                val merged = maxOf(wordCounts[key] ?: 0, count)
+                if (merged > (wordCounts[key] ?: 0) && wordCounts.size < MAX_WORDS) {
+                    wordCounts[key] = merged
                 }
             }
         }
@@ -332,9 +371,11 @@ class UserProfile(
             root.optJSONObject(KEY_CHOICES)?.let { choiceJson ->
                 for (code in choiceJson.keys()) {
                     val bucket = choiceJson.optJSONObject(code) ?: continue
-                    val map = HashMap<String, Int>(4)
-                    for (text in bucket.keys()) map[text] = bucket.optInt(text)
-                    if (map.isNotEmpty()) choices[code] = map
+                    val map = choices.getOrPut(normalize(code.take(MAX_CODE_CHARS))) { HashMap(4) }
+                    for (text in bucket.keys()) {
+                        val word = normalize(text)
+                        map[word] = maxOf(map[word] ?: 0, bucket.optInt(text))
+                    }
                 }
             }
             root.optJSONObject(KEY_INVENTED)?.let { wordJson ->
@@ -343,7 +384,10 @@ class UserProfile(
                 }
             }
             root.optJSONObject(KEY_COUNTS)?.let { countJson ->
-                for (word in countJson.keys()) wordCounts[word] = countJson.optInt(word)
+                for (word in countJson.keys()) {
+                    val key = normalize(word)
+                    wordCounts[key] = maxOf(wordCounts[key] ?: 0, countJson.optInt(word))
+                }
             }
         }
     }
@@ -376,6 +420,14 @@ class UserProfile(
          * here is a character the QR code cannot spend on data.
          */
         const val PAYLOAD_PREFIX = "CRP1:"
+
+        /** Codes and committed words are compared without case; see the class comment. */
+        private fun normalize(value: String): String = value.lowercase()
+
+        /** A word made only of ASCII letters, apostrophes and hyphens: something English. */
+        private fun isLatinWord(word: String): Boolean =
+            word.length > 1 && word[0] in 'a'..'z' &&
+                word.all { it in 'a'..'z' || it == '\'' || it == '-' }
     }
 }
 

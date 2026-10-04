@@ -14,6 +14,7 @@ import com.yuan3271.cloudrift.data.SymbolWidth
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.engine.Candidate
 import com.yuan3271.cloudrift.engine.CandidateKind
+import com.yuan3271.cloudrift.engine.EngineKind
 import com.yuan3271.cloudrift.engine.InputEngine
 import com.yuan3271.cloudrift.engine.emoji.EmojiGroup
 import com.yuan3271.cloudrift.input.EditorProxy
@@ -266,7 +267,10 @@ class ImeController(
      */
     private fun learn(code: String, candidate: Candidate) {
         if (!settings.current.learningEnabled) return
-        if (code.isEmpty() || candidate.kind == CandidateKind.Raw) return
+        if (code.isEmpty()) return
+        // Raw 是"原样上屏的缓冲串"。中文模式下那是一串拼音（`nihao` 不是词），记下来只会污染
+        // 记录；英文布局里缓冲串本身就是用户打的英文词（`cloudrift`），正是要学的东西。
+        if (candidate.kind == CandidateKind.Raw && engine.kind != EngineKind.Latin) return
 
         AppGraph.profile.recordChoice(code, candidate.text, candidate.annotation)
 
@@ -295,6 +299,9 @@ class ImeController(
 
     fun onKey(key: KeyDef) {
         if (key.code != KeyCode.Settings && key.code != KeyCode.HideKeyboard) feedback()
+        // 用户开始编辑了：那条"要不要粘贴"的提示就此收掉，别再回到候选栏。剪贴板提示是复制
+        // 之后的一次性邀请，不是常驻控件（见 ClipboardStore：一段内容只提示一次）。
+        if (key.code in EDITING_KEYS) clipboard.acknowledgePending()
         when (key.code) {
             KeyCode.Char -> appendReading(key.output)
             KeyCode.Text -> commitLiteral(key.output)
@@ -370,6 +377,7 @@ class ImeController(
     /** Inserts text from a panel (clipboard, snippets) without touching the reading buffer. */
     fun commitText(text: String) {
         if (text.isEmpty()) return
+        clipboard.acknowledgePending()
         characterChain.clear()
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
@@ -549,6 +557,7 @@ class ImeController(
         val current = _state.value
         val candidate = current.candidates.getOrNull(index) ?: return
         if (settings.current.hapticFeedback) haptics.candidate()
+        clipboard.acknowledgePending()
         learn(current.raw, candidate)
         val remaining = if (candidate.consumed >= current.raw.length) {
             ""
@@ -879,6 +888,9 @@ class ImeController(
         characterChain.clear()
         val current = _state.value
         val literal = engine.literal(current.raw)
+        // 回车在英文布局里是"这个词我打完了"：上屏的那串就是词本身，照记不误（空格走
+        // selectCandidate，那条路已经会记）。中文模式下这里上屏的是拼音串，learn 会自己挡掉。
+        learn(current.raw, Candidate(text = literal, consumed = current.raw.length, kind = CandidateKind.Raw))
         selfEditCounter++
         editor.commit(literal)
         _state.value = current.copy(
@@ -1004,6 +1016,15 @@ class ImeController(
     }
 
     companion object {
+        /** 会改动编辑器内容的键：按下其中任何一颗，剪贴板提示就算看过了。 */
+        private val EDITING_KEYS = setOf(
+            KeyCode.Char,
+            KeyCode.Text,
+            KeyCode.Backspace,
+            KeyCode.Enter,
+            KeyCode.Space,
+        )
+
         /** 成对键的输出（与 KeyboardLayouts 的 *_PAIRS 一一对应）。 */
         private val PAIR_KEYS: Set<String> = setOf(
             "（）", "【】", "《》", "〈〉", "「」", "『』", "“”", "‘’", "〔〕", "〖〗",

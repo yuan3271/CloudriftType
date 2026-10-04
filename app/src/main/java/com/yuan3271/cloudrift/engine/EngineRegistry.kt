@@ -61,7 +61,7 @@ class EngineRegistry(
         PinyinEngine(dictionary, nineKey = true, profile = profile, orderProvider = orderProvider)
     }
     private val romaji by lazy { JapaneseEngine(EngineKind.Romaji) }
-    private val latin by lazy { EnglishEngine() }
+    private val latin by lazy { EnglishEngine(profile = profile) }
 
     fun engineFor(kind: EngineKind): InputEngine = when (kind) {
         EngineKind.Pinyin26 -> pinyin26

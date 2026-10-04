@@ -615,29 +615,31 @@ private fun KeyGlyph(icon: androidx.compose.ui.graphics.vector.ImageVector, labe
 }
 
 /**
- * Main label centred, optional badge tucked into the top start corner and an optional caption
- * under the label. The badge exists so a nine key pad can lead with its letters and still show
- * the digit; the caption is what makes the number page read as a phone dial pad.
+ * Main label centred, optional badge **stacked on top of it** and an optional caption under it.
+ * The badge exists so a nine key pad can lead with its letters and still show the digit; the
+ * caption is what makes the number page read as a phone dial pad.
+ *
+ * 角标不能画在键的角落里：九键是五列，一颗键只有 70dp 上下，`WXYZ` 居中之后直接压到左上角的
+ * 数字上，字号滑到 100% 以上连 `ABC` 也躲不开。所以数字改成压在字母**上方的中间**——两者共用
+ * 一条竖中轴，任何字号下都不会重叠。
  */
 @Composable
 private fun BadgedLabel(key: KeyDef, contentColor: Color) {
     val scale = LocalKeyLabelScale.current
     Box(modifier = Modifier.fillMaxWidth()) {
-        if (key.badge.isNotEmpty()) {
-            Text(
-                text = key.badge,
-                color = contentColor.copy(alpha = 0.55f),
-                fontSize = 11.sp * scale,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(start = 9.dp, top = 6.dp),
-            )
-        }
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (key.badge.isNotEmpty()) {
+                Text(
+                    text = key.badge,
+                    color = contentColor.copy(alpha = 0.55f),
+                    fontSize = 11.sp * scale,
+                    lineHeight = 12.sp * scale,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
             KeyLabel(
                 text = key.display,
                 color = contentColor,

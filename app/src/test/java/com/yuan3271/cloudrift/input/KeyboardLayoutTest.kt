@@ -61,6 +61,9 @@ class KeyboardLayoutTest {
      * 老布局是四列（三个数字 + 右边一列 `⌫/，/。`），数字那块的中心落在整行的 37.5%，
      * 整块键盘看上去往左偏——这是用户点名的那件事。现在数字占中间三列、左右各一列，
      * 底排的空格正好铺在数字下面。右边那一列的位置一动不动（用户的肌肉记忆在那里）。
+     *
+     * 随后用户又点名把两列侧键互换：`，` `。` 到左边，`中` `换行` 到右边；`符` 与 `⌫`
+     * 仍各占第一行的一个角。
      */
     @Test
     fun `the nine key digits sit in the middle with a rail on each side`() {
@@ -81,14 +84,14 @@ class KeyboardLayoutTest {
             assertEquals("两边要一样宽: ${row.map { it.weight }}", row.first().weight, row.last().weight, 0f)
             assertEquals(3, row.subList(1, 4).count { it.code == KeyCode.Char })
         }
-        // 右边一列没动：⌫ 仍在右上角，`，` 与 `。` 跟着它往下排。
+        // 第一行两个角没动：⌫ 仍在右上角，符 仍在左上角。
         assertEquals(KeyCode.Backspace, grid[0].last().code)
-        assertEquals("，", grid[1].last().output)
-        assertEquals("。", grid[2].last().output)
-        // 左边补出来的一列是功能键。
         assertEquals(KeyCode.Symbols, grid[0].first().code)
-        assertEquals(KeyCode.Language, grid[1].first().code)
-        assertEquals(KeyCode.Enter, grid[2].first().code)
+        // 侧键互换：`，` `。` 在左边，`中` `换行` 在右边。
+        assertEquals("，", grid[1].first().output)
+        assertEquals("。", grid[2].first().output)
+        assertEquals(KeyCode.Language, grid[1].last().code)
+        assertEquals(KeyCode.Enter, grid[2].last().code)
         // 空格键铺在数字那三列下面。
         assertEquals(listOf(KeyCode.None, KeyCode.Space, KeyCode.None), grid[3].map { it.code })
         assertEquals(3f, grid[3][1].weight)

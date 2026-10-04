@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # 抓取英文词表原始数据到 tools/wordgen/raw/（该目录不入版本库，只用于离线生成）。
 #
-# 数据来源：KyleBing/english-vocabulary（BSD-3-Clause，见 NOTICE.md）
+# 数据来源之一：KyleBing/english-vocabulary（BSD-3-Clause，见 NOTICE.md）
 #   小学：人教 PEP 三~六年级（每册一份 jsonl，字段里的 word 就是词头）
 #   初中/高中：仓库根目录的 tsv（第一列是词头，后面是释义）
+#
+# 数据来源之二：Tatoeba 英文句子导出（CC BY 2.0 FR，见 NOTICE.md）
+#   只用来统计词频（build_english_everyday.py），**句子原文不入库、不随应用分发**。
+#   与中文那边的 Tatoeba 日常词层（tools/dictgen）同一份许可、同一个口径。
 #
 # 用法：tools/wordgen/fetch_words.sh
 set -euo pipefail
@@ -32,5 +36,14 @@ fetch "full_line_jsonl/simple/%E6%AD%A3%E5%BA%8F/%E4%BA%BA%E6%95%99%E5%B0%8F%E5%
 echo "初中 / 高中"
 fetch "1%20%E5%88%9D%E4%B8%AD-%E4%B9%B1%E5%BA%8F.txt" junior.tsv
 fetch "2%20%E9%AB%98%E4%B8%AD-%E4%B9%B1%E5%BA%8F.txt" senior.tsv
+
+echo "Tatoeba 英文句子（CC BY 2.0 FR，只用来统计词频）"
+TATOEBA="$RAW/tatoeba_eng_sentences.tsv.bz2"
+if [ ! -f "$TATOEBA" ]; then
+    # 这个源会限速、偶发断流，所以带断点续传与重试：中断了重跑本脚本即可接着下。
+    curl -fsSL --retry 8 --retry-all-errors --retry-delay 3 -C - \
+        -o "$TATOEBA" \
+        https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences.tsv.bz2
+fi
 
 echo "完成：$RAW"

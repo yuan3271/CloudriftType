@@ -91,6 +91,45 @@ class UserProfileTest {
         assertNull(learner.inventedWord("zhang"))
     }
 
+    /**
+     * 中英共用一份记录，英文先把大小写抹平：句子开头的 "Tomorrow" 和句子中间的 "tomorrow" 是
+     * 同一个词，否则同一份习惯会被拆成两半，各自都到不了两次。
+     */
+    @Test
+    fun `english picks are learned without their capitalisation splitting the count`() {
+        val learner = profile()
+        repeat(2) { learner.recordChoice(code = "Tomo", text = "Tomorrow", reading = "") }
+
+        assertEquals(2, habitOf(learner, "tomo", "tomorrow"))
+        assertEquals(listOf("tomorrow"), learner.learnedWords("tomo", 4))
+    }
+
+    /**
+     * 英文补全的另一半素材：词表里没有的名字、术语、缩写。门槛与习惯一致（两次），排序按用的
+     * 多少来；中文词不是英文补全的素材，前缀对不上的也不出现。
+     */
+    @Test
+    fun `learned words are the latin ones typed at least twice, most used first`() {
+        val learner = profile()
+
+        learner.recordChoice(code = "cloudrift", text = "cloudrift", reading = "")
+        // 一次是巧合：随手打了个词就退格、打错一个字母，都不该变成候选。
+        assertTrue(learner.learnedWords("cl", 4).isEmpty())
+
+        repeat(3) { learner.recordChoice(code = "cloudrift", text = "cloudrift", reading = "") }
+        repeat(2) { learner.recordChoice(code = "cloudnote", text = "cloudnote", reading = "") }
+        repeat(2) { learner.recordChoice(code = "astrearc", text = "astrearc", reading = "") }
+        repeat(2) { learner.recordChoice(code = "ni", text = "你好", reading = "nihao") }
+
+        // 同一个前缀下按用的次数排：4 次的 cloudrift 在前，2 次的 cloudnote 在后。
+        assertEquals(listOf("cloudrift", "cloudnote"), learner.learnedWords("clou", 4))
+        assertEquals(listOf("astrearc"), learner.learnedWords("ast", 4))
+        // 打满的词不需要再补全自己。
+        assertTrue(learner.learnedWords("cloudrift", 4).isEmpty())
+        // 中文词有中文那边的候选路径，不进英文补全。
+        assertTrue(learner.learnedWords("你", 4).isEmpty())
+    }
+
     @Test
     fun `the profile survives a restart`() {
         val store = MemoryStore()

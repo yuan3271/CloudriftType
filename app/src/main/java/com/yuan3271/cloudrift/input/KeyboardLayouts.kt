@@ -142,9 +142,11 @@ object KeyboardLayouts {
      * 九键：**五列**，数字占中间三列，左右各一列。
      *
      * 原来只有四列（三个数字 + 右边一列 `⌫ / ，/ 。`），数字那块的中心落在整行 37.5% 的地方，
-     * 整块键盘看上去往左偏。现在左边补一列功能键（`符 / 中 / 换行`），右边保留原来那一列
-     * （`⌫` 仍在右上角，`，` `。` 跟着它），数字三列就被夹在正中间；底排的空格键正好铺在
-     * 数字下面。每行都是五个单位（底排 1 + 3 + 1），所以列列对齐、换页不长高。
+     * 整块键盘看上去往左偏。现在数字三列被夹在正中间；底排的空格键正好铺在数字下面。每行都是
+     * 五个单位（底排 1 + 3 + 1），所以列列对齐、换页不长高。
+     *
+     * 两列侧键按用户点名换过位：`，` `。` 走左边，`中` `换行` 走右边，`符` 与 `⌫` 留在第一行
+     * 原来的两个角上（一个进符号页、一个退格，都是肌肉记忆最重的位置，不动）。
      */
     private fun nineKeyRows(enterLabel: String): List<List<KeyDef>> = listOf(
         listOf(
@@ -155,18 +157,18 @@ object KeyboardLayouts {
             KeyDef.backspace.copy(weight = 1f),
         ),
         listOf(
-            KeyDef.modifier(KeyCode.Language, languageLabel(LayoutId.Pinyin9), weight = 1f),
+            KeyDef.immediate("，"),
             digit("4", "GHI"),
             digit("5", "JKL"),
             digit("6", "MNO"),
-            KeyDef.immediate("，"),
+            KeyDef.modifier(KeyCode.Language, languageLabel(LayoutId.Pinyin9), weight = 1f),
         ),
         listOf(
-            KeyDef.enter.copy(label = enterLabel, weight = 1f),
+            KeyDef.immediate("。"),
             digit("7", "PQRS"),
             digit("8", "TUV"),
             digit("9", "WXYZ"),
-            KeyDef.immediate("。"),
+            KeyDef.enter.copy(label = enterLabel, weight = 1f),
         ),
         listOf(
             KeyDef.spacer(1f),
@@ -176,8 +178,11 @@ object KeyboardLayouts {
     )
 
     /**
-     * Nine key pads are read by their letters, not their digits, so the letters are the main
-     * label and the digit becomes a small corner badge.
+     * Nine key pads are read by their letters, not their digits, so the letters stay the main
+     * label and the digit is a small badge **above** them (see `BadgedLabel`). The badge used to
+     * sit in the key's top start corner, which on a five column pad - where a key is only ~70dp
+     * wide - ran straight into the centred `WXYZ`, and into `ABC` as soon as the font slider went
+     * past 100%.
      */
     private fun digit(value: String, letters: String) = KeyDef.char(
         output = value,

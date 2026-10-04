@@ -648,6 +648,32 @@ class PinyinEngineTest {
         assertTrue("inter 不该给出 international: $inter", inter.none { it == "international" })
     }
 
+    /**
+     * 中文模式下打英文词也吃学习记录：词表里根本没有、但这个人打过两次以上的词（人名、术语、
+     * 缩写）也走同一条路——至少 5 个字母、是前缀、拼到 60%。
+     */
+    @Test
+    fun `an english word learned on this device is offered on the pinyin keyboard too`() {
+        val store = object : StringStore {
+            private val values = HashMap<String, String>()
+            override fun read(key: String): String? = values[key]
+            override fun write(key: String, value: String) {
+                values[key] = value
+            }
+        }
+        val learner = UserProfile(store, CoroutineScope(Dispatchers.Unconfined))
+        repeat(2) { learner.recordChoice(code = "cloudrift", text = "cloudrift", reading = "") }
+
+        val engine = PinyinEngine(dictionary, nineKey = false, profile = learner)
+        val texts = engine.evaluate("cloudr", engine.candidateLimit).candidates.map { it.text }
+
+        assertTrue("cloudr 应该给出 cloudrift: $texts", texts.contains("cloudrift"))
+        // 九键缓冲区是数字，英文那条路整条不参与。
+        val nine = PinyinEngine(dictionary, nineKey = true, profile = learner)
+            .evaluate("253634", 40).candidates.map { it.text }
+        assertTrue("九键不该猜英文: $nine", nine.none { it == "cloudrift" })
+    }
+
     @Test
     fun `short buffers never guess english`() {
         val engine = PinyinEngine(dictionary, nineKey = false)

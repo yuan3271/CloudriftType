@@ -131,12 +131,14 @@ class PinyinEngine(
         if (nineKey || buffer.length < ENGLISH_MIN_INPUT) return emptyList()
         if (buffer.any { it !in 'a'..'z' }) return emptyList()
         val matches = ArrayList<Candidate>(ENGLISH_LIMIT)
+        val seen = HashSet<String>(ENGLISH_LIMIT * 2)
         for (word in EnglishWords.ALL) {
             if (word.length < buffer.length) continue
             if (!word.startsWith(buffer)) continue
             val typedFully = word.length == buffer.length
             // 只打了一小半的词不算"对应"，整词打满才不需要这条。
             if (!typedFully && word.length * ENGLISH_PERCENT_NUMERATOR > buffer.length * 100) continue
+            seen.add(word)
             matches.add(
                 Candidate(
                     text = EnglishWords.matchCase(raw, word),
@@ -144,6 +146,23 @@ class PinyinEngine(
                     kind = CandidateKind.Prediction,
                     score = englishWeight(buffer.length, word.length),
                     // 没打出来的那截和码前缀补全一样淡显。
+                    unmatchedFrom = if (typedFully) -1 else buffer.length,
+                ),
+            )
+        }
+        // 自己打过的英文词（人名、术语、缩写这类词表里没有的）走**同一套**规矩：它也是打完整词
+        // 才出现的证据，所以并进同一张表、由同一把尺子排。学习记录是默认开着的，这里能补出来的
+        // 多半是 `cloudrift` 这种谁也没见过的词。
+        for (word in profile?.learnedWords(buffer, ENGLISH_LEARNED_LIMIT).orEmpty()) {
+            if (word.length < buffer.length || !word.startsWith(buffer) || !seen.add(word)) continue
+            val typedFully = word.length == buffer.length
+            if (!typedFully && word.length * ENGLISH_PERCENT_NUMERATOR > buffer.length * 100) continue
+            matches.add(
+                Candidate(
+                    text = EnglishWords.matchCase(raw, word),
+                    consumed = buffer.length,
+                    kind = CandidateKind.Prediction,
+                    score = englishWeight(buffer.length, word.length),
                     unmatchedFrom = if (typedFully) -1 else buffer.length,
                 ),
             )
@@ -1677,6 +1696,8 @@ class PinyinEngine(
         private const val ENGLISH_MIN_INPUT = 5
         /** 一次最多给几个英文词。 */
         private const val ENGLISH_LIMIT = 6
+        /** 其中最多几个来自本机学习记录（自己打过的词），剩下的位置留给词表。 */
+        private const val ENGLISH_LEARNED_LIMIT = 3
         /** 拼到百分之多少就可以进候选（用户定的 60%）。 */
         private const val ENGLISH_PERCENT_NUMERATOR = 60
         /** 刚好拼够 [ENGLISH_PERCENT_NUMERATOR]% 时的权重。 */
