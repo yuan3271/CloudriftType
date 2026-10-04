@@ -177,7 +177,8 @@
 | 173 | 只复用、不新造：工具栏沿用 `LanguageChip` / `SmallIconButton` / `FilledIconButton`，符号那颗用键盘上同一个键的字（`KeyboardLayouts.symbolKeyLabel`：中文 `符`、英文 `?123`）；候选栏抽成共享的 `CandidateStrip`；我上一轮自造的 `Symbols` 图标已撤回，`build_icons.py` 与 `CloudriftIcons.kt` 与 HEAD 逐字节一致 | 完成 |
 | 174 | 设计示意图 `tools/design/render_compat_panel.py`：图标几何直接从 `tools/icons/build_icons.py` 取来栅格化（不是手绘），产出 `tools/design/compat-panel-preview.png`（浅色 / 深色展开符号页 / 工具窗口拖出） | 完成 |
 | 175 | 修复长期失败的 `NoticeAssetTest`：仓库 `NOTICE.md`（0.2.41 之后新增了英文 Tatoeba 那一层）与 `app/src/main/assets/NOTICE.md` 漂移，按测试自己给出的修法同步，发布包内的第三方声明与仓库一致 | 完成 |
-| 176 | 发布 0.2.42（versionCode 46）：tag `v0.2.42` + Release，资产 `cloudrift-type-0.2.42-release.apk` 与设计图 `compat-panel-preview.png`；179 个用例全绿（本轮新增 12 个：外接设备判定 6 + 硬件键位翻译 6） | 完成 |
+| 176 | 本地构建 0.2.42（versionCode 46）：179 个用例全绿（本轮新增 12 个：外接设备判定 6 + 硬件键位翻译 6）+ `assembleRelease`，产物落 `dist/cloudrift-type-0.2.42-release.apk`（4,203,576 字节，sha256 `e894d5bd…`，签名 `CN=yuan3271`） | 完成 |
+| 177 | 发布 0.2.42（versionCode 46）：tag `v0.2.42`、[Release 云隙输入 0.2.42](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.42) 已上传资产 `cloudrift-type-0.2.42-release.apk`（4,203,576 字节，资产 API 的 `digest` `sha256:e894d5bd…` 与本地逐字节一致）与设计图 `compat-panel-preview.png`（133,922 字节）。本机到 `github.com` 的 git 端口被墙（TLS 卡死 / RPC too slow），`api.github.com` 与 `uploads.github.com` 可用，因此提交与 tag 改走官方 **Git Data API** 推送 | 完成 |
 
 ## 外接键鼠：候选词面板 + 工具面板（0.2.42）
 
@@ -270,6 +271,18 @@
   工具栏用的就是仓库里现成的 Mic / Clipboard / Globe，符号那颗是键盘上同一个键的字。
 - **未验证**：真机。两块面板的位置与手感、第二个窗口在具体 ROM 上开不开得出来、跟随光标在各家
   App 里落点准不准，都只能在真机上核对（按约定不使用模拟器）。
+
+### 发布记录（0.2.42）
+
+- 本地产物 `dist/cloudrift-type-0.2.42-release.apk`：4,203,576 字节，sha256
+  `e894d5bd728c56f3f181d5e5359b4c9b1311d5393acc1bc663e6042c7fb285dc`，`apksigner verify` 通过，
+  签名 `CN=yuan3271, OU=Cloudrift Type, O=Cloudrift, L=Shanghai, ST=Shanghai, C=CN`。
+- 远端：提交 `1f98927` 与 tag `v0.2.42` 由 Git Data API 建在 `main` 上（本机 git 到 github.com
+  的 https 通道被墙，`api.github.com` 正常）；Release id `403097439`。
+- 回验用资产 API 的 `digest` 字段：APK `sha256:e894d5bd…`、设计图 `sha256:4877e9a0…`，与本地
+  `dist/` 与 `tools/design/` 里那两个文件**逐字节一致**。
+- 资产两个：`cloudrift-type-0.2.42-release.apk`（4,203,576 字节）与 `compat-panel-preview.png`
+  （133,922 字节，用户点名要随 Release 一起发）。
 
 ## 0.2.41：中英共用自我训练、9 键两列互换与键面重叠、剪贴板提示只出现一次、英文日常词表
 
