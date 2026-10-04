@@ -38,6 +38,9 @@ import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
  * @param showResizeHandle 右端那颗缩放手柄。键鼠兼容面板的两张卡片都**没有**这一颗：候选栏与工具
  *   栏本来就是按内容排好的（工具栏不留空、候选栏有多少画多少），拖宽拖窄没有意义，留一颗能按的
  *   图标在那儿只会让人以为按下去会发生什么。
+ * @param expand 这一条要不要占满卡片宽度。悬浮键盘与候选词面板要（把手铺满整条，抓哪儿都能拖）；
+ *   工具面板不要——它的卡片是"按内容撑开"的，`weight` 在那种约束里会顺着"至多整屏宽"这个上限把
+ *   卡片撑到整屏宽（用户报的"工具面板突然铺满整个宽度"）。那种卡片下把手缩成中间一小段拖动区。
  */
 @Composable
 internal fun FloatingGripStrip(
@@ -45,6 +48,7 @@ internal fun FloatingGripStrip(
     onResize: (Float, Float) -> Unit,
     onResizeCommitted: () -> Unit,
     showResizeHandle: Boolean = true,
+    expand: Boolean = true,
 ) {
     // pointerInput 里的手势协程只启动一次：直接用它捕获的 lambda，会一直用**第一次组合时**的
     // 那份（缩放要用的行数一开始还没量到，是 1，于是又变成 4 倍不跟手）。rememberUpdatedState
@@ -52,6 +56,44 @@ internal fun FloatingGripStrip(
     val currentMove by rememberUpdatedState(onMove)
     val currentResize by rememberUpdatedState(onResize)
     val currentCommit by rememberUpdatedState(onResizeCommitted)
+
+    val gripBar: @Composable () -> Unit = {
+        Box(
+            modifier = Modifier
+                .size(width = 40.dp, height = 4.dp)
+                .clip(RoundedCornerShape(50))
+                // 白条只在深色卡片上有对比度：浅色卡片是 surfaceContainer（近白），白条压上去
+                // 几乎看不见——原来那条"能拖"的提示在浅色模式下等于没有。改成随主题的文字色，
+                // 两种模式下都是一条看得见的灰条。
+                .background(
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                )
+                .border(
+                    width = 0.5.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                    shape = RoundedCornerShape(50),
+                ),
+        )
+    }
+
+    if (!expand) {
+        // 按内容撑开的卡片：把手只占中间一小段，但整段都是拖动区。
+        Box(
+            modifier = Modifier
+                .width(72.dp)
+                .height(GRIP_STRIP_HEIGHT)
+                .pointerInput(Unit) {
+                    detectDragGestures { change, dragAmount ->
+                        change.consume()
+                        currentMove(dragAmount.x, dragAmount.y)
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            gripBar()
+        }
+        return
+    }
 
     Row(
         modifier = Modifier
@@ -70,25 +112,10 @@ internal fun FloatingGripStrip(
                         change.consume()
                         currentMove(dragAmount.x, dragAmount.y)
                     }
-                },
+            },
             contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 40.dp, height = 4.dp)
-                    .clip(RoundedCornerShape(50))
-                    // 白条只在深色卡片上有对比度：浅色卡片是 surfaceContainer（近白），白条压上去
-                    // 几乎看不见——原来那条"能拖"的提示在浅色模式下等于没有。改成随主题的文字色，
-                    // 两种模式下都是一条看得见的灰条。
-                    .background(
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
-                    )
-                    .border(
-                        width = 0.5.dp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
-                        shape = RoundedCornerShape(50),
-                    ),
-            )
+            gripBar()
         }
         if (showResizeHandle) {
             // 缩放手柄：抓住它等于抓住卡片的右下角，被拖的那边跟着手指走（换算在 KeyboardSurface）。

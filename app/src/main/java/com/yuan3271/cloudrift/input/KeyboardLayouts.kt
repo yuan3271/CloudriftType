@@ -80,6 +80,18 @@ object KeyboardLayouts {
     fun symbolKeyLabel(layout: LayoutId): String =
         if (layout == LayoutId.English) "?123" else "符"
 
+    /**
+     * 语言的完整名字（状态行里用）。键位上那颗依旧写短名 [languageLabel]。
+     *
+     * 键鼠模式下**不报布局**（"中文 · 26 键拼音"里的"26 键"是给手指看的，物理键盘下没有意义），
+     * 所以那一行只写语言。
+     */
+    fun languageName(layout: LayoutId): String = when (layout) {
+        LayoutId.Pinyin26, LayoutId.Pinyin9 -> "中文"
+        LayoutId.English -> "English"
+        LayoutId.JapaneseRomaji -> "日本語"
+    }
+
     // ---- Latin style layouts ------------------------------------------------------
 
     private fun qwertyRows(

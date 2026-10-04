@@ -2,8 +2,8 @@ package com.yuan3271.cloudrift.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledIconButton
@@ -152,6 +151,7 @@ fun CompatPanel(
                 onExpand = controller::toggleCandidatesExpanded,
                 onPasteClipboardOffer = controller::pasteClipboardOffer,
                 onDismissClipboardOffer = controller::dismissClipboardOffer,
+                idle = { CompatIdleStrip(state = state) },
             )
         }
 
@@ -195,22 +195,30 @@ fun CompatPanel(
                         onCollapse = controller::toggleCandidatesExpanded,
                     )
 
-                    state.page == KeyboardPage.Symbols -> SymbolPanel(
-                        symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
-                        emojiGroups = controller.emojiGroups,
-                        sheet = state.symbolSheet,
-                        emojiGroup = state.emojiGroup,
-                        functionRow = KeyboardLayouts.symbolFunctionRow(state.enterLabel),
-                        width = state.symbolWidth,
-                        onWidthChange = controller::setSymbolWidth,
-                        onSheetChange = controller::setSymbolSheet,
-                        onEmojiGroupChange = controller::setEmojiGroup,
-                        keyHeight = keyHeight,
-                        cornerRadius = cornerRadius,
-                        keyBackground = state.keyBackground,
-                        callbacks = callbacks,
-                        labelScale = labelScale,
-                    )
+                    // 符号页：**先保证每颗符号看得清**，再谈排布。列数按面板当前宽度算（一颗至少
+                    // 约 56dp），窄了就少几列、多几行，滚动着取——绝不为了"一排放 7 个"把字挤扁。
+                    state.page == KeyboardPage.Symbols -> BoxWithConstraints(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        SymbolPanel(
+                            symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
+                            emojiGroups = controller.emojiGroups,
+                            sheet = state.symbolSheet,
+                            emojiGroup = state.emojiGroup,
+                            functionRow = KeyboardLayouts.symbolFunctionRow(state.enterLabel),
+                            width = state.symbolWidth,
+                            onWidthChange = controller::setSymbolWidth,
+                            onSheetChange = controller::setSymbolSheet,
+                            onEmojiGroupChange = controller::setEmojiGroup,
+                            keyHeight = keyHeight,
+                            cornerRadius = cornerRadius,
+                            keyBackground = state.keyBackground,
+                            callbacks = callbacks,
+                            labelScale = labelScale,
+                            columns = (maxWidth / SYMBOL_TILE_MIN_WIDTH).toInt()
+                                .coerceIn(3, 8),
+                        )
+                    }
 
                     // 符号页底部那颗 `123` 通向这里。物理键盘打数字是直接上屏的，但只用鼠标的
                     // 用户没有键盘可打——面板里留着这条数字页，两条路都不落空。
@@ -261,19 +269,20 @@ fun CompatToolbarWindowContent(controller: ImeController) {
     ) {
         FloatingPanel(
             modifier = Modifier
-                .width(IntrinsicSize.Max)
                 .windowInsetsPadding(
                     WindowInsets.systemBars.only(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
                     ),
                 )
                 .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL),
+            fillWidth = false,
         ) {
             FloatingGripStrip(
                 onMove = controller::moveCompatToolbar,
                 onResize = { _, _ -> },
                 onResizeCommitted = controller::commitCompatToolbarPosition,
                 showResizeHandle = false,
+                expand = false,
             )
             CompatToolbar(state = state, controller = controller)
         }
@@ -292,15 +301,43 @@ private fun hasExpandedPanel(state: ImeUiState): Boolean = when {
 @Composable
 private fun FloatingPanel(
     modifier: Modifier = Modifier,
+    /**
+     * 卡片要不要撑满容器宽度。
+     *
+     * 候选词那张要（候选栏本来就按窗口宽度排），工具面板那张**不要**：它待在一个 `WRAP_CONTENT`
+     * 的独立窗口里，而窗口给 Compose 的约束是"至多整屏宽"——卡片一旦 `fillMaxWidth()`，就会顺着
+     * 这个上限长到整屏宽，看上去正是"工具面板突然铺满整个宽度"。所以工具面板靠内容自己撑开。
+     */
+    fillWidth: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = if (fillWidth) modifier.fillMaxWidth() else modifier,
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(PANEL_CORNER),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) { content() }
+        // 不撑宽度的那张卡片（工具面板）里，孩子按内容量宽度，再靠这一列居中：把手与那一排工具
+        // 都落在卡片中轴上，而卡片的宽度由内容决定（不会被"至多整屏宽"这个上限撑开）。
+        Column(
+            horizontalAlignment = if (fillWidth) Alignment.Start else Alignment.CenterHorizontally,
+        ) { content() }
     }
+}
+
+/**
+ * 键鼠模式下的空闲行：**只写语言**。
+ *
+ * 虚拟键盘那边写的是"中文 · 26 键拼音"，那个"26 键"是给手指看的布局名；物理键盘在手时它没有
+ * 意义（用户点名要在键鼠模式下把它藏起来），所以这一行只剩语言，顺带回答"现在按哪个语言处理按键"。
+ */
+@Composable
+private fun CompatIdleStrip(state: ImeUiState) {
+    Text(
+        text = KeyboardLayouts.languageName(state.layout),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 10.dp),
+    )
 }
 
 /**
@@ -324,6 +361,11 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
+        // 有更新时先把这件事摆出来（和虚拟键盘工具栏那一枚是同一个：先"有更新"长条，再收成黄点）。
+        // 键鼠模式下没有别的入口能看到它，所以这一枚不能省。
+        if (state.update != null && state.showUpdateDot) {
+            UpdateMark(replayKey = state.keyboardShows, onClick = controller::openUpdate)
+        }
         LanguageChip(
             label = KeyboardLayouts.languageLabel(state.layout),
             onClick = controller::cycleLanguage,
@@ -377,3 +419,6 @@ private val PANEL_GAP = 6.dp
 
 /** 卡片圆角：与横屏悬浮键盘的 24dp 一致。 */
 private val PANEL_CORNER = 24.dp
+
+/** 符号页里一颗符号的最小宽度：低于这个数就把列数减一（先保证看得清，再谈排布）。 */
+private val SYMBOL_TILE_MIN_WIDTH = 56.dp

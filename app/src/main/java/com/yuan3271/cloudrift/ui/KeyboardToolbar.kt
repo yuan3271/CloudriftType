@@ -147,7 +147,7 @@ fun KeyboardToolbar(
  * button live.
  */
 @Composable
-private fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
+internal fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
     // 打开键盘时先说人话，再收成一枚点：黄色长条写着黑字「有更新」，约一秒后收成黄点，
     // 点里是向上的箭头。长条期间点它同样有效；收成点之后它不再挪动任何键。
     //

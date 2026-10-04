@@ -407,6 +407,14 @@ fun SettingsScreen(
                         MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
+                // 认出来的设备名字：判定错了（比如把某个系统设备当成键盘）时，这一行直接说明是谁。
+                if (externalInputs.describeDevices.isNotEmpty()) {
+                    Text(
+                        text = externalInputs.describeDevices,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             SectionTitle("候选词顺序", CloudriftIcons.Spellcheck)

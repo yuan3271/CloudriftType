@@ -64,6 +64,11 @@ fun SymbolPanel(
     callbacks: KeyCallbacks,
     modifier: Modifier = Modifier,
     labelScale: Float = 1f,
+    /**
+     * 一排放几颗。默认是虚拟键盘那一页的 7 列；键鼠兼容面板的窗口窄得多，按可用宽度算出来的列数
+     * 传进来——**先保证每颗符号看得清**（每颗至少约 56dp 宽），列少了就多几行、滚动着取。
+     */
+    columns: Int = SYMBOL_COLUMNS,
 ) {
     val gridHeight = keyHeight * VISIBLE_ROWS + KEY_GAP * (VISIBLE_ROWS - 1)
     // 空串表示"还没选过"：落到第一个分类，而不是给出一页空白。
@@ -84,7 +89,7 @@ fun SymbolPanel(
         Column(modifier = Modifier.weight(1f)) {
             if (showEmoji && activeGroup != null) {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(SYMBOL_COLUMNS),
+                    columns = GridCells.Fixed(columns),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(gridHeight),
@@ -108,7 +113,7 @@ fun SymbolPanel(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(SYMBOL_COLUMNS),
+                    columns = GridCells.Fixed(columns),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(gridHeight),

@@ -180,6 +180,14 @@
 | 176 | 本地构建 0.2.42（versionCode 46）：179 个用例全绿（本轮新增 12 个：外接设备判定 6 + 硬件键位翻译 6）+ `assembleRelease`，产物落 `dist/cloudrift-type-0.2.42-release.apk`（4,203,576 字节，sha256 `e894d5bd…`，签名 `CN=yuan3271`） | 完成 |
 | 177 | 发布 0.2.42（versionCode 46）：tag `v0.2.42`、[Release 云隙输入 0.2.42](https://github.com/yuan3271/CloudriftType/releases/tag/v0.2.42) 已上传资产 `cloudrift-type-0.2.42-release.apk`（4,203,576 字节，资产 API 的 `digest` `sha256:e894d5bd…` 与本地逐字节一致）与设计图 `compat-panel-preview.png`（133,922 字节）。本机到 `github.com` 的 git 端口被墙（TLS 卡死 / RPC too slow），`api.github.com` 与 `uploads.github.com` 可用，因此提交与 tag 改走官方 **Git Data API** 推送 | 完成 |
 
+| 178 | 修掉"没接键盘也判定成外接键盘"：`Configuration.keyboard` 不再参与判定（它在不少 ROM 上常年是 QWERTY），只看设备表，并排除 `isVirtual` 与 gpio / uinput / virtual 这类系统设备；设置页显示认出来的设备名 | 完成 |
+| 179 | 修掉"工具面板突然铺满整个宽度"：`WRAP_CONTENT` 窗口给 Compose 的约束是"至多整屏宽"，卡片里的 `fillMaxWidth()` 与把手条的 `weight(1f)` 都会顺着上限长满——工具面板改成按内容撑开（`fillWidth=false` + 把手缩成中段拖动区、整列居中） | 完成 |
+| 180 | 键鼠模式不再出现"26 键拼音"：空闲行只写语言（中文 / English / 日本語） | 完成 |
+| 181 | 更新提示进键鼠模式：工具面板用与虚拟键盘工具栏同一枚更新标记（长条 → 黄点，点它进设置页） | 完成 |
+| 182 | 修掉"压低媒体音无效"：官方音频焦点指南写明自动压低只在对方满足一串条件时发生，所以除请求焦点外**自己把媒体流调低**（压低≈30% / 静音 0），说完还原，用户中途自己调过就不还原；补 `MODIFY_AUDIO_SETTINGS` | 完成 |
+| 183 | "先保证内容看得清，再谈宽度"：符号页列数按面板当前宽度算（一颗至少约 56dp），窄了少几列、多几行滚动取用，不为"一排放满"把字挤扁 | 完成 |
+| 184 | 发布 0.3.0（versionCode 47）：tag `v0.3.0` + Release（资产含 APK 与设计图） | 完成 |
+
 ## 外接键鼠：候选词面板 + 工具面板（0.2.42）
 
 用户的要求原话拆成五条：外接键鼠时只留两件东西——**候选词框**和**输入法工具栏**（语音 / 剪贴板 /
