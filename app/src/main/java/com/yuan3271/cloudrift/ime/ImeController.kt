@@ -638,9 +638,11 @@ class ImeController(
         }
         // 候选词面板要知道光标在哪；工具面板不跟光标，但它也得先站起来。
         host.setCaretFollowing(true)
+        // 工具面板也要它自己的位置（记住的那个），并且和候选词那一块同一个条件出现 / 收起：
+        // 只在真的在输入的时候露脸（用户点名），空闲时屏幕上不留任何一条。
         val toolbarReady = host.applyCompatPanel(
             kind = CompatPanelKind.Toolbar,
-            visible = true,
+            visible = current.compatToolbarVisible,
             xPercent = current.compatToolbarXPercent,
             yPercent = current.compatToolbarYPercent,
         )
@@ -714,6 +716,10 @@ class ImeController(
     fun toggleClipboard() {
         val next = !_state.value.clipboardVisible
         setQuickSettingsVisible(false)
+        // 打开剪贴板历史本身就是"这段内容我已经看见了"：那条一次性的"要不要粘贴"提示就此收掉，
+        // 免得切回虚拟键盘时它又冒出来提一段早就贴过的内容（键鼠模式下这条提示不露脸，用户只会
+        // 从工具栏的 📋 进来，拿一条走的是 commitText，那边同样会记账）。
+        if (next) clipboard.acknowledgePending()
         _state.value = _state.value.copy(
             clipboardVisible = next,
             candidatesExpanded = false,
@@ -808,7 +814,13 @@ class ImeController(
         selfEditCounter++
         editor.commit(candidate.text)
         if (remaining.isEmpty()) {
-            // Nothing left to compose, so the strip turns into 联想 for what just went in.
+            // 这一条拼写已经全部上屏：缓冲连同候选一起清空，再让候选栏翻成"接着上个词的联想"。
+            //
+            // 清空**必须在这里做**，不能托付给 showAssociations：键鼠兼容模式下联想条是不显示的
+            // （见 showAssociations 的开头），它一早就 return，raw 与候选就留在了状态里。那样
+            // 物理键盘的下一次空格 / 数字仍然算"还在拼写"，把同一个词再上屏一次——用户报的
+            // "空格打出两个已候选""按数字能重复打出内容"。
+            _state.value = _state.value.clearedBuffer()
             clearComposingQuietly()
             showAssociations(candidate.text)
         } else {
@@ -1011,7 +1023,7 @@ class ImeController(
     }
 
     private fun clearBuffer() {
-        _state.value = _state.value.copy(raw = "", preview = "", candidates = emptyList(), candidatesExpanded = false)
+        _state.value = _state.value.clearedBuffer()
         clearComposingQuietly()
     }
 
@@ -1039,7 +1051,7 @@ class ImeController(
             ?: engine.literal(current.raw)
         selfEditCounter++
         editor.commit(text)
-        _state.value = current.copy(raw = "", preview = "", candidates = emptyList(), candidatesExpanded = false)
+        _state.value = current.clearedBuffer()
     }
 
     private fun commitLiteral(text: String) {
@@ -1146,12 +1158,7 @@ class ImeController(
         learn(current.raw, Candidate(text = literal, consumed = current.raw.length, kind = CandidateKind.Raw))
         selfEditCounter++
         editor.commit(literal)
-        _state.value = current.copy(
-            raw = "",
-            preview = "",
-            candidates = emptyList(),
-            candidatesExpanded = false,
-        )
+        _state.value = current.clearedBuffer()
     }
 
     private fun toggleShift() {

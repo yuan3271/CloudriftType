@@ -300,6 +300,9 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
             window.width = width
             window.height = height
             if (window.visible) placeCompatWindow(window)
+            // 工具面板第一次量出来（或换了大小）时，压在它上面的弹出层要跟着走：弹出层的横向
+            // 落点是对着工具面板居中的，锚点变了它就得重摆一次。
+            if (window.kind == CompatPanelKind.Toolbar) placeCompatContentWindow()
         }
         return window
     }
@@ -320,9 +323,16 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
     /**
      * 把一块面板摆到它该在的地方。
      *
-     * 候选词面板：跟着光标（编辑器每报一次锚点就走一遍这条路），光标下面放不下就翻到上面；
-     * 拿不到锚点就退回贴屏幕底部中间。工具面板：第一次按记住的位置（没记住＝底部居中），之后
-     * 用户拖到哪就在哪——所以它不走光标那条路。
+     * 候选词面板有两种形态，默认位置不一样（[ImeUiState.compatToolbarMenu]）：
+     *
+     * - **候选那一排**跟着光标（编辑器每报一次锚点就走一遍这条路），默认在光标**下面**，横向按
+     *   光标落在屏幕哪一段分左下 / 中下 / 右下（见 [caretPanelX]）；下面放不下就翻到上面；拿不到
+     *   锚点就退回贴屏幕底部中间。
+     * - **从工具栏弹出来的那一块**（符号页 / 数字页 / 语音 / 剪贴板）默认**压在工具面板上面**，
+     *   不跟光标——那一层是"点开的一块菜单"，跟着光标跑只会跑到刚打完的那一行字底下挡着。
+     *
+     * 工具面板：第一次按记住的位置（没记住＝底部居中），之后用户拖到哪就在哪——所以它不走光标
+     * 那条路，也正因为如此，弹出层拿它当锚点。
      */
     private fun placeCompatWindow(window: CompatWindow) {
         // 面板还没量出来时不能摆：默认位置（底部居中）与"下面放不下就翻到上面"都要用尺寸，
@@ -341,15 +351,46 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         val metrics = resources.displayMetrics
         val inset = systemBarBottomInset()
         val bottomLimit = (metrics.heightPixels - inset).toFloat()
+        val screenWidth = metrics.widthPixels.toFloat()
+        val toolbar = compatWindows[CompatPanelKind.Toolbar]
+        val menu = controller?.state?.value?.compatToolbarMenu == true
         val anchor = caretAnchor.takeIf {
-            caretFollowing && window.kind == CompatPanelKind.Content
+            caretFollowing && window.kind == CompatPanelKind.Content && !menu
         }
         when {
             anchor != null -> {
-                val below = anchor.y + CARET_GAP_Y_PX + window.nudgeY
-                val above = anchor.y - window.height - CARET_LINE_PX + window.nudgeY
-                window.x = anchor.x + CARET_GAP_X_PX + window.nudgeX
-                window.y = if (window.height > 0f && below + window.height > bottomLimit) above else below
+                val position = panelBelowCaret(
+                    caretX = anchor.x,
+                    caretY = anchor.y,
+                    panelWidth = window.width,
+                    panelHeight = window.height,
+                    screenWidth = screenWidth,
+                    screenBottomLimit = bottomLimit,
+                    gapX = CARET_GAP_X_PX,
+                    gapY = CARET_GAP_Y_PX,
+                    lineHeight = CARET_LINE_PX,
+                )
+                window.x = position.x + window.nudgeX
+                window.y = position.y + window.nudgeY
+            }
+
+            // 弹出层要压在工具面板上面，所以得先知道工具面板在哪、有多大；它自己还没量出来时
+            // 不算数，往下走那条"贴屏幕底部"的退路，等它量出来再摆（见 createCompatWindow 里
+            // 工具面板那次重摆）。
+            menu && window.kind == CompatPanelKind.Content &&
+                toolbar != null && toolbar.width > 0f && toolbar.height > 0f -> {
+                val position = panelAboveToolbar(
+                    toolbarX = toolbar.x,
+                    toolbarY = toolbar.y,
+                    toolbarWidth = toolbar.width,
+                    panelWidth = window.width,
+                    panelHeight = window.height,
+                    screenWidth = screenWidth,
+                    screenBottomLimit = bottomLimit,
+                    gapPx = PANEL_GAP_DP * resources.displayMetrics.density,
+                )
+                window.x = position.x + window.nudgeX
+                window.y = position.y + window.nudgeY
             }
 
             window.kind == CompatPanelKind.Content -> {
@@ -701,12 +742,17 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         /** 默认停靠位置与屏幕底边留出的空。 */
         const val FALLBACK_MARGIN_PX = 24
         /** 跟随光标时，候选词窗口相对光标往右、往下让开多少。 */
-        const val CARET_GAP_X_PX = -16
-        const val CARET_GAP_Y_PX = 10
+        const val CARET_GAP_X_PX = -16f
+        const val CARET_GAP_Y_PX = 10f
         /** 翻到光标上方时，再往上让开一行的高度（光标本身在那一行里）。 */
-        const val CARET_LINE_PX = 8
+        const val CARET_LINE_PX = 8f
         /** 光标锚点只记前几条日志，用来核对坐标空间（真机排查用）。 */
         const val CARET_LOG_LIMIT = 3
+        /**
+         * 弹出层（符号页 / 语音 / 剪贴板）与工具面板之间留的空，和两张卡片之间的 6dp 同一档
+         * （见 CompatPanel 的 PANEL_GAP）：两块面板看上去才是同一套东西的两层。
+         */
+        const val PANEL_GAP_DP = 6f
         /** 面板还没量到尺寸时，补摆位置的次数上限。 */
         const val COMPAT_PLACEMENT_ATTEMPTS = 3
         const val DEFAULT_FLOATING_WIDTH = 78

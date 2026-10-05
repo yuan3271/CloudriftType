@@ -138,12 +138,16 @@ fun CompatPanel(
                 CompatContentBody(state = state, controller = controller)
             }
         }
-        FloatPanelWithGrip(
-            controller = controller,
-            kind = CompatPanelKind.Toolbar,
-            maxWidth = state.toolbarMaxWidth(),
-        ) {
-            CompatToolbar(state = state, controller = controller)
+        // 工具面板也是"打字才出现"：空闲时屏幕上什么都不留（见 ImeUiState.compatToolbarVisible）。
+        // 这条退路和两个独立窗口那条路读的是同一个判断，两种形态不会长得不一样。
+        if (state.compatToolbarVisible) {
+            FloatPanelWithGrip(
+                controller = controller,
+                kind = CompatPanelKind.Toolbar,
+                maxWidth = state.toolbarMaxWidth(),
+            ) {
+                CompatToolbar(state = state, controller = controller)
+            }
         }
     }
 }
@@ -241,10 +245,10 @@ private fun CompatContentBody(state: ImeUiState, controller: ImeController) {
         )
     }
     when {
-        hasExpandedPanel(state) -> CompatExpandedPanel(state = state, controller = controller)
-        // 候选栏只在"真有东西"时出现（候选、联想、剪贴板提示）。空着的时候这条不画——用户点名：
-        // 候选栏默认不出现，别在屏幕上留一条空栏。
-        state.candidates.isEmpty() && state.clipboardOffer == null -> Unit
+        state.compatExpandedPanel -> CompatExpandedPanel(state = state, controller = controller)
+        // 候选栏只在**真有候选**时出现。空着的时候这条不画——用户点名：候选栏默认不出现，别在
+        // 屏幕上留一条空栏；剪贴板的提示在键鼠模式下也不走这条（见 allowClipboardOffer）。
+        state.candidates.isEmpty() -> Unit
         else -> CandidateStrip(
             state = state,
             onCandidate = controller::selectCandidate,
@@ -256,6 +260,8 @@ private fun CompatContentBody(state: ImeUiState, controller: ImeController) {
             wrapContent = true,
             // 物理键盘在手：按 2 选第二颗，那颗前面就得写着 2。
             numbered = true,
+            // 剪贴板提示不进这条栏：键鼠模式下剪贴板只从工具栏的 📋 进（用户点名"有内容了也隐藏"）。
+            allowClipboardOffer = false,
         )
     }
 }
@@ -457,14 +463,6 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
             active = state.clipboardVisible,
         )
     }
-}
-
-private fun hasExpandedPanel(state: ImeUiState): Boolean = when {
-    state.voice !is VoiceState.Idle && !state.holdToTalk -> true
-    state.clipboardVisible -> true
-    state.candidatesExpanded -> true
-    state.page != KeyboardPage.Letters -> true
-    else -> false
 }
 
 /**

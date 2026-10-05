@@ -148,6 +148,17 @@ data class ImeUiState(
     val isVoiceActive: Boolean get() = voice !is VoiceState.Idle
 
     /**
+     * 一次拼写结束（选完候选 / 上屏 / 取消 / 清空）之后的状态：缓冲与候选一起清空。
+     *
+     * 单独写成一处，是因为"清空"这件事以前散在四条路上，其中 [ImeController.selectCandidate]
+     * 那条**漏了**——它把清空托付给了联想条，而键鼠兼容模式下
+     * 联想条不显示，于是 raw 与候选留在状态里：物理键盘的下一次空格 / 数字仍然算"还在拼写"，
+     * 把同一个词又上屏一次（用户报的"空格打出两个词""数字按几次出几个词"）。
+     */
+    fun clearedBuffer(): ImeUiState =
+        copy(raw = "", preview = "", candidates = emptyList(), candidatesExpanded = false)
+
+    /**
      * 键盘窗口里画"键鼠兼容面板"（候选词栏 + 工具栏）而不是整块按键。
      *
      * 默认的 [ExternalInputMode.CompatPanel] 只在真的有外接键鼠时生效：没有外接设备的话，两种
@@ -161,16 +172,50 @@ data class ImeUiState(
      *
      * 用户点名：候选词栏**默认不出现**，只有真在打字（或者有候选、联想、剪贴板提示、展开的
      * 第二层）时才贴着光标露出来——外接键盘的人不该在屏幕上看一条空栏。
+     *
+     * 剪贴板提示（[clipboardOffer]）**不算"有内容"**：键鼠模式下只有工具栏那颗 📋 是剪贴板的
+     * 入口，"刚复制的这段要不要贴"这条一次性提示在那边不露脸（用户点名"有内容了也隐藏"）。
      */
     val compatContentVisible: Boolean
         get() = showsCompatPanel && (
             isComposing ||
                 candidates.isNotEmpty() ||
-                clipboardOffer != null ||
                 notice != null ||
                 candidatesExpanded ||
                 clipboardVisible ||
                 voice !is VoiceState.Idle ||
                 page != KeyboardPage.Letters
             )
+
+    /**
+     * 键鼠兼容模式下，候选词那一块里画的是**展开的第二层**（语音 / 剪贴板 / 更多候选 / 符号页 /
+     * 数字页），而不是那一排候选词。
+     */
+    val compatExpandedPanel: Boolean
+        get() = candidatesExpanded || compatToolbarMenu
+
+    /**
+     * 工具面板现在露不露脸。用户点名：**工具栏也默认隐藏，只在真的在输入的时候出现**——和候选词
+     * 那一块共用同一个条件，两块面板一起出现、一起收起，屏幕上不会留下谁都没在用的东西。
+     *
+     * 一个例外：场上**只有鼠标、没有键盘**时工具栏不隐藏。那种配置下键鼠面板取代了虚拟键盘，
+     * 工具栏是屏幕上唯一的入口——把它藏起来，用户连符号页和语音都点不到，也没有别的地方能叫回
+     * 虚拟键盘（键鼠在场时输入法窗口只剩一块 1dp 的壳）。
+     */
+    val compatToolbarVisible: Boolean
+        get() = compatContentVisible || (showsCompatPanel && !externalInputs.keyboard)
+
+    /**
+     * 键鼠兼容模式下，候选词那一块现在是一份**从工具栏里弹出来的菜单**（符号页 / 数字页 / 语音 /
+     * 剪贴板）——它的默认位置是压在工具面板上面（用户点名），而不是跟着光标跑。
+     *
+     * 「更多候选」（[candidatesExpanded]）不在这一条里：它是候选栏那一排的延续，位置照旧跟着光标。
+     */
+    val compatToolbarMenu: Boolean
+        get() = when {
+            voice !is VoiceState.Idle && !holdToTalk -> true
+            clipboardVisible -> true
+            page != KeyboardPage.Letters -> true
+            else -> false
+        }
 }

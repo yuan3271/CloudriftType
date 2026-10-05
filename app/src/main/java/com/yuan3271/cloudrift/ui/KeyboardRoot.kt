@@ -107,6 +107,11 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
         state.compatToolbarYPercent,
         // 候选词面板是"打字才出现"的那一块：它的显隐也要立刻反映到窗口上。
         state.compatContentVisible,
+        // 工具面板同样是"打字才出现"（用户点名）：它收起或露出来也得立刻反映到窗口上。
+        state.compatToolbarVisible,
+        // 两层东西的默认位置不一样（候选排跟着光标、工具栏弹出的菜单压在工具栏上面），
+        // 换层要立刻重摆一次，别等下一次光标动或者两层的尺寸碰巧不一样。
+        state.compatExpandedPanel,
     ) {
         controller.syncCompatWindows()
     }

@@ -86,7 +86,8 @@ fun CandidateBar(
  * 这条栏里装的东西：候选词、剪贴板提示，或者空闲时那行字。
  *
  * 单独抽出来是因为键鼠兼容面板要的是**一模一样**的一条（同样的候选胶囊、同样把没打完的部分
- * 画淡、同样的一次性剪贴板提示），只是外面多套一个圆角外框；两边各写一份迟早会长歪。
+ * 画淡、候选前面同样标着 1-9），只是外面多套一个圆角外框；两边各写一份迟早会长歪。
+ * 唯一的差别是那条一次性剪贴板提示：键鼠模式下它不出现（见 [allowClipboardOffer]）。
  */
 @Composable
 internal fun CandidateStrip(
@@ -109,11 +110,18 @@ internal fun CandidateStrip(
      * （见 ImeController.selectCandidateByDigit）。虚拟键盘上手指直接点候选，标号只是噪声。
      */
     numbered: Boolean = false,
+    /**
+     * 刚复制进来的那段内容要不要占这条栏（一次性的"要不要粘贴"）。
+     *
+     * 键鼠兼容面板上传 false（用户点名）：那边剪贴板只有一个入口——工具栏上的 📋，刚复制的内容
+     * 不该自己把面板顶出来。虚拟键盘上照旧，点一下就是贴上。
+     */
+    allowClipboardOffer: Boolean = true,
 ) {
     if (state.candidates.isEmpty()) {
         // 刚复制进来的内容优先占这条栏：它是一次性的"要不要粘贴"，而 layout 名随时都在。
         // 一旦开始打字（有候选）就让位给候选，不用用户自己关。
-        val offer = state.clipboardOffer
+        val offer = state.clipboardOffer.takeIf { allowClipboardOffer }
         if (offer != null) {
             ClipboardOfferStrip(
                 text = offer.text.replace(OFFER_WHITESPACE, " ").trim(),
