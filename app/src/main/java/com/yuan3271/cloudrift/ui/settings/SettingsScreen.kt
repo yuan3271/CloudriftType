@@ -393,6 +393,15 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // 工具面板的开关（候选词那一块不受它影响，照旧"打字才出现"）。面板右端那颗 ✕
+                // 关的也是这一项，两条路同一个设置。
+                SwitchRow(
+                    title = "显示输入法工具栏",
+                    subtitle = "语言 / 符号 / 语音 / 剪贴板那一排；关掉只留候选词面板，面板上的 ✕ " +
+                        "也是关它",
+                    checked = settings.compatToolbarEnabled,
+                    onCheckedChange = { value -> onUpdate { it.copy(compatToolbarEnabled = value) } },
+                )
                 // 检测状态摆在这儿，是因为这条设置只对外接键鼠生效：看得见"现在有没有检测到"，
                 // 才知道刚才的选择到底会不会起作用。
                 val externalInputs = rememberExternalInputs()

@@ -90,6 +90,15 @@ class ImeController(
     private var hasSelection: Boolean = false
 
     /**
+     * 有没有一个输入框正在被编辑（[onStartInput] / [onFinishInput]）。
+     *
+     * 物理键盘只在**确实在输入框里打字**的时候才归输入法管：输入法窗口有时会留在屏幕上（比如
+     * 应用自己没把焦点收走），那时候敲字母、按方向键都是用户在对那个应用做事，不该被输入法接过去
+     * 拼成候选（用户点名"没有进行输入框输入的时候，按下键盘输入法不要被触发"）。
+     */
+    private var editingField = false
+
+    /**
      * 外接键鼠把这次会话的布局从 9 键临时换成 26 键了吗（见 [onExternalInputs]）。只活在内存里：
      * 用户自己选的布局还在设置里躺着，拔掉键鼠就还回去。
      */
@@ -180,11 +189,20 @@ class ImeController(
     // ---- lifecycle ------------------------------------------------------------------
 
     fun onStartInput(info: EditorInfo?, restarting: Boolean) {
+        editingField = true
         editorInfo = info
         commitBuffer()
         // 新的一次输入会话：上一条联想说的是**上一个**输入框里的事。
         clearAssociations()
         updateEnterLabel()
+    }
+
+    /**
+     * 输入框不再被编辑了（失焦 / 输入法解绑）。物理键盘从这一刻起不归输入法管，除非用户又点进
+     * 某个输入框（见 [onStartInput]）。
+     */
+    fun onFinishInput() {
+        editingField = false
     }
 
     fun onStartInputView() {
@@ -391,6 +409,9 @@ class ImeController(
      * 只在真的有外接键鼠时才接管（和面板同为 [ExternalInputSnapshot.present] 这一个条件）：没有
      * 外接设备时这条路一个键都不碰，行为与从前逐字节相同。这颗键"是什么意思"由
      * [hardwareKeyAction] 判定（纯函数，可单测），这里只决定按下之后发生什么。
+     *
+     * 另外还要**有一个输入框正在被编辑**（[editingField]）：没在输入框里打字的时候，敲键盘的是
+     * 用户和那个应用之间的事，输入法不该把字母接过去拼成候选、更不该把候选面板叫出来。
      */
     fun onHardwareKeyDown(
         keyCode: Int,
@@ -398,7 +419,7 @@ class ImeController(
         ctrlPressed: Boolean,
         altPressed: Boolean,
     ): Boolean {
-        if (!_state.value.externalInputs.present) return false
+        if (!editingField || !_state.value.externalInputs.present) return false
         return when (val action = hardwareKeyAction(keyCode, unicode, ctrlPressed, altPressed)) {
             null -> false
             is HardwareKeyAction.Type -> {
@@ -517,6 +538,15 @@ class ImeController(
 
     /** Quick settings edits the same store the full settings screen writes to. */
     fun updateSettings(transform: (AppSettings) -> AppSettings) = settings.update(transform)
+
+    /**
+     * 工具面板开不开。设置页里是一个开关，面板右端那颗 ✕ 关的也是它——同一个设置，两条路。
+     */
+    fun setCompatToolbarEnabled(enabled: Boolean) {
+        settings.update { it.copy(compatToolbarEnabled = enabled) }
+        refreshSettings()
+        syncCompatWindows()
+    }
 
     /** Inserts text from a panel (clipboard, snippets) without touching the reading buffer. */
     fun commitText(text: String) {
@@ -1260,6 +1290,7 @@ class ImeController(
             floatingKeyHeightDp = snapshot.floatingKeyHeightDp,
             japaneseEnabled = snapshot.japaneseEnabled,
             externalInputMode = snapshot.externalInputMode,
+            compatToolbarEnabled = snapshot.compatToolbarEnabled,
             compatToolbarXPercent = snapshot.compatToolbarXPercent,
             compatToolbarYPercent = snapshot.compatToolbarYPercent,
             showUpdateDot = snapshot.showUpdateDot,

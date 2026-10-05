@@ -248,6 +248,12 @@ data class AppSettings(
      */
     val externalInputMode: ExternalInputMode = ExternalInputMode.CompatPanel,
     /**
+     * 键鼠兼容面板上那块**工具面板**（语言 / 符号 / 语音 / 剪贴板）要不要显示。
+     *
+     * 关掉之后屏幕上只剩候选词那一块（打字才出现）；面板上那颗 ✕ 与设置页这个是同一个开关。
+     */
+    val compatToolbarEnabled: Boolean = true,
+    /**
      * 键鼠兼容面板里工具面板的位置（屏幕百分比，左上角）。负数＝用户还没拖过，交给服务放在
      * 默认位置（底部居中）；拖过之后就按这里记住，下次插上键鼠还在原地。
      */

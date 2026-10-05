@@ -60,6 +60,20 @@ class ImeUiStateTest {
     }
 
     @Test
+    fun `switching the toolbar off does not take the candidates with it`() {
+        // 设置页那个开关和面板右端的 ✕ 关的是同一件事：只关工具栏，候选词那一块照旧。
+        val off = ImeUiState(
+            externalInputs = ExternalInputSnapshot(keyboard = true),
+            compatToolbarEnabled = false,
+        )
+        assertFalse("关掉之后工具栏不再出现", off.compatToolbarVisible)
+
+        val offComposing = composing.copy(compatToolbarEnabled = false)
+        assertTrue("关掉工具栏不影响打字时候选词那一块照常出来", offComposing.compatContentVisible)
+        assertFalse(offComposing.compatToolbarVisible)
+    }
+
+    @Test
     fun `fresh clipboard content does not summon anything`() {
         val copied = ImeUiState(
             externalInputs = ExternalInputSnapshot(keyboard = true),

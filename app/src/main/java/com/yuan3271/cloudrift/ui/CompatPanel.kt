@@ -462,6 +462,13 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
             onClick = controller::toggleClipboard,
             active = state.clipboardVisible,
         )
+        // 最右端这颗叉把整块工具面板关掉：设置页「外接键鼠」里那个开关是同一件事，点了叉就去
+        // 那边重新打开（键鼠模式下总有人只想留一块候选，不想要这一排工具）。
+        SmallIconButton(
+            icon = CloudriftIcons.Close,
+            description = "关闭工具栏",
+            onClick = { controller.setCompatToolbarEnabled(false) },
+        )
     }
 }
 

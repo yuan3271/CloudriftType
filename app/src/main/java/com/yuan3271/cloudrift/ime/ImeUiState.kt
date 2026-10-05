@@ -109,6 +109,8 @@ data class ImeUiState(
     val externalInputMode: ExternalInputMode = ExternalInputMode.CompatPanel,
     /** 场上有没有外接键鼠；由服务的设备监听推过来（见 ExternalInputMonitor）。 */
     val externalInputs: ExternalInputSnapshot = ExternalInputSnapshot(),
+    /** 键鼠兼容面板上那块工具面板要不要显示（设置项；面板上的 ✕ 关的就是它）。 */
+    val compatToolbarEnabled: Boolean = true,
     /** 工具面板的位置（屏幕百分比）；负数＝用户还没拖过，服务会放在默认位置。 */
     val compatToolbarXPercent: Int = -1,
     val compatToolbarYPercent: Int = -1,
@@ -201,11 +203,12 @@ data class ImeUiState(
      * 被激活就出现**——鼠标点一下输入框、可以开始打字了，工具栏就该在；离开输入（点到别处、
      * 收起键盘）就没有。所以这条**不是**"打字才出现"（那是候选词那一块的规矩），也不是常驻。
      *
-     * 实现上就是 [showsCompatPanel]：输入法只在输入会话里存在，进入会话时服务会把两块窗口重新
-     * 建起来（见 `CloudriftImeService.onStartInputView`），会话结束一起拆掉。
+     * 实现上就是 [showsCompatPanel] 再看 [compatToolbarEnabled]：输入法只在输入会话里存在，进入
+     * 会话时服务会把两块窗口重新建起来（见 `CloudriftImeService.onStartInputView`），会话结束一起
+     * 拆掉；设置里可以整个关掉这块面板（面板右端那颗 ✕ 是同一个开关）。
      */
     val compatToolbarVisible: Boolean
-        get() = showsCompatPanel
+        get() = showsCompatPanel && compatToolbarEnabled
 
     /**
      * 键鼠兼容模式下，候选词那一块现在是一份**从工具栏里弹出来的菜单**（符号页 / 数字页 / 语音 /

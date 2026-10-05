@@ -651,6 +651,15 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         controller?.onStartInput(attribute, restarting)
     }
 
+    /**
+     * 输入框失焦 / 输入法解绑：物理键盘从这一刻起交回系统与应用（见 ImeController.onHardwareKeyDown
+     * 里的 `editingField`）——"没有在输入框里输入的时候按键盘，输入法不该被触发"。
+     */
+    override fun onFinishInput() {
+        controller?.onFinishInput()
+        super.onFinishInput()
+    }
+
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         // Cheap insurance: the decor can be recreated if the IME process is reused.

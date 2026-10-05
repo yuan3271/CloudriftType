@@ -54,6 +54,10 @@ class SettingsRepository(context: Context) {
             externalInputMode = ExternalInputMode.fromKey(
                 prefs.getString(KEY_EXTERNAL_INPUT_MODE, null),
             ),
+            compatToolbarEnabled = prefs.getBoolean(
+                KEY_COMPAT_TOOLBAR,
+                defaults.compatToolbarEnabled,
+            ),
             compatToolbarXPercent = prefs.getInt(
                 KEY_COMPAT_TOOLBAR_X,
                 defaults.compatToolbarXPercent,
@@ -104,6 +108,7 @@ class SettingsRepository(context: Context) {
             putBoolean(KEY_LEARNING, settings.learningEnabled)
             putBoolean(KEY_JAPANESE, settings.japaneseEnabled)
             putString(KEY_EXTERNAL_INPUT_MODE, settings.externalInputMode.name)
+            putBoolean(KEY_COMPAT_TOOLBAR, settings.compatToolbarEnabled)
             putInt(KEY_COMPAT_TOOLBAR_X, settings.compatToolbarXPercent)
             putInt(KEY_COMPAT_TOOLBAR_Y, settings.compatToolbarYPercent)
             putString(KEY_UPDATE_INTERVAL, settings.updateCheckInterval.name)
@@ -176,6 +181,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_LEARNING = "learning_enabled"
         private const val KEY_JAPANESE = "japanese_enabled"
         private const val KEY_EXTERNAL_INPUT_MODE = "external_input_mode"
+        private const val KEY_COMPAT_TOOLBAR = "compat_toolbar_visible"
         private const val KEY_COMPAT_TOOLBAR_X = "compat_toolbar_x_percent"
         private const val KEY_COMPAT_TOOLBAR_Y = "compat_toolbar_y_percent"
         private const val KEY_UPDATE_INTERVAL = "update_check_interval"
