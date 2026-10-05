@@ -101,7 +101,13 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
 
     // 工具面板是**另一个窗口**（见 CloudriftImeService.applyToolbarWindow）：它该不该出现、在哪儿，
     // 要单独同步一次；开不出来时会退回画在候选词那个窗口里。
-    LaunchedEffect(state.showsCompatPanel, state.compatToolbarXPercent, state.compatToolbarYPercent) {
+    LaunchedEffect(
+        state.showsCompatPanel,
+        state.compatToolbarXPercent,
+        state.compatToolbarYPercent,
+        // 候选词面板是"打字才出现"的那一块：它的显隐也要立刻反映到窗口上。
+        state.compatContentVisible,
+    ) {
         controller.syncCompatWindows()
     }
 
@@ -115,6 +121,7 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
         state.bottomGapDp,
         state.keyCornerRadiusDp,
         state.showsCompatPanel,
+        state.compatWindowsReady,
     ) {
         view.requestLayout()
         (view.parent as? View)?.requestLayout()
@@ -143,11 +150,18 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
             // 外接键鼠在场且设置选了兼容面板时，窗口里只有候选词栏 + 工具栏；否则就是原来那
             // 整块键盘。两条路读的是同一份状态、同一套引擎，插上键鼠不会打断正在打的东西。
             if (state.showsCompatPanel) {
-                CompatPanel(
-                    state = state,
-                    controller = controller,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                // 两块面板各在自己的窗口里时（见 CloudriftImeService.applyCompatPanel），输入法
+                // 这个窗口只剩一块 1dp 的透明壳：它不占屏、不把应用顶起来、也挡不住任何东西——
+                // 屏幕上看得见的只有那两块面板。开不出独立窗口时退回老样子，把两块画在这里。
+                if (state.compatWindowsReady) {
+                    CompatShell()
+                } else {
+                    CompatPanel(
+                        state = state,
+                        controller = controller,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             } else {
                 KeyboardSurface(
                     state = state,
@@ -187,6 +201,18 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
 
         }
     }
+}
+
+/**
+ * 键鼠兼容模式下的输入法窗口：两块面板都住在自己的窗口里（见 [CompatContentWindow] 与
+ * [CompatToolbarWindowContent]），这一块只负责让输入法"是开着的"。
+ *
+ * 高度压到 1dp、背景透明。这块壳的高度就是系统眼里的输入法 inset——压到 1dp，应用既不会被
+ * 顶起来，屏幕上也不会出现一条谁都没在用的横条（用户报的"窗屏莫名其妙占满整个横屏"）。
+ */
+@Composable
+private fun CompatShell() {
+    Box(modifier = Modifier.fillMaxWidth().height(1.dp))
 }
 
 // 键盘高度是按**屏幕**高度算的（autoKeyHeight），不是按窗口高度——这里的窗口就是键盘自己，

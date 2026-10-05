@@ -1,41 +1,40 @@
 package com.yuan3271.cloudrift.ui
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.ime.ImeController
 import com.yuan3271.cloudrift.ime.ImeUiState
+import com.yuan3271.cloudrift.input.CompatPanelKind
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.KeyboardPage
@@ -44,35 +43,69 @@ import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 
 /**
- * 键鼠兼容面板：外接键鼠在场时取代整块虚拟键盘的那两块。
+ * 键鼠兼容面板：外接键鼠在场时取代整块虚拟键盘的那两块——**候选词面板**与**工具面板**。
  *
- * 它不是另起一套界面——**框就是横屏那台悬浮键盘的框**（见 KeyboardSurface 的 floating 分支与
- * [FloatingGripStrip]）：同样 24dp 圆角的卡片、同样 10dp / 6dp 的外边距、顶部同样一条 20dp 的
- * 把手（中间一根小白条＝拖着走），窗口同样是那块"能拖到任何地方"的悬浮窗。区别只在卡片里装的
- * 东西：虚拟键盘装的是按键，这里装的是候选词栏与工具栏。
- *
- * 两块面板是**两个窗口**（用户点名：工具面板与候选词面板是分开的，各是一个窗口），各自带自己的
- * 把手、各自能拖：
+ * 两块面板各是**一个独立窗口**（见 `CloudriftImeService.applyCompatPanel`）：各自能拖、各自按
+ * 内容撑开。这里只负责画，位置交给服务。
  *
  * ```
- *   ╭──────────────────────────────────────────╮
- *   │            ▬▬▬▬          ⌄               │  把手
- *   │  [你好][拟合][你][内][拟]                │  候选词面板（虚拟键盘那条候选栏）
- *   ╰──────────────────────────────────────────╯
- *   ╭──────────────────────────────────────────╮
- *   │            ▬▬▬▬                          │  把手
- *   │  [🌐 中][符][🎤][📋]                     │  工具面板（紧凑排布，不留空）
- *   ╰──────────────────────────────────────────╯
+ *   ╭───────────────────────────╮
+ *   │  ▬▬▬▬   [你好][拟合][你]  │  候选词面板：跟着光标，**默认不出现**，
+ *   ╰───────────────────────────╯  打字（或有候选 / 联想 / 提示）时才露出来
+ *   ╭───────────────────────────╮
+ *   │  ▬▬▬▬  [中][符] [🎤][📋]  │  工具面板：独立窗口，拖到哪停在哪
+ *   ╰───────────────────────────╯
  * ```
  *
- * 候选词面板在输入法自己的那个窗口里，工具面板是服务另开的一个窗口（见
- * `CloudriftImeService.applyToolbarWindow`）；开不出来时（个别 ROM 不给第二个窗口）退回把工具
- * 面板画进候选词那个窗口，功能一件不少，只是不能各拖各的。
+ * 框与横屏那台悬浮键盘是同一套（见 [FloatingPanel] 与 [FloatingGripStrip]）：同样 24dp 圆角、
+ * 同样的边距、顶部同样一条小横条，抓它就拖着走，没有阴影也没有多余的手柄。
  *
- * 工具栏**不是**新画的一排按钮：语言那颗就是 [LanguageChip]，语音与剪贴板就是
- * [SmallIconButton] / [FilledIconButton]，尺寸与配色和虚拟键盘工具栏一模一样；符号那颗仓库里
- * 没有图标，就用键盘上同一个键的字（[KeyboardLayouts.symbolKeyLabel]：中文 `符`、英文 `?123`），
- * 外壳仍是同一颗 [ToolbarButton]。
+ * 窗口开不出来时（没有「显示在其他应用上层」权限）退回 [CompatPanel]：两块画进输入法窗口里，
+ * 功能一件不少，只是不能各拖各的——那时会在面板上给出授权入口。
+ */
+
+/** 候选词面板（它自己的那个窗口）。 */
+@Composable
+fun CompatContentWindow(controller: ImeController) {
+    val state by controller.state.collectAsStateWithLifecycle()
+    CompatWindowTheme(state) {
+        CompatCard(
+            state = state,
+            controller = controller,
+            kind = CompatPanelKind.Content,
+            maxWidth = state.contentMaxWidth(),
+        ) {
+            CompatContentBody(state = state, controller = controller)
+        }
+    }
+}
+
+/**
+ * 工具面板（它自己的那个窗口）：一块**紧凑**的悬浮卡片（把手 + 一排工具，不留空）。
+ *
+ * 它单独成一个 composable，是因为它要由服务放进自己的窗口，而不是画在候选词那个窗口里；两个
+ * 窗口各有各的大小：候选词窗口按候选排，工具窗口收紧到这一排。
+ */
+@Composable
+fun CompatToolbarWindowContent(controller: ImeController) {
+    val state by controller.state.collectAsStateWithLifecycle()
+    CompatWindowTheme(state) {
+        CompatCard(
+            state = state,
+            controller = controller,
+            kind = CompatPanelKind.Toolbar,
+            maxWidth = state.toolbarMaxWidth(),
+        ) {
+            CompatToolbar(state = state, controller = controller)
+        }
+    }
+}
+
+/**
+ * 退路：两块面板都画进输入法窗口里。
+ *
+ * 输入法窗口的宽度是系统说了算的（这台机器上就是整屏宽），所以卡片只能靠自己的 `widthIn` 收窄；
+ * 两块也就只能一起被拖（同一个窗口）。这是个降级形态：面板上会写明怎么让它恢复成两个窗口。
  */
 @Composable
 fun CompatPanel(
@@ -80,9 +113,157 @@ fun CompatPanel(
     controller: ImeController,
     modifier: Modifier = Modifier,
 ) {
+    Column(
+        modifier = modifier
+            // 悬浮键盘同款外边距：卡片与屏幕边靠它对齐。
+            .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL)
+            // 窗口自己不吃系统栏（decorFitsSystemWindows=false），面板替它吃：手势条不能压在
+            // 工具面板上。
+            .windowInsetsPadding(
+                WindowInsets.systemBars.only(
+                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                ),
+            ),
+        verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
+    ) {
+        CompatPermissionStrip(state = state, controller = controller)
+        // 候选词卡片默认不出现：没有正在打的字、没有候选、没有提示时，屏幕上只剩工具面板那一条
+        // （用户点名要的就是这个）。
+        if (state.compatContentVisible) {
+            FloatPanelWithGrip(
+                controller = controller,
+                kind = CompatPanelKind.Content,
+                maxWidth = state.contentMaxWidth(),
+            ) {
+                CompatContentBody(state = state, controller = controller)
+            }
+        }
+        FloatPanelWithGrip(
+            controller = controller,
+            kind = CompatPanelKind.Toolbar,
+            maxWidth = state.toolbarMaxWidth(),
+        ) {
+            CompatToolbar(state = state, controller = controller)
+        }
+    }
+}
+
+// ---- 卡片 ---------------------------------------------------------------------------
+
+/**
+ * 一块面板的窗口内容：悬浮卡片（圆角 + `surfaceContainer` 底 + 顶部一条把手）。
+ *
+ * 位置由窗口决定，这里只画卡片本身，并把宽度上限交给内容——卡片是"按内容撑开"的
+ * （`WRAP_CONTENT` 的独立窗口里，`fillMaxWidth` 会顺着"至多整屏宽"这个上限长到整屏，
+ * 正是用户报过的"面板突然铺满整个宽度"）。
+ */
+@Composable
+private fun CompatWindowTheme(state: ImeUiState, content: @Composable () -> Unit) {
+    CloudriftTheme(
+        themeMode = state.themeMode,
+        themeSource = state.themeSource,
+        accentHue = state.accentHue,
+        accentSaturation = state.accentSaturation,
+    ) {
+        Box(
+            modifier = Modifier
+                .windowInsetsPadding(
+                    WindowInsets.systemBars.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                    ),
+                )
+                .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun CompatCard(
+    state: ImeUiState,
+    controller: ImeController,
+    kind: CompatPanelKind,
+    maxWidth: Dp,
+    content: @Composable () -> Unit,
+) {
+    FloatPanelWithGrip(controller = controller, kind = kind, maxWidth = maxWidth) {
+        CompatPermissionStrip(state = state, controller = controller)
+        content()
+    }
+}
+
+@Composable
+private fun FloatPanelWithGrip(
+    controller: ImeController,
+    kind: CompatPanelKind,
+    maxWidth: Dp,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(PANEL_CORNER),
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            FloatingGripStrip(
+                onMove = { dx, dy -> controller.moveCompatPanelBy(kind, dx, dy) },
+                // 面板按内容排好了，没有可缩放的余地：这一条不留缩放手柄，拖动区也收在中间，
+                // 卡片宽度才由内容说了算。
+                onResize = { _, _ -> },
+                onResizeCommitted = { controller.commitCompatPanelPosition(kind) },
+                showResizeHandle = false,
+                expand = false,
+            )
+            Box(modifier = Modifier.widthIn(max = maxWidth)) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+// ---- 面板里的东西 -------------------------------------------------------------------
+
+/** 候选词面板的内容：候选栏，或展开的第二层。 */
+@Composable
+private fun CompatContentBody(state: ImeUiState, controller: ImeController) {
+    // 提示条（语音出错、要麦克风权限）压在这块面板的最上面：键鼠模式下没有别的地方能显示它。
+    state.notice?.let { notice ->
+        NoticeStrip(
+            message = notice,
+            actionLabel = if (state.noticeNeedsMicrophonePermission) "授权" else null,
+            onAction = controller::openMicrophonePermissionSettings,
+            onDismiss = controller::dismissNotice,
+        )
+    }
+    when {
+        hasExpandedPanel(state) -> CompatExpandedPanel(state = state, controller = controller)
+        // 候选栏只在"真有东西"时出现（候选、联想、剪贴板提示）。空着的时候这条不画——用户点名：
+        // 候选栏默认不出现，别在屏幕上留一条空栏。
+        state.candidates.isEmpty() && state.clipboardOffer == null -> Unit
+        else -> CandidateStrip(
+            state = state,
+            onCandidate = controller::selectCandidate,
+            onExpand = controller::toggleCandidatesExpanded,
+            onPasteClipboardOffer = controller::pasteClipboardOffer,
+            onDismissClipboardOffer = controller::dismissClipboardOffer,
+            idle = {},
+            // 按内容撑开：两三个候选就是一张窄卡片，候选多了才长到上限再滚动。
+            wrapContent = true,
+            // 物理键盘在手：按 2 选第二颗，那颗前面就得写着 2。
+            numbered = true,
+        )
+    }
+}
+
+/** 展开的第二层：语音 / 剪贴板 / 更多候选 / 符号页 / 数字页。 */
+@Composable
+private fun CompatExpandedPanel(state: ImeUiState, controller: ImeController) {
     val screenHeight = LocalConfiguration.current.screenHeightDp
-    val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
-    val density = LocalDensity.current
     val keyHeight = (
         if (state.keyHeightDp > 0) {
             state.keyHeightDp.toFloat()
@@ -106,238 +287,107 @@ fun CompatPanel(
         onClearAllArmedChanged = controller::onClearAllArmedChanged,
         onClearAll = controller::clearAllText,
     )
-    // 面板里没有按键，"缩放"就只剩宽度这一件事（高度那半截按 0 交回去）。换算与悬浮键盘同一套：
-    // 横向位移 / 屏宽 = 宽度百分比。
-    val onResize: (Float, Float) -> Unit = { dx, _ ->
-        controller.resizeFloatingKeyboard(
-            widthDeltaPercent = (dx / density.density) / screenWidth.coerceAtLeast(1f) * 100f,
-            keyHeightDeltaDp = 0f,
-        )
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            // 悬浮键盘同款外边距：卡片与屏幕边、卡片与卡片之间都靠它对齐。
-            .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL)
-            // 窗口自己不吃系统栏（decorFitsSystemWindows=false），面板替它吃：手势条不能压在
-            // 工具面板上。
-            .windowInsetsPadding(
-                WindowInsets.systemBars.only(
-                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
-                ),
-            ),
-        verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
-    ) {
-        state.notice?.let { notice ->
-            NoticeStrip(
-                message = notice,
-                actionLabel = if (state.noticeNeedsMicrophonePermission) "授权" else null,
-                onAction = controller::openMicrophonePermissionSettings,
-                onDismiss = controller::dismissNotice,
+    Box(modifier = Modifier.fillMaxWidth()) {
+        when {
+            state.voice !is VoiceState.Idle && !state.holdToTalk -> VoicePanel(
+                state = state.voice,
+                autoApplyDelayMs = state.voiceAutoApplyDelayMs,
+                autoApplyPending = state.autoApplyPending,
+                onStop = { controller.toggleVoice() },
+                onCancel = controller::dismissVoice,
+                onSkipCorrection = controller::skipVoiceCorrection,
+                onRetry = controller::retryVoice,
+                onCommit = controller::commitVoiceResult,
+                onOpenPermission = controller::openMicrophonePermissionSettings,
+                onCancelAutoApply = controller::cancelAutoApply,
             )
-        }
 
-        FloatingPanel {
-            FloatingGripStrip(
-                onMove = controller::moveFloatingKeyboard,
-                onResize = onResize,
-                onResizeCommitted = controller::commitFloatingKeyboardSize,
-                showResizeHandle = false,
+            state.clipboardVisible -> ClipboardPanel(
+                entries = state.clipboardEntries,
+                onPick = controller::pickClipboardEntry,
+                onDelete = controller::deleteClipboardEntry,
+                onCopy = controller::copyClipboardEntry,
+                onClear = controller::clearClipboard,
+                onClose = { controller.setClipboardVisible(false) },
+                keyHeight = keyHeight,
             )
-            CandidateBar(
+
+            state.candidatesExpanded -> ExpandedCandidates(
                 state = state,
                 onCandidate = controller::selectCandidate,
-                onExpand = controller::toggleCandidatesExpanded,
-                onPasteClipboardOffer = controller::pasteClipboardOffer,
-                onDismissClipboardOffer = controller::dismissClipboardOffer,
-                idle = { CompatIdleStrip(state = state) },
+                onCollapse = controller::toggleCandidatesExpanded,
             )
-        }
 
-        // 展开的第二层（语音 / 剪贴板 / 更多候选 / 符号页 / 数字页）：同样是悬浮卡片，夹在
-        // 候选面板与工具面板之间，与虚拟键盘里"按键区被面板替换"是同一个规矩。
-        if (hasExpandedPanel(state)) {
-            FloatingPanel {
-                FloatingGripStrip(
-                    onMove = controller::moveFloatingKeyboard,
-                    onResize = onResize,
-                    onResizeCommitted = controller::commitFloatingKeyboardSize,
-                    showResizeHandle = false,
+            // 符号页：**先保证每颗符号看得清**，再谈排布。列数按面板当前宽度算（一颗至少约
+            // 56dp），窄了就少几列、多几行，滚动着取——绝不为了"一排放 7 个"把字挤扁。
+            state.page == KeyboardPage.Symbols -> BoxWithConstraints(
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                SymbolPanel(
+                    symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
+                    emojiGroups = controller.emojiGroups,
+                    sheet = state.symbolSheet,
+                    emojiGroup = state.emojiGroup,
+                    functionRow = KeyboardLayouts.symbolFunctionRow(state.enterLabel),
+                    width = state.symbolWidth,
+                    onWidthChange = controller::setSymbolWidth,
+                    onSheetChange = controller::setSymbolSheet,
+                    onEmojiGroupChange = controller::setEmojiGroup,
+                    keyHeight = keyHeight,
+                    cornerRadius = cornerRadius,
+                    keyBackground = state.keyBackground,
+                    callbacks = callbacks,
+                    labelScale = labelScale,
+                    columns = (maxWidth / SYMBOL_TILE_MIN_WIDTH).toInt().coerceIn(3, 8),
                 )
-                when {
-                    state.voice !is VoiceState.Idle && !state.holdToTalk -> VoicePanel(
-                        state = state.voice,
-                        autoApplyDelayMs = state.voiceAutoApplyDelayMs,
-                        autoApplyPending = state.autoApplyPending,
-                        onStop = { controller.toggleVoice() },
-                        onCancel = controller::dismissVoice,
-                        onSkipCorrection = controller::skipVoiceCorrection,
-                        onRetry = controller::retryVoice,
-                        onCommit = controller::commitVoiceResult,
-                        onOpenPermission = controller::openMicrophonePermissionSettings,
-                        onCancelAutoApply = controller::cancelAutoApply,
-                    )
-
-                    state.clipboardVisible -> ClipboardPanel(
-                        entries = state.clipboardEntries,
-                        onPick = controller::pickClipboardEntry,
-                        onDelete = controller::deleteClipboardEntry,
-                        onCopy = controller::copyClipboardEntry,
-                        onClear = controller::clearClipboard,
-                        onClose = { controller.setClipboardVisible(false) },
-                        keyHeight = keyHeight,
-                    )
-
-                    state.candidatesExpanded -> ExpandedCandidates(
-                        state = state,
-                        onCandidate = controller::selectCandidate,
-                        onCollapse = controller::toggleCandidatesExpanded,
-                    )
-
-                    // 符号页：**先保证每颗符号看得清**，再谈排布。列数按面板当前宽度算（一颗至少
-                    // 约 56dp），窄了就少几列、多几行，滚动着取——绝不为了"一排放 7 个"把字挤扁。
-                    state.page == KeyboardPage.Symbols -> BoxWithConstraints(
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        SymbolPanel(
-                            symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
-                            emojiGroups = controller.emojiGroups,
-                            sheet = state.symbolSheet,
-                            emojiGroup = state.emojiGroup,
-                            functionRow = KeyboardLayouts.symbolFunctionRow(state.enterLabel),
-                            width = state.symbolWidth,
-                            onWidthChange = controller::setSymbolWidth,
-                            onSheetChange = controller::setSymbolSheet,
-                            onEmojiGroupChange = controller::setEmojiGroup,
-                            keyHeight = keyHeight,
-                            cornerRadius = cornerRadius,
-                            keyBackground = state.keyBackground,
-                            callbacks = callbacks,
-                            labelScale = labelScale,
-                            columns = (maxWidth / SYMBOL_TILE_MIN_WIDTH).toInt()
-                                .coerceIn(3, 8),
-                        )
-                    }
-
-                    // 符号页底部那颗 `123` 通向这里。物理键盘打数字是直接上屏的，但只用鼠标的
-                    // 用户没有键盘可打——面板里留着这条数字页，两条路都不落空。
-                    else -> NumberPanel(
-                        strip = KeyboardLayouts.mathStrip(),
-                        symbolKey = KeyboardLayouts.numberSymbolKey(),
-                        rows = KeyboardLayouts.numberRows(state.enterLabel),
-                        keyHeight = keyHeight,
-                        cornerRadius = cornerRadius,
-                        keyBackground = state.keyBackground,
-                        callbacks = callbacks,
-                        labelScale = labelScale,
-                    )
-                }
             }
-        }
 
-        // 工具面板正常是另一个窗口（见 CompatToolbarWindow）。只有第二个窗口开不出来时，才退回
-        // 画在这里——功能一件不少，只是两块面板不能各拖各的。
-        if (state.compatToolbarInMainWindow) {
-            FloatingPanel {
-                FloatingGripStrip(
-                    onMove = controller::moveFloatingKeyboard,
-                    onResize = onResize,
-                    onResizeCommitted = controller::commitFloatingKeyboardSize,
-                    showResizeHandle = false,
-                )
-                CompatToolbar(state = state, controller = controller)
-            }
+            // 符号页底部那颗 `123` 通向这里。物理键盘打数字是直接上屏的，但只用鼠标的用户没有
+            // 键盘可打——面板里留着这条数字页，两条路都不落空。
+            else -> NumberPanel(
+                strip = KeyboardLayouts.mathStrip(),
+                symbolKey = KeyboardLayouts.numberSymbolKey(),
+                rows = KeyboardLayouts.numberRows(state.enterLabel),
+                keyHeight = keyHeight,
+                cornerRadius = cornerRadius,
+                keyBackground = state.keyBackground,
+                callbacks = callbacks,
+                labelScale = labelScale,
+            )
         }
     }
 }
 
 /**
- * 工具面板那个窗口里装的东西：一块**紧凑**的悬浮卡片（把手 + 一排工具，不留空）。
+ * "两块面板需要「显示在其他应用上层」"这条提示。
  *
- * 它单独成一个 composable，是因为它要由服务放进自己的窗口（见 `CloudriftImeService`），而不是画
- * 在输入法窗口里；两个窗口各有各的大小：候选词窗口按候选排，工具窗口收紧到这一排。
+ * 只有用户自己能解决（去授权），所以它带一颗按钮；别的失败原因用户无能为力，不在这里说。
  */
 @Composable
-fun CompatToolbarWindowContent(controller: ImeController) {
-    val state by controller.state.collectAsStateWithLifecycle()
-    CloudriftTheme(
-        themeMode = state.themeMode,
-        themeSource = state.themeSource,
-        accentHue = state.accentHue,
-        accentSaturation = state.accentSaturation,
-    ) {
-        FloatingPanel(
-            modifier = Modifier
-                .windowInsetsPadding(
-                    WindowInsets.systemBars.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
-                    ),
-                )
-                .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL),
-            fillWidth = false,
-        ) {
-            FloatingGripStrip(
-                onMove = controller::moveCompatToolbar,
-                onResize = { _, _ -> },
-                onResizeCommitted = controller::commitCompatToolbarPosition,
-                showResizeHandle = false,
-                expand = false,
-            )
-            CompatToolbar(state = state, controller = controller)
-        }
-    }
-}
-
-private fun hasExpandedPanel(state: ImeUiState): Boolean = when {
-    state.voice !is VoiceState.Idle && !state.holdToTalk -> true
-    state.clipboardVisible -> true
-    state.candidatesExpanded -> true
-    state.page != KeyboardPage.Letters -> true
-    else -> false
-}
-
-/** 悬浮卡片：圆角、`surfaceContainer` 底、顶部一条 [FloatingGripStrip]。与横屏悬浮键盘同一个框。 */
-@Composable
-private fun FloatingPanel(
-    modifier: Modifier = Modifier,
-    /**
-     * 卡片要不要撑满容器宽度。
-     *
-     * 候选词那张要（候选栏本来就按窗口宽度排），工具面板那张**不要**：它待在一个 `WRAP_CONTENT`
-     * 的独立窗口里，而窗口给 Compose 的约束是"至多整屏宽"——卡片一旦 `fillMaxWidth()`，就会顺着
-     * 这个上限长到整屏宽，看上去正是"工具面板突然铺满整个宽度"。所以工具面板靠内容自己撑开。
-     */
-    fillWidth: Boolean = true,
-    content: @Composable () -> Unit,
-) {
+private fun CompatPermissionStrip(state: ImeUiState, controller: ImeController) {
+    if (!state.compatNeedsOverlayPermission) return
     Surface(
-        modifier = if (fillWidth) modifier.fillMaxWidth() else modifier,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = RoundedCornerShape(PANEL_CORNER),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
     ) {
-        // 不撑宽度的那张卡片（工具面板）里，孩子按内容量宽度，再靠这一列居中：把手与那一排工具
-        // 都落在卡片中轴上，而卡片的宽度由内容决定（不会被"至多整屏宽"这个上限撑开）。
-        Column(
-            horizontalAlignment = if (fillWidth) Alignment.Start else Alignment.CenterHorizontally,
-        ) { content() }
+        Row(
+            modifier = Modifier
+                .widthIn(max = 420.dp)
+                .padding(start = 12.dp, end = 6.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "候选栏与工具栏要分成两个窗口，需要「显示在其他应用上层」权限",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            androidx.compose.material3.TextButton(onClick = controller::openOverlayPermissionSettings) {
+                Text("去授权")
+            }
+        }
     }
-}
-
-/**
- * 键鼠模式下的空闲行：**只写语言**。
- *
- * 虚拟键盘那边写的是"中文 · 26 键拼音"，那个"26 键"是给手指看的布局名；物理键盘在手时它没有
- * 意义（用户点名要在键鼠模式下把它藏起来），所以这一行只剩语言，顺带回答"现在按哪个语言处理按键"。
- */
-@Composable
-private fun CompatIdleStrip(state: ImeUiState) {
-    Text(
-        text = KeyboardLayouts.languageName(state.layout),
-        style = MaterialTheme.typography.labelMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 10.dp),
-    )
 }
 
 /**
@@ -355,9 +405,6 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
     )
 
     Row(
-        modifier = Modifier
-            .padding(horizontal = 6.dp)
-            .padding(bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
@@ -412,6 +459,33 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
     }
 }
 
+private fun hasExpandedPanel(state: ImeUiState): Boolean = when {
+    state.voice !is VoiceState.Idle && !state.holdToTalk -> true
+    state.clipboardVisible -> true
+    state.candidatesExpanded -> true
+    state.page != KeyboardPage.Letters -> true
+    else -> false
+}
+
+/**
+ * 候选词卡片与展开面板的宽度上限。
+ *
+ * 上限存在的理由不是"排得下"，而是"别铺满整屏"：外接键鼠的面板浮在应用上面，一条横贯整个
+ * 横屏的卡片既挡内容又和键盘腿一样宽，看着像键盘没关干净。窄内容（两三个候选）本来就撑不到
+ * 上限，卡片按内容走。
+ */
+@Composable
+private fun ImeUiState.contentMaxWidth(): Dp {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    return (screenWidth * CONTENT_WIDTH_FRACTION).coerceIn(CONTENT_MIN_WIDTH, CONTENT_MAX_WIDTH)
+}
+
+@Composable
+private fun ImeUiState.toolbarMaxWidth(): Dp {
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    return (screenWidth * TOOLBAR_WIDTH_FRACTION).coerceIn(TOOLBAR_MIN_WIDTH, TOOLBAR_MAX_WIDTH)
+}
+
 /** 悬浮卡片与屏幕边、卡片与卡片之间的距离：和悬浮键盘同一档。 */
 private val PANEL_MARGIN = 10.dp
 private val PANEL_MARGIN_VERTICAL = 6.dp
@@ -422,3 +496,13 @@ private val PANEL_CORNER = 24.dp
 
 /** 符号页里一颗符号的最小宽度：低于这个数就把列数减一（先保证看得清，再谈排布）。 */
 private val SYMBOL_TILE_MIN_WIDTH = 56.dp
+
+/** 候选词卡片：内容多长就多长，最多占屏幕的这么多。 */
+private const val CONTENT_WIDTH_FRACTION = 0.62f
+private val CONTENT_MIN_WIDTH = 200.dp
+private val CONTENT_MAX_WIDTH = 560.dp
+
+/** 工具面板：一排工具，撑不到上限（上限只是兜底，免得某些字号下长出屏幕）。 */
+private const val TOOLBAR_WIDTH_FRACTION = 0.9f
+private val TOOLBAR_MIN_WIDTH = 160.dp
+private val TOOLBAR_MAX_WIDTH = 420.dp

@@ -1,9 +1,11 @@
 package com.yuan3271.cloudrift.ime
 
 import android.util.Log
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.os.Build
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.ViewGroup
@@ -30,9 +32,11 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.core.view.WindowCompat
 import androidx.core.graphics.drawable.toDrawable
 import com.yuan3271.cloudrift.data.AppGraph
+import com.yuan3271.cloudrift.input.CompatPanelKind
 import com.yuan3271.cloudrift.input.ExternalInputMonitor
 import com.yuan3271.cloudrift.input.InputWindowHost
 import com.yuan3271.cloudrift.theme.CloudriftTheme
+import com.yuan3271.cloudrift.ui.CompatContentWindow
 import com.yuan3271.cloudrift.ui.CompatToolbarWindowContent
 import com.yuan3271.cloudrift.ui.KeyboardRoot
 import kotlin.math.roundToInt
@@ -61,24 +65,19 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
     private var floating = false
     private var floatingWidthPercent = DEFAULT_FLOATING_WIDTH
 
-    /** 工具面板那个窗口（键鼠兼容面板时的第二个窗口）；开不出来时是 null。 */
-    private var toolbarView: ComposeView? = null
-    private var toolbarParams: WindowManager.LayoutParams? = null
-    /** 工具面板左上角在屏幕上的位置（像素）；拖动时直接改它。 */
-    private var toolbarOffsetX = 0f
-    private var toolbarOffsetY = 0f
-    /** 量出来的面板尺寸；默认位置（底部居中）要用它。 */
-    private var toolbarWidthPx: Int? = null
-    private var toolbarHeightPx: Int? = null
-    private var toolbarPostAttempts = 0
+    /**
+     * 键鼠兼容面板的两块面板各自的窗口（见 [createCompatWindow]）；开不出来的那块不在表里。
+     *
+     * 用户点名两块面板要"两窗分离"：候选词面板跟着光标、工具面板停在自己被拖到的地方，各自
+     * 按内容撑开。所以它们不能画在输入法窗口里——输入法那个窗口的宽度是系统说了算的。
+     */
+    private val compatWindows = mutableMapOf<CompatPanelKind, CompatWindow>()
 
     /** 键鼠兼容面板：候选词窗口要不要跟着光标走，以及当前拿到的光标锚点（屏幕像素）。 */
     private var caretFollowing = false
     private var caretAnchor: android.graphics.PointF? = null
-    /** 这台机器给的光标锚点读不懂（换算后仍在屏幕外）：本机不再尝试跟随，免得面板跑到屏幕外。 */
-    private var caretAnchorRejected = false
-    /** 编辑器没给变换矩阵这件事只记一条日志。 */
-    private var caretMatrixMissingLogged = false
+    /** 光标锚点每来一条就重摆一次窗口太吵，只记前几条，用来核对坐标空间对不对。 */
+    private var caretLogs = 0
 
     /**
      * 外接键鼠的在场状态。它的回调只做一件事：把快照交给控制器，由控制器决定窗口里画虚拟键盘
@@ -107,7 +106,14 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         attachComposeOwnersToWindow()
         // The keyboard paints its own surface. Without this the window's own background shows as a
         // thick frame around the rounded card (and around the floating card's margins).
-        window?.window?.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
+        window?.window?.let { dialogWindow ->
+            dialogWindow.setBackgroundDrawable(Color.TRANSPARENT.toDrawable())
+            // 悬浮键盘不会铺满窗口（卡片四周留着 10dp / 6dp 的边距），那些边距必须露出底下的
+            // 应用。窗口格式要是 `PixelFormat.TRANSPARENT`（"没有 alpha 位、按不透明算"），
+            // 没画过的地方就会按窗口自己的底色算——横屏时看起来就是卡片四周一圈黑底。
+            // 明确要 TRANSLUCENT（带 alpha 的那种），这些边距才是真的透明。
+            dialogWindow.setFormat(PixelFormat.TRANSLUCENT)
+        }
         // The keyboard owns its own bottom inset, which is what lets the rounded surface sit
         // flush against a gesture navigation bar.
         window?.window?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
@@ -151,135 +157,271 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         applyWindowLayout()
     }
 
-    // ---- 键鼠兼容面板的第二个窗口：工具面板 ------------------------------------------
+    // ---- 键鼠兼容面板的两个窗口 --------------------------------------------------------
 
     /**
-     * 工具面板是**另一个窗口**，不是画在输入法窗口里的一行（用户点名：两个窗口）。
+     * 键鼠兼容面板的两块（候选词、工具）各是**一个独立窗口**，不是画在输入法窗口里的两行。
      *
-     * 这样两块面板各自能拖、各自有位置：候选词面板是输入法自己的窗口（跟着光标放），工具面板是这里
-     * 加的这一个。它比输入法窗口小得多，所以窗口自己就能收紧到面板大小，不用触摸区域那套。
+     * 为什么不能画在输入法窗口里：那个窗口的宽度是系统说了算的——这台机器上它是 `MATCH_PARENT`，
+     * 画在里面的卡片只能跟着铺满整屏（用户报的"窗屏莫名其妙占满整个横屏"），而且两块卡片共用
+     * 一个窗口，抓住一块拖另一块也跟着走（用户报的"没分成两个窗口"）。
      *
-     * 窗口类型按可靠性顺序试：`TYPE_INPUT_METHOD_DIALOG`（输入法自己的对话框窗口）→ 带上输入法窗口
-     * 的 token → `TYPE_APPLICATION_OVERLAY`（需要悬浮窗权限，没授权就失败）。全都开不出来时返回
-     * false，界面把工具面板画进候选词那个窗口里——功能不缺，只是两块面板不能再分开摆。
+     * 窗口类型只能是 `TYPE_APPLICATION_OVERLAY`：
+     * - `TYPE_INPUT_METHOD_DIALOG`（2012）走不通，它要 `INTERNAL_SYSTEM_WINDOW`（系统签名权限），
+     *   日志里就是 `permission denied for window type 2012`；
+     * - 再开一个 `TYPE_INPUT_METHOD`（2011）会把"这个显示的输入法窗口"顶掉，输入法 inset 跟着乱，
+     *   代价比收益大。
+     * 悬浮窗要用户授一次「显示在其他应用上层」（`SYSTEM_ALERT_WINDOW`）。没授权时不硬撑：返回
+     * false，界面把两块面板画回输入法窗口里（功能一件不少，只是不能各拖各的），并给出授权入口。
      */
-    override fun applyToolbarWindow(visible: Boolean, xPercent: Int, yPercent: Int): Boolean {
-        if (!visible) {
-            removeToolbarWindow()
-            return false
+    override fun applyCompatPanel(
+        kind: CompatPanelKind,
+        visible: Boolean,
+        xPercent: Int,
+        yPercent: Int,
+    ): Boolean {
+        val window = compatWindows[kind] ?: run {
+            // 没建过就现在建——**哪怕这次不用显示**。两块面板能不能各占一个窗口只有建了才知道，
+            // 而这个答案决定界面走"两块独立窗口"还是"画回输入法窗口"那条路；藏着不建等于把
+            // 候选词面板的第一次出现押在一次 addView 上。
+            val created = createCompatWindow(kind, startHidden = !visible) ?: return false
+            compatWindows[kind] = created
+            created
         }
-        if (toolbarView == null && !createToolbarWindow()) return false
-        val view = toolbarView ?: return false
-        val params = toolbarParams ?: return false
-        // 第一次摆位置时面板可能还没量过（刚 addView）。量到了再摆一次，居中才是真的居中。
-        if (toolbarWidthPx == null && view.width > 0) {
-            toolbarWidthPx = view.width
-            toolbarHeightPx = view.height
+        window.hintXPercent = xPercent
+        window.hintYPercent = yPercent
+        if (window.visible != visible) {
+            window.visible = visible
+            // 只是收起来，不拆窗口：候选词面板在键鼠模式下是"打字才出现、打完就收"，每次重建
+            // 都要重新量一遍、重新合成一遍，出现得慢半拍。
+            window.view.visibility = if (visible) View.VISIBLE else View.GONE
         }
+        if (!visible) return true
+        placeCompatWindow(window)
+        return true
+    }
+
+    /**
+     * 拖动把手。
+     *
+     * 两块面板的"位置"是两种东西，所以位移落在两个地方：
+     * - 候选词面板跟着光标走，所以拖出来的是**相对光标**的偏移（拖开一点，光标再走它还在旁边，
+     *   不是"脱开光标"）；
+     * - 工具面板没有光标可跟，拖出来的是屏幕上的绝对位置，拖到哪停在哪、下次开键盘还认得。
+     */
+    override fun moveCompatPanelBy(kind: CompatPanelKind, dx: Float, dy: Float) {
+        val window = compatWindows[kind] ?: return
+        if (kind == CompatPanelKind.Content) {
+            window.nudgeX += dx
+            window.nudgeY += dy
+            placeCompatWindow(window)
+        } else {
+            window.x += dx
+            window.y += dy
+            applyCompatWindowPosition(window)
+        }
+    }
+
+    override fun commitCompatPanelPosition(kind: CompatPanelKind) {
+        // 只有工具面板需要记住位置（候选词面板的位置由光标决定，拖出来的是相对偏移，不值得记）。
+        if (kind != CompatPanelKind.Toolbar) return
+        val window = compatWindows[kind] ?: return
         val metrics = resources.displayMetrics
-        val insets = systemBarBottomInset()
-        // 没拖过就放在底部居中：与候选词面板同一列，但各是各的窗口。
-        val defaultX = (metrics.widthPixels - (toolbarWidthPx ?: 0)).toFloat() / 2f
-        val defaultY = (
-            metrics.heightPixels - insets - (toolbarHeightPx ?: 0) - FALLBACK_MARGIN_PX
-            ).toFloat()
-        toolbarOffsetX = if (xPercent >= 0) metrics.widthPixels * xPercent / 100f else defaultX
-        toolbarOffsetY = if (yPercent >= 0) metrics.heightPixels * yPercent / 100f else defaultY
-        params.gravity = Gravity.TOP or Gravity.START
-        params.x = toolbarOffsetX.roundToInt()
-        params.y = toolbarOffsetY.roundToInt()
-        val applied = runCatching {
-            windowManager.updateViewLayout(view, params)
-            true
-        }.getOrElse {
-            Log.w(TAG, "工具面板窗口更新失败，退回画在键盘窗口里", it)
-            false
+        controller?.onCompatToolbarMoved(
+            (window.x / metrics.widthPixels * 100f).roundToInt().coerceIn(0, 100),
+            (window.y / metrics.heightPixels * 100f).roundToInt().coerceIn(0, 100),
+        )
+    }
+
+    override fun removeCompatPanels() {
+        compatWindows.values.forEach { window ->
+            runCatching { window.windowManager.removeViewImmediate(window.view) }
+                .onFailure { Log.w(TAG, "键鼠面板窗口拆不掉", it) }
         }
-        if (applied && xPercent < 0 && toolbarWidthPx == null && toolbarPostAttempts < TOOLBAR_POSITION_ATTEMPTS) {
-            toolbarPostAttempts++
-            view.post { applyToolbarWindow(visible = true, xPercent = -1, yPercent = -1) }
+        compatWindows.clear()
+    }
+
+    private fun createCompatWindow(kind: CompatPanelKind, startHidden: Boolean): CompatWindow? {
+        val active = controller ?: return null
+        val context = overlayContext()
+        val manager = context.getSystemService(WINDOW_SERVICE) as? WindowManager ?: run {
+            Log.w(TAG, "拿不到悬浮窗的 WindowManager，键鼠面板退回输入法窗口")
+            return null
         }
-        return applied
-    }
-
-    override fun moveToolbarWindowBy(dx: Float, dy: Float) {
-        val view = toolbarView ?: return
-        val params = toolbarParams ?: return
-        // 拖动量直接从窗口原来的位置加上去：这里记的是屏幕上的绝对位置（不是相对某个角），
-        // 所以窗口不会因为"锚点动了"而跳。
-        toolbarOffsetX += dx
-        toolbarOffsetY += dy
-        params.x = toolbarOffsetX.roundToInt()
-        params.y = toolbarOffsetY.roundToInt()
-        runCatching { windowManager.updateViewLayout(view, params) }
-    }
-
-    override fun commitToolbarWindowPosition() {
-        val metrics = resources.displayMetrics
-        val xPercent = (toolbarOffsetX / metrics.widthPixels * 100f).roundToInt().coerceIn(0, 100)
-        val yPercent = (toolbarOffsetY / metrics.heightPixels * 100f).roundToInt().coerceIn(0, 100)
-        controller?.onCompatToolbarMoved(xPercent, yPercent)
-    }
-
-    private fun createToolbarWindow(): Boolean {
-        val view = ComposeView(this).apply {
+        val view = ComposeView(context).apply {
             setViewTreeLifecycleOwner(this@CloudriftImeService)
             setViewTreeViewModelStoreOwner(this@CloudriftImeService)
             setViewTreeSavedStateRegistryOwner(this@CloudriftImeService)
+            if (startHidden) visibility = View.GONE
         }
-        val active = controller ?: return false
-        view.setContent { CompatToolbarWindowContent(active) }
-        // WRAP_CONTENT：窗口自己收紧到面板大小（工具栏不留空，也没有可以点空的区域）。
-        // WRAP_CONTENT：窗口自己收紧到面板大小（工具栏不留空，也没有可以点空的区域）。
-        //
-        // 窗口类型按可靠性顺序试：`TYPE_INPUT_METHOD_DIALOG`（输入法自己的对话框窗口，可能还要带上
-        // 输入法窗口的 token）→ `TYPE_APPLICATION_OVERLAY`（要用户授权"显示在其他应用上层"）。
-        // 全都开不出来时返回 false，界面把工具面板画进候选词那个窗口里。
-        val candidates = listOf(
-            toolbarWindowParams(WindowManager.LayoutParams.TYPE_INPUT_METHOD_DIALOG, withToken = false),
-            toolbarWindowParams(WindowManager.LayoutParams.TYPE_INPUT_METHOD_DIALOG, withToken = true),
-            toolbarWindowParams(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, withToken = false),
-        )
-        for (params in candidates) {
-            val added = runCatching {
-                windowManager.addView(view, params)
-                true
-            }.getOrElse {
-                Log.w(TAG, "工具面板窗口开不出来（type=${params.type}）", it)
-                false
-            }
-            if (added) {
-                toolbarView = view
-                toolbarParams = params
-                return true
+        view.setContent {
+            when (kind) {
+                CompatPanelKind.Content -> CompatContentWindow(active)
+                CompatPanelKind.Toolbar -> CompatToolbarWindowContent(active)
             }
         }
-        return false
-    }
-
-    private fun toolbarWindowParams(type: Int, withToken: Boolean): WindowManager.LayoutParams =
-        WindowManager.LayoutParams(
+        // WRAP_CONTENT：窗口自己收紧到面板大小——卡片按内容撑开、没有可以点空的区域，这正是
+        // "窗口自适应内容"。位置由 applyCompatWindowPosition 逐像素摆，所以重力固定成左上角。
+        val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            type,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                // 面板以外的地方点击照旧落到下面的应用（输入法不该接管整屏触摸）。
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            if (withToken) token = window?.window?.attributes?.token
+        }
+        val added = runCatching {
+            manager.addView(view, params)
+            true
+        }.getOrElse {
+            Log.w(TAG, "键鼠面板窗口开不出来（$kind），退回画在输入法窗口里", it)
+            false
+        }
+        if (!added) return null
+        val window = CompatWindow(
+            kind = kind,
+            view = view,
+            windowManager = manager,
+            params = params,
+            visible = !startHidden,
+        )
+        // 面板按内容撑开，宽度高度会随候选多少变。量一次、变一次就重摆一次，窗口才不会在
+        // 内容变高之后半个身子探到屏幕外（或者压住光标那一行）。
+        view.addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+            val width = (right - left).toFloat()
+            val height = (bottom - top).toFloat()
+            if (width <= 0f || height <= 0f) return@addOnLayoutChangeListener
+            if (width == window.width && height == window.height) return@addOnLayoutChangeListener
+            window.width = width
+            window.height = height
+            if (window.visible) placeCompatWindow(window)
+        }
+        return window
+    }
+
+    /**
+     * 悬浮窗要一个"窗口上下文"，而且类型必须与窗口类型一致：拿服务的上下文（窗口类型是输入法的
+     * 2011）去加 2038 的窗口，会被 `IncorrectContextUseViolation` 拦下。
+     *
+     * API 30 以下没有 `createWindowContext`：那时也还没有这条类型检查，直接用服务上下文。
+     */
+    private fun overlayContext(): Context =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            createWindowContext(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null)
+        } else {
+            this
         }
 
-    private fun removeToolbarWindow() {
-        val view = toolbarView ?: return
-        toolbarView = null
-        toolbarParams = null
-        toolbarWidthPx = null
-        toolbarHeightPx = null
-        toolbarPostAttempts = 0
-        runCatching { windowManager.removeViewImmediate(view) }
+    /**
+     * 把一块面板摆到它该在的地方。
+     *
+     * 候选词面板：跟着光标（编辑器每报一次锚点就走一遍这条路），光标下面放不下就翻到上面；
+     * 拿不到锚点就退回贴屏幕底部中间。工具面板：第一次按记住的位置（没记住＝底部居中），之后
+     * 用户拖到哪就在哪——所以它不走光标那条路。
+     */
+    private fun placeCompatWindow(window: CompatWindow) {
+        // 面板还没量出来时不能摆：默认位置（底部居中）与"下面放不下就翻到上面"都要用尺寸，
+        // 拿 0 去算会把它放在屏幕正中间那条线上。等第一帧布局完，尺寸自然就来了——
+        // 那一刻 createCompatWindow 里挂的布局监听会再调一次这里。
+        if (window.width <= 0f || window.height <= 0f) {
+            // 最多补几次：面板的尺寸是布局给的，正常情况一帧就有；万一某台机器上一直量不出来，
+            // 也不能在这儿无限重投消息。
+            if (window.placementAttempts < COMPAT_PLACEMENT_ATTEMPTS) {
+                window.placementAttempts++
+                window.view.post { if (window.visible) placeCompatWindow(window) }
+            }
+            return
+        }
+        window.placementAttempts = 0
+        val metrics = resources.displayMetrics
+        val inset = systemBarBottomInset()
+        val bottomLimit = (metrics.heightPixels - inset).toFloat()
+        val anchor = caretAnchor.takeIf {
+            caretFollowing && window.kind == CompatPanelKind.Content
+        }
+        when {
+            anchor != null -> {
+                val below = anchor.y + CARET_GAP_Y_PX + window.nudgeY
+                val above = anchor.y - window.height - CARET_LINE_PX + window.nudgeY
+                window.x = anchor.x + CARET_GAP_X_PX + window.nudgeX
+                window.y = if (window.height > 0f && below + window.height > bottomLimit) above else below
+            }
+
+            window.kind == CompatPanelKind.Content -> {
+                window.x = (metrics.widthPixels - window.width) / 2f + window.nudgeX
+                window.y = bottomLimit - window.height - FALLBACK_MARGIN_PX + window.nudgeY
+            }
+
+            !window.positioned -> {
+                window.x = if (window.hintXPercent >= 0) {
+                    metrics.widthPixels * window.hintXPercent / 100f
+                } else {
+                    (metrics.widthPixels - window.width) / 2f
+                }
+                window.y = if (window.hintYPercent >= 0) {
+                    metrics.heightPixels * window.hintYPercent / 100f
+                } else {
+                    bottomLimit - window.height - FALLBACK_MARGIN_PX
+                }
+                window.positioned = true
+            }
+            // 已经被拖过：位置归用户，不要因为一次同步把它拽回记住的那个百分比。
+        }
+        window.x = window.x.coerceIn(0f, (metrics.widthPixels - window.width).coerceAtLeast(0f))
+        window.y = window.y.coerceIn(0f, (bottomLimit - window.height).coerceAtLeast(0f))
+        applyCompatWindowPosition(window)
+    }
+
+    private fun applyCompatWindowPosition(window: CompatWindow) {
+        window.params.gravity = Gravity.TOP or Gravity.START
+        window.params.x = window.x.roundToInt()
+        window.params.y = window.y.roundToInt()
+        runCatching { window.windowManager.updateViewLayout(window.view, window.params) }
+            .onFailure { Log.w(TAG, "键鼠面板摆位失败（${window.kind}）", it) }
+    }
+
+    /** 光标锚点变了：候选词面板要跟着走（工具面板不动）。 */
+    private fun placeCompatContentWindow() {
+        val window = compatWindows[CompatPanelKind.Content] ?: return
+        if (!window.visible) return
+        placeCompatWindow(window)
+    }
+
+    /**
+     * 键鼠兼容面板里的一块的窗口，连同它自己的位置。
+     *
+     * 尺寸在**窗口层**量（`WRAP_CONTENT` 下窗口的宽高就是面板的宽高），Compose 那边只管画，
+     * 这样"窗口自适应内容"这件事只有一处真相。
+     */
+    private class CompatWindow(
+        val kind: CompatPanelKind,
+        val view: ComposeView,
+        val windowManager: WindowManager,
+        val params: WindowManager.LayoutParams,
+        visible: Boolean,
+    ) {
+        var visible = visible
+        /** 左上角在屏幕上的位置（像素）。 */
+        var x = 0f
+        var y = 0f
+        /** 相对默认位置（候选词＝光标，工具面板＝记住的位置）拖出来的偏移。 */
+        var nudgeX = 0f
+        var nudgeY = 0f
+        /** 量到的面板尺寸；0 表示还没量到。 */
+        var width = 0f
+        var height = 0f
+        /** 工具面板：位置已经定过一次（记住的位置或默认位置），之后归用户拖。 */
+        var positioned = false
+        /** 最近一次同步给过来的位置提示（屏幕百分比，负数＝没记住）。 */
+        var hintXPercent = -1
+        var hintYPercent = -1
+        /** 面板还没量到时补摆位置的次数。 */
+        var placementAttempts = 0
     }
 
     private fun systemBarBottomInset(): Int =
@@ -292,6 +434,8 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         get() = getSystemService(WINDOW_SERVICE) as WindowManager
 
     private fun applyWindowLayout() {
+        // 键鼠兼容模式下窗口里只有一块 1dp 的透明壳（两块面板各自在 [compatWindows] 里），
+        // 这里的宽度、位置都只跟虚拟键盘有关：壳本身不占屏，摆在哪都一样。
         val dialog = window ?: return
         val attributes = dialog.window?.attributes ?: return
         val screenWidth = resources.displayMetrics.widthPixels
@@ -350,61 +494,64 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
     override fun setCaretFollowing(enabled: Boolean) {
         if (caretFollowing == enabled) return
         caretFollowing = enabled
-        caretAnchorRejected = false
-        caretMatrixMissingLogged = false
-        if (!enabled) caretAnchor = null
-        runCatching {
+        caretLogs = 0
+        if (!enabled) {
+            caretAnchor = null
+            // 停下监听：有的编辑器会一直算锚点，输入法不该在这次输入里继续要它。
+        }
+        val requested = runCatching {
             val mode = if (enabled) InputConnection.CURSOR_UPDATE_MONITOR else 0
-            currentInputConnection?.requestCursorUpdates(mode)
-        }.onFailure { Log.w(TAG, "无法请求光标位置更新", it) }
+            currentInputConnection?.requestCursorUpdates(mode) ?: false
+        }
+            .onFailure { Log.w(TAG, "无法请求光标位置更新", it) }
+            .getOrDefault(false)
+        if (enabled) {
+            // 编辑器（或它的输入连接）没接这条：面板就按"不知道光标在哪"处理，贴屏幕底部。
+            if (requested) {
+                Log.i(TAG, "已向编辑器订阅光标位置，候选词面板将跟着光标走")
+            } else {
+                Log.i(TAG, "编辑器不接受光标位置订阅，候选词面板贴屏幕底部")
+            }
+        }
         applyWindowLayout()
     }
 
     /**
      * 编辑器报来了光标位置。
      *
-     * 坐标按屏幕坐标用，`CursorAnchorInfo.matrix` 非空时先用它换算一次（编辑器自带缩放 / 滚动换算
-     * 时会带上矩阵）。这两句是这套 API 里唯一需要真机核对的地方：坐标语义 Android 文档写得含糊，
-     * 万一某台机器给的是编辑器局部坐标，锚点会落在屏幕左上角附近——那台机器上退回底部即可（把
-     * "虚拟键盘 / 兼容面板"切成虚拟键盘，或直接不管它，窗口也不会跑到屏幕外）。
+     * 坐标空间：`insertionMarker*` 是编辑器**局部坐标**，"渲染到屏幕上时要先过 `getMatrix()`"
+     * （官方文档原话），所以先换算再当屏幕坐标用。`getMatrix()` 按实现永远不会是 null（构造器里
+     * 没设就是单位阵），单位阵换算等于没换算——正好是"编辑器没给矩阵"时的正确行为。
      */
     override fun onUpdateCursorAnchorInfo(cursorAnchorInfo: CursorAnchorInfo) {
         super.onUpdateCursorAnchorInfo(cursorAnchorInfo)
-        if (!caretFollowing || caretAnchorRejected) return
+        if (!caretFollowing) return
         val point = floatArrayOf(
             cursorAnchorInfo.insertionMarkerHorizontal,
             cursorAnchorInfo.insertionMarkerBottom,
         )
         if (point[0].isNaN() || point[1].isNaN()) return
-        // 坐标空间有官方说法：insertionMarker* 都是"编辑器局部坐标，渲染到屏幕时要先过 getMatrix()"
-        // （developer.android.google.cn：in the local coordinates that will be transformed with
-        // getMatrix() when rendered on the screen），所以这里照做——先拿矩阵，再换算。
-        val matrix = cursorAnchorInfo.matrix
-        if (matrix == null) {
-            // 编辑器没给变换矩阵：那些值是局部坐标，我们没有任何依据换算到屏幕上。宁可不跟随
-            // （面板继续贴在屏幕底部），也不猜一个位置把候选栏丢到别处。
-            if (!caretMatrixMissingLogged) {
-                caretMatrixMissingLogged = true
-                Log.w(TAG, "编辑器没有提供 CursorAnchorInfo 的变换矩阵，本机不跟随光标")
-            }
-            return
-        }
-        runCatching { matrix.mapPoints(point) }
-        val x = point[0]
-        val y = point[1]
+        cursorAnchorInfo.matrix?.let { matrix -> runCatching { matrix.mapPoints(point) } }
         val metrics = resources.displayMetrics
-        if (x < -CARET_TOLERANCE_PX || x > metrics.widthPixels + CARET_TOLERANCE_PX ||
-            y < -CARET_TOLERANCE_PX || y > metrics.heightPixels + CARET_TOLERANCE_PX
-        ) {
-            // 换算完还是屏幕外的点：这台机器给的东西我们读不懂。同样退回"贴底部"。
-            caretAnchorRejected = true
-            caretAnchor = null
-            Log.w(TAG, "光标锚点落在屏幕外（$x, $y），这台机器上不跟随光标")
-            applyWindowLayout()
-            return
+        if (caretLogs < CARET_LOG_LIMIT) {
+            caretLogs++
+            Log.i(
+                TAG,
+                "光标锚点 原始=(${cursorAnchorInfo.insertionMarkerHorizontal}, " +
+                    "${cursorAnchorInfo.insertionMarkerBottom}) 换算后=(${point[0]}, ${point[1]}) " +
+                    "屏幕=${metrics.widthPixels}x${metrics.heightPixels}",
+            )
         }
-        caretAnchor = android.graphics.PointF(x, y)
-        applyWindowLayout()
+        // 换算完落在屏幕外的点照样收下，只是夹进屏幕范围：面板会贴着光标那一侧停住，而不是
+        // 直接放弃跟随、永远贴回屏幕底部（宁可位置差一点，也好过一直不跟）。
+        caretAnchor = android.graphics.PointF(
+            point[0].coerceIn(0f, metrics.widthPixels.toFloat()),
+            point[1].coerceIn(0f, metrics.heightPixels.toFloat()),
+        )
+        placeCompatContentWindow()
+        // 两块面板都在自己的窗口里时，输入法窗口只是个 1dp 的壳，没什么好重摆的；退回把面板画进
+        // 输入法窗口的那条路上，窗口本身才需要跟着光标走。
+        if (compatWindows[CompatPanelKind.Content] == null) applyWindowLayout()
     }
 
     @Composable
@@ -472,13 +619,13 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         controller?.onFinishInputView()
-        removeToolbarWindow()
+        removeCompatPanels()
         super.onFinishInputView(finishingInput)
     }
 
     override fun onWindowHidden() {
         controller?.onWindowHidden()
-        removeToolbarWindow()
+        removeCompatPanels()
         super.onWindowHidden()
     }
 
@@ -543,7 +690,7 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
     }
 
     override fun onDestroy() {
-        removeToolbarWindow()
+        removeCompatPanels()
         externalInputs.stop()
         controller?.dispose()
         super.onDestroy()
@@ -551,8 +698,6 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
 
     private companion object {
         const val TAG = "CloudriftIme"
-        /** 面板还没量到时再摆几次位置的次数上限。 */
-        const val TOOLBAR_POSITION_ATTEMPTS = 3
         /** 默认停靠位置与屏幕底边留出的空。 */
         const val FALLBACK_MARGIN_PX = 24
         /** 跟随光标时，候选词窗口相对光标往右、往下让开多少。 */
@@ -560,8 +705,10 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         const val CARET_GAP_Y_PX = 10
         /** 翻到光标上方时，再往上让开一行的高度（光标本身在那一行里）。 */
         const val CARET_LINE_PX = 8
-        /** 光标锚点允许超出屏幕多少像素；超出去就当这台机器的坐标空间读不懂。 */
-        const val CARET_TOLERANCE_PX = 64
+        /** 光标锚点只记前几条日志，用来核对坐标空间（真机排查用）。 */
+        const val CARET_LOG_LIMIT = 3
+        /** 面板还没量到尺寸时，补摆位置的次数上限。 */
+        const val COMPAT_PLACEMENT_ATTEMPTS = 3
         const val DEFAULT_FLOATING_WIDTH = 78
         const val MIN_FLOATING_WIDTH = 45
         const val MAX_FLOATING_WIDTH = 100

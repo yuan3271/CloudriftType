@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +27,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -34,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Constraints
 import com.yuan3271.cloudrift.engine.Candidate
 import com.yuan3271.cloudrift.engine.CandidateKind
 import com.yuan3271.cloudrift.ime.ImeUiState
@@ -91,6 +96,19 @@ internal fun CandidateStrip(
     onPasteClipboardOffer: () -> Unit,
     onDismissClipboardOffer: () -> Unit,
     idle: @Composable () -> Unit,
+    /**
+     * 键鼠兼容面板里的那条：卡片按内容撑开，两三个候选就是一张窄卡片，候选多了才长到上限再滚动。
+     *
+     * 虚拟键盘上这条必须撑满窗口宽度（它顶着整块键盘的顶边），所以默认是 false。
+     */
+    wrapContent: Boolean = false,
+    /**
+     * 每颗候选前面标上 1-9。
+     *
+     * 键鼠兼容面板上是给**物理键盘**看的："按 2 选第二颗"这件事只有号码写在候选前面才成立
+     * （见 ImeController.selectCandidateByDigit）。虚拟键盘上手指直接点候选，标号只是噪声。
+     */
+    numbered: Boolean = false,
 ) {
     if (state.candidates.isEmpty()) {
         // 刚复制进来的内容优先占这条栏：它是一次性的"要不要粘贴"，而 layout 名随时都在。
@@ -101,37 +119,124 @@ internal fun CandidateStrip(
                 text = offer.text.replace(OFFER_WHITESPACE, " ").trim(),
                 onPaste = onPasteClipboardOffer,
                 onDismiss = onDismissClipboardOffer,
+                wrapContent = wrapContent,
             )
         } else {
             idle()
         }
     } else {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LazyRow(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                itemsIndexed(state.candidates.take(MAX_VISIBLE)) { index, candidate ->
-                    CandidatePill(
-                        candidate = candidate,
-                        // The first candidate is the one space/enter would take - but only
-                        // while something is being composed. A 联想 strip has no default, so
-                        // its pills all carry the prediction tint.
-                        emphasised = index == 0 && state.isComposing,
-                        onClick = { onCandidate(index) },
-                    )
-                }
+        val pills: @Composable () -> Unit = {
+            state.candidates.take(MAX_VISIBLE).forEachIndexed { index, candidate ->
+                CandidatePill(
+                    candidate = candidate,
+                    // 标号从 1 开始，和物理键盘上的数字键一一对应。
+                    number = if (numbered && index < MAX_NUMBERED) index + 1 else null,
+                    // The first candidate is the one space/enter would take - but only
+                    // while something is being composed. A 联想 strip has no default, so
+                    // its pills all carry the prediction tint.
+                    emphasised = index == 0 && state.isComposing,
+                    onClick = { onCandidate(index) },
+                )
             }
-            if (state.candidates.size > MAX_VISIBLE || state.candidatesExpanded) {
+        }
+        val expandButton: @Composable () -> Unit = {
+            // 箭头下面垫一层卡片底色：候选行被截断时，最后一颗候选会在箭头右边露出一条边，
+            // 盖上底色之后"候选到这儿为止"才是干净的，箭头也正好贴着卡片右缘。
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(start = 4.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 IconButton(onClick = onExpand, modifier = Modifier.size(34.dp)) {
                     Icon(
                         imageVector = CloudriftIcons.ExpandMore,
-                        contentDescription = "更多候选",
+                        contentDescription = "展开候选",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
                 }
+            }
+        }
+        if (wrapContent) {
+            // 键鼠面板那条：卡片多宽由内容说了算，装不下就截断并把剩下的收进展开列表
+            // （见 [WrapCandidateRow]）。
+            WrapCandidateRow(expand = expandButton, pills = pills)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LazyRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(PILL_GAP),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    itemsIndexed(state.candidates.take(MAX_VISIBLE)) { index, candidate ->
+                        CandidatePill(
+                            candidate = candidate,
+                            emphasised = index == 0 && state.isComposing,
+                            onClick = { onCandidate(index) },
+                        )
+                    }
+                }
+                if (state.candidates.size > MAX_VISIBLE || state.candidatesExpanded) {
+                    expandButton()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 按内容撑开的候选行：候选少时卡片就这么窄；装不下时**自动截断**，并在右端留一颗「展开」，
+ * 点它把剩下的候选摊开成下拉列表（[ExpandedCandidates]）。
+ *
+ * 为什么不用 `LazyRow`：Lazy 布局**总是把自己撑到可用宽度**（可用宽度就是卡片上限），于是"内容
+ * 到底多宽"量不出来——卡片永远顶满上限，展开按钮还会被挤到可视区外，看起来正是"多余的候选词
+ * 既没有截断、也没有下拉列表"。横向滚动容器同样不能用无限约束去量（Compose 会直接抛异常）。
+ *
+ * 所以这里只做两件事：先用**不限宽**的约束把候选那一行量一遍拿到真实内容宽度（普通 Row 允许无限
+ * 约束），再决定这一帧是"内容宽，没有箭头"还是"上限宽，裁掉超出部分，右端放箭头"。
+ */
+@Composable
+private fun WrapCandidateRow(
+    expand: @Composable () -> Unit,
+    pills: @Composable () -> Unit,
+) {
+    Layout(
+        content = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(PILL_GAP),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                pills()
+            }
+            expand()
+        },
+        // 卡片的上限由外面那层 widthIn 给（窗口是按内容收紧的独立窗口），这里不再重复；
+        // clipToBounds 把超出上限的候选真的裁掉——截断就该是截断，不是让卡片继续长。
+        modifier = Modifier.clipToBounds(),
+    ) { measurables, constraints ->
+        val unbounded = constraints.copy(minWidth = 0, minHeight = 0, maxWidth = Int.MAX_VALUE)
+        val content = measurables.firstOrNull()?.measure(unbounded)
+        val contentWidth = content?.width ?: 0
+        val height = (content?.height ?: 0).coerceAtLeast(constraints.minHeight)
+        // 箭头按候选行的高度量（它自己用 fillMaxHeight 铺满，才好盖住被截断的那一截候选）。
+        val button = measurables.getOrNull(1)?.measure(
+            Constraints(minWidth = 0, maxWidth = Int.MAX_VALUE, minHeight = height, maxHeight = height),
+        )
+        val buttonWidth = button?.width ?: 0
+        val available = constraints.maxWidth
+        if (contentWidth + buttonWidth <= available) {
+            // 全装得下：卡片宽度就取内容宽度，箭头不出现（它只是"还有别的候选"的入口）。
+            layout(contentWidth, height) {
+                content?.place(0, Alignment.CenterVertically.align(content.height, height))
+            }
+        } else {
+            // 装不下：给箭头留出位置，超出的候选被裁掉，箭头永远贴着卡片右端可见。
+            val pillsWidth = (available - buttonWidth).coerceAtLeast(0)
+            layout(available, height) {
+                content?.place(0, Alignment.CenterVertically.align(content.height, height))
+                button?.place(pillsWidth, Alignment.CenterVertically.align(button.height, height))
             }
         }
     }
@@ -149,15 +254,15 @@ private fun ClipboardOfferStrip(
     text: String,
     onPaste: () -> Unit,
     onDismiss: () -> Unit,
+    wrapContent: Boolean = false,
 ) {
     Row(
-        modifier = Modifier.fillMaxSize(),
+        modifier = if (wrapContent) Modifier else Modifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Row(
-            modifier = Modifier
-                .weight(1f)
+            modifier = (if (wrapContent) Modifier.widthIn(max = 380.dp) else Modifier.weight(1f))
                 .clip(RoundedCornerShape(14.dp))
                 .clickable(onClick = onPaste)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -222,7 +327,13 @@ private fun IdleStrip(state: ImeUiState) {
 }
 
 @Composable
-private fun CandidatePill(candidate: Candidate, emphasised: Boolean, onClick: () -> Unit) {
+private fun CandidatePill(
+    candidate: Candidate,
+    emphasised: Boolean,
+    onClick: () -> Unit,
+    /** 这颗候选在物理键盘上对应的数字键（1-9）；null 表示这一条不标号。 */
+    number: Int? = null,
+) {
     val target = when {
         emphasised -> MaterialTheme.colorScheme.primaryContainer
         candidate.kind == CandidateKind.Prediction -> MaterialTheme.colorScheme.surfaceContainerHighest
@@ -244,6 +355,14 @@ private fun CandidatePill(candidate: Candidate, emphasised: Boolean, onClick: ()
         contentAlignment = Alignment.Center,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (number != null) {
+                // 号要小、要淡：它是给眼睛找"该按哪个数字键"用的，不该跟候选抢注意力。
+                Text(
+                    text = number.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = content.copy(alpha = 0.5f),
+                )
+            }
             Text(
                 text = candidateLabel(candidate, dim = content.copy(alpha = 0.45f)),
                 style = MaterialTheme.typography.titleMedium,
@@ -284,4 +403,8 @@ internal fun candidateLabel(candidate: Candidate, dim: Color): AnnotatedString {
 
 private val CANDIDATE_BAR_HEIGHT = 44.dp
 private const val MAX_VISIBLE = 12
+/** 标号只到 9：物理键盘上能当快捷键用的就这九个。 */
+private const val MAX_NUMBERED = 9
+/** 候选胶囊之间、以及胶囊与「展开」之间的间距。 */
+private val PILL_GAP = 6.dp
 private val OFFER_WHITESPACE = Regex("\\s+")

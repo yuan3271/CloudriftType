@@ -614,8 +614,9 @@ class PinyinEngineTest {
     }
 
     /**
-     * 中文模式下的英文词。用户定下的三条：至少 5 个字母、没有拼错（是前缀）、拼到 60%（或者整词
-     * 打满）。"hello" 在中文这边只有不成词的读法，所以它排第一。
+     * 中文模式下的英文词。用户定下的规则：3 个字母以内要整词打满，4 个字母以上至少打 4 个字母
+     * 并且打到 60%；两种情况都不能拼错（必须是前缀）。"hello" 在中文这边只有不成词的读法，
+     * 所以它排第一。
      */
     @Test
     fun `an english word typed on the pinyin keyboard comes first when no chinese word reads the same`() {
@@ -649,8 +650,26 @@ class PinyinEngineTest {
     }
 
     /**
+     * 用户点在名字上的那一个：中文模式下打 `like` 要出 `like`。
+     *
+     * 原来的门槛是 5 个字母，四个字母的常用词一个都进不来（`like`/`love`/`work`/`time`），而它们
+     * 恰恰是中文读音给不出像样结果的那类串。
+     */
+    @Test
+    fun `four letter english words work on the pinyin keyboard`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        for (word in listOf("like", "love", "work", "time")) {
+            val texts = engine.evaluate(word, engine.candidateLimit).candidates.map { it.text }
+            assertTrue("$word 应该出现在候选里: $texts", texts.contains(word))
+        }
+        // 四个字母的短词一样要打够 4 个：`lik` 还不够（`like` 会被静音键那条规则挡在外面）。
+        val partial = engine.evaluate("lik", engine.candidateLimit).candidates.map { it.text }
+        assertTrue("lik 不该出 $partial", partial.none { it == "like" })
+    }
+
+    /**
      * 中文模式下打英文词也吃学习记录：词表里根本没有、但这个人打过两次以上的词（人名、术语、
-     * 缩写）也走同一条路——至少 5 个字母、是前缀、拼到 60%。
+     * 缩写）也走同一条路——至少 4 个字母、是前缀、拼到 60%。
      */
     @Test
     fun `an english word learned on this device is offered on the pinyin keyboard too`() {
@@ -674,13 +693,24 @@ class PinyinEngineTest {
         assertTrue("九键不该猜英文: $nine", nine.none { it == "cloudrift" })
     }
 
+    /**
+     * 三个字母以内的词：整词打满才认，少一个字母都不算。
+     *
+     * 这一条与"四字母起至少打 4 个字母"是同一个尺子的两头：`men` 打全了给（哪怕它同时是"门"的
+     * 读音），`me` 没打全就不给。
+     */
     @Test
-    fun `short buffers never guess english`() {
+    fun `three letter words need every letter`() {
         val engine = PinyinEngine(dictionary, nineKey = false)
-        for (code in listOf("he", "men", "can", "wo", "you")) {
-            val predictions = engine.evaluate(code, engine.candidateLimit).candidates
+        for (partial in listOf("me", "ca", "yo")) {
+            val predicted = engine.evaluate(partial, engine.candidateLimit).candidates
                 .filter { it.kind == CandidateKind.Prediction }
-            assertTrue("$code 不该猜英文: ${predictions.map { it.text }}", predictions.isEmpty())
+                .map { it.text }
+            assertTrue("$partial 不该提前给出英文词: $predicted", predicted.none { it.length == 3 })
+        }
+        for (word in listOf("men", "can", "you")) {
+            val texts = engine.evaluate(word, engine.candidateLimit).candidates.map { it.text }
+            assertTrue("$word 打全了就该有: $texts", texts.contains(word))
         }
     }
 

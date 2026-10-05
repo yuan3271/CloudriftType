@@ -119,16 +119,23 @@ class PinyinEngine(
      * 拼音键盘上打出 "hello"、"computer" 这种字母串时，中文引擎能给的只是几个不成词的读法
      * （`喝理论喔`、`成欧盟铺`），而那串字母**本来就是英文单词**。规则由用户定：
      *
-     *  - 输入长度至少 [ENGLISH_MIN_INPUT] 个字母（太短的串到处都能撞上英文词，`he`/`men` 这种）；
-     *  - **没有拼错**：屏幕上那串字母必须是候选词的前缀（`comput` → `computer`），拼到
-     *    [ENGLISH_PERCENT_NUMERATOR]% 就能上（`compu` 也出 `computer`）；
-     *  - 或者**完全输入**：整词打满（`hello`）本身就是证据，不需要百分比。
+     * 能不能上，看它有多长（用户口述的规则，见 [englishQualifies]）：
+     *
+     *  - **三个字母以内**：整词打满才算（`men` 要等 m-e-n 全打出来、一个字母不差）。`he`/`men`/
+     *    `can` 这些串本身就是拼音的读音，提前冒头只会添乱；
+     *  - **四个字母以上**：至少打 [ENGLISH_MIN_INPUT] 个字母、并且打到
+     *    [ENGLISH_PERCENT_NUMERATOR]%（`compu` → `computer`）；整词打满（`hello`）本身就是证据。
+     *
+     * 两种情况下都**不能拼错**：屏幕上那串字母必须是候选词的前缀。
      *
      * 英文之间只看**拼全了多少**：越全越靠前，一样全时短的词在前（它离打满更近）。
      * 它和中文字谁排第一见 [mergeEnglish]。
      */
     private fun englishCandidates(raw: String, buffer: String): List<Candidate> {
-        if (nineKey || buffer.length < ENGLISH_MIN_INPUT) return emptyList()
+        // 九键的缓冲区是数字，整条英文路都不参与。长度这里不再设门槛：短词由
+        // [englishQualifies] 按"整词打满"单独把关（`men` 全打出来才算），所以不能在这一步
+        // 就把三个字母以内的缓冲区整片砍掉。
+        if (nineKey || buffer.isEmpty()) return emptyList()
         if (buffer.any { it !in 'a'..'z' }) return emptyList()
         val matches = ArrayList<Candidate>(ENGLISH_LIMIT)
         val seen = HashSet<String>(ENGLISH_LIMIT * 2)
@@ -136,15 +143,14 @@ class PinyinEngine(
             if (word.length < buffer.length) continue
             if (!word.startsWith(buffer)) continue
             val typedFully = word.length == buffer.length
-            // 只打了一小半的词不算"对应"，整词打满才不需要这条。
-            if (!typedFully && word.length * ENGLISH_PERCENT_NUMERATOR > buffer.length * 100) continue
+            if (!englishQualifies(word, buffer.length)) continue
             seen.add(word)
             matches.add(
                 Candidate(
                     text = EnglishWords.matchCase(raw, word),
                     consumed = buffer.length,
                     kind = CandidateKind.Prediction,
-                    score = englishWeight(buffer.length, word.length),
+                    score = englishScore(word, buffer.length),
                     // 没打出来的那截和码前缀补全一样淡显。
                     unmatchedFrom = if (typedFully) -1 else buffer.length,
                 ),
@@ -156,13 +162,13 @@ class PinyinEngine(
         for (word in profile?.learnedWords(buffer, ENGLISH_LEARNED_LIMIT).orEmpty()) {
             if (word.length < buffer.length || !word.startsWith(buffer) || !seen.add(word)) continue
             val typedFully = word.length == buffer.length
-            if (!typedFully && word.length * ENGLISH_PERCENT_NUMERATOR > buffer.length * 100) continue
+            if (!englishQualifies(word, buffer.length)) continue
             matches.add(
                 Candidate(
                     text = EnglishWords.matchCase(raw, word),
                     consumed = buffer.length,
                     kind = CandidateKind.Prediction,
-                    score = englishWeight(buffer.length, word.length),
+                    score = englishScore(word, buffer.length),
                     unmatchedFrom = if (typedFully) -1 else buffer.length,
                 ),
             )
@@ -176,6 +182,25 @@ class PinyinEngine(
     }
 
     /**
+     * 这个词现在够不够格进候选（用户口述的规则）。
+     *
+     * | 词长 | 条件 |
+     * | --- | --- |
+     * | 3 个字母以内 | **整词打满**：一个字母不差，少一个都不算 |
+     * | 4 个字母以上 | 至少打了 [ENGLISH_MIN_INPUT] 个字母，并且打到 [ENGLISH_PERCENT_NUMERATOR]% |
+     *
+     * 短词一条都不许提前冒头（`he`/`men`/`can` 都是真读音，猜早了只是噪声），四个字母起的词少打
+     * 几个字母也能认出来（`compu` → `computer`）。调用方已经保证了"是前缀"这件事。
+     */
+    private fun englishQualifies(word: String, typed: Int): Boolean {
+        // 整词打满是两种规则唯一的交集，也是永远成立的证据。
+        if (typed == word.length) return true
+        if (word.length < ENGLISH_MIN_INPUT) return false
+        if (typed < ENGLISH_MIN_INPUT) return false
+        return word.length * ENGLISH_PERCENT_NUMERATOR <= typed * 100
+    }
+
+    /**
      * 拼全了多少：[ENGLISH_MIN_WEIGHT]（刚好 [ENGLISH_PERCENT_NUMERATOR]%）→ [ENGLISH_MAX_WEIGHT]（打满）。
      * 整数运算，免得每次按键都做浮点除法。
      */
@@ -183,6 +208,20 @@ class PinyinEngine(
         val span = ENGLISH_MAX_WEIGHT - ENGLISH_MIN_WEIGHT
         val above = typed * 100 - ENGLISH_PERCENT_NUMERATOR * length
         return ENGLISH_MIN_WEIGHT + span * above / (length * (100 - ENGLISH_PERCENT_NUMERATOR))
+    }
+
+    /**
+     * 一颗英文候选的分量。
+     *
+     * 拼到一半的按拼了多少算（[englishWeight]）；整词打满时按词长分两档——四个字母起的词与
+     * "拼音真的打出了这个词"平级（`women` 底下`我们`第一、`women` 紧随其后），三个字母以内的
+     * 短词刻意低一档：`he`/`men`/`you` 这些串先是拼音的读音，用户的诉求是"打全了它得出现"，
+     * 不是"它得抢在`和`前面"。
+     */
+    private fun englishScore(word: String, typed: Int): Int = when {
+        typed < word.length -> englishWeight(typed, word.length)
+        word.length >= ENGLISH_MIN_INPUT -> ENGLISH_MAX_WEIGHT
+        else -> ENGLISH_SHORT_WORD_WEIGHT
     }
 
     /**
@@ -1692,8 +1731,15 @@ class PinyinEngine(
 
         // ---- 中文模式下的英文词（见 [englishCandidates] 与 [mergeEnglish]）-------------
 
-        /** 少于这么多字母就不猜英文：`he`/`men`/`can` 这种串到处都是词，猜了只会添乱。 */
-        private const val ENGLISH_MIN_INPUT = 5
+        /**
+         * 四个字母起才算"长词"：短词（3 个字母以内）要整词打满才认，长词只要打够这么多字母、
+         * 并且打到 [ENGLISH_PERCENT_NUMERATOR]% 就行（见 [englishQualifies]）。
+         *
+         * 原来是"少于 5 个字母一律不猜"，用户报 `like` 打不出来——四个字母的常用词
+         * （`like`/`love`/`work`/`time`…）在中文这边往往只是一串不成词的读法，正是这条规则最该
+         * 帮上忙的地方。
+         */
+        private const val ENGLISH_MIN_INPUT = 4
         /** 一次最多给几个英文词。 */
         private const val ENGLISH_LIMIT = 6
         /** 其中最多几个来自本机学习记录（自己打过的词），剩下的位置留给词表。 */
@@ -1704,6 +1750,11 @@ class PinyinEngine(
         private const val ENGLISH_MIN_WEIGHT = 700
         /** 整词打满时的权重。 */
         private const val ENGLISH_MAX_WEIGHT = 1000
+        /**
+         * 三个字母以内的词整词打满时的权重：**低于**整音节单字的 [SYLLABLE_CHAR_WEIGHT]（950），
+         * 所以 `men` 底下`们`/`门`照旧在前，`men` 排在它们后面（见 [englishScore]）。
+         */
+        private const val ENGLISH_SHORT_WORD_WEIGHT = 900
         /** 词典词覆盖了整串字母——拼音真的打出了一个词。 */
         private const val WHOLE_WORD_WEIGHT = 1000
         /** 整串就是一个音节的单字，或整句解码／码前缀补全：覆盖整串，但一半是猜的。 */

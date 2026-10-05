@@ -113,9 +113,17 @@ data class ImeUiState(
     val compatToolbarXPercent: Int = -1,
     val compatToolbarYPercent: Int = -1,
     /**
-     * 第二个窗口开不出来时的退路：工具面板画进候选词那个窗口里（见 InputWindowHost.applyToolbarWindow）。
+     * 两块面板的独立窗口都开出来了吗（见 InputWindowHost.applyCompatPanel）。
+     *
+     * false 表示退回老样子：候选词面板与工具面板都画进输入法自己的那个窗口里。
      */
-    val compatToolbarInMainWindow: Boolean = false,
+    val compatWindowsReady: Boolean = false,
+    /**
+     * 两块面板的窗口开不出来，而且原因是没有「显示在其他应用上层」权限。
+     *
+     * 这条要单独说，因为用户能自己解决（去授权），而别的失败原因用户无能为力。
+     */
+    val compatNeedsOverlayPermission: Boolean = false,
 
     /** True while the in-keyboard quick settings sheet is open. */
     val quickSettingsVisible: Boolean = false,
@@ -147,4 +155,22 @@ data class ImeUiState(
      */
     val showsCompatPanel: Boolean
         get() = externalInputMode == ExternalInputMode.CompatPanel && externalInputs.present
+
+    /**
+     * 键鼠兼容模式下，候选词那个窗口现在有没有内容可显示。
+     *
+     * 用户点名：候选词栏**默认不出现**，只有真在打字（或者有候选、联想、剪贴板提示、展开的
+     * 第二层）时才贴着光标露出来——外接键盘的人不该在屏幕上看一条空栏。
+     */
+    val compatContentVisible: Boolean
+        get() = showsCompatPanel && (
+            isComposing ||
+                candidates.isNotEmpty() ||
+                clipboardOffer != null ||
+                notice != null ||
+                candidatesExpanded ||
+                clipboardVisible ||
+                voice !is VoiceState.Idle ||
+                page != KeyboardPage.Letters
+            )
 }

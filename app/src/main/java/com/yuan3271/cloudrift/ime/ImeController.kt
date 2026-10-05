@@ -2,6 +2,8 @@ package com.yuan3271.cloudrift.ime
 
 import android.content.Intent
 import android.inputmethodservice.InputMethodService
+import android.net.Uri
+import android.provider.Settings
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.inputmethod.EditorInfo
@@ -18,6 +20,7 @@ import com.yuan3271.cloudrift.engine.EngineKind
 import com.yuan3271.cloudrift.engine.InputEngine
 import com.yuan3271.cloudrift.engine.emoji.EmojiGroup
 import com.yuan3271.cloudrift.input.EditorProxy
+import com.yuan3271.cloudrift.input.CompatPanelKind
 import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
@@ -395,7 +398,10 @@ class ImeController(
         return when (val action = hardwareKeyAction(keyCode, unicode, ctrlPressed, altPressed)) {
             null -> false
             is HardwareKeyAction.Type -> {
-                typeFromHardware(action.text)
+                // 正在拼写时，数字 1-9 是"选第 N 个候选"：键鼠面板里每颗候选前面就写着这个号
+                // （见 CompatPanel 的 numbered 那条），所以它不是一个看不见的快捷键。没在拼写时
+                // 数字还是数字——打"2026"不该被吃掉。
+                if (!selectCandidateByDigit(action.text)) typeFromHardware(action.text)
                 true
             }
 
@@ -437,6 +443,22 @@ class ImeController(
             return
         }
         space()
+    }
+
+    /**
+     * 物理键盘上的一颗数字键：正在拼写、而且这个位置真有候选，就是选它。
+     *
+     * @return true 表示这颗键已经当"选候选"用掉了。
+     */
+    private fun selectCandidateByDigit(text: String): Boolean {
+        val digit = text.singleOrNull()?.digitToIntOrNull() ?: return false
+        // 0 没有对应的候选位（第 0 个候选是空格 / 首选键的事）。
+        if (digit !in 1..9) return false
+        val current = _state.value
+        if (!current.isComposing) return false
+        if (digit > current.candidates.size) return false
+        selectCandidate(digit - 1)
+        return true
     }
 
     /**
@@ -598,42 +620,75 @@ class ImeController(
     // ---- 键鼠兼容面板的两个窗口 ---------------------------------------------------------
 
     /**
-     * 告诉服务"工具面板现在该不该出现、在哪儿"。工具面板是**另一个窗口**（候选词面板是输入法自己
-     * 那个窗口），所以它的显隐与位置要单独同步一次。
+     * 键鼠兼容模式的两块面板各是一个独立窗口：这里同步"该不该出现、在哪儿"。
      *
-     * @return 第二个窗口开出来了没有；false 时界面把工具面板画进候选词那个窗口（退路）。
+     * 两块都要能开出来才算数：只开出一块（比如工具面板开得出来、候选词面板开不出来）会变成
+     * "候选有、工具栏没有"的半截样子——还不如整块退回输入法窗口里（见 [ImeUiState.compatWindowsReady]）。
+     *
+     * @return true 表示两块都在自己的窗口里。
      */
-    fun syncToolbarWindow(): Boolean {
+    fun syncCompatWindows(): Boolean {
         val host = windowHost ?: return false
         val current = _state.value
-        val available = host.applyToolbarWindow(
-            visible = current.showsCompatPanel,
+        if (!current.showsCompatPanel) {
+            host.setCaretFollowing(false)
+            host.removeCompatPanels()
+            publishCompatWindowState(ready = false, needsPermission = false)
+            return false
+        }
+        // 候选词面板要知道光标在哪；工具面板不跟光标，但它也得先站起来。
+        host.setCaretFollowing(true)
+        val toolbarReady = host.applyCompatPanel(
+            kind = CompatPanelKind.Toolbar,
+            visible = true,
             xPercent = current.compatToolbarXPercent,
             yPercent = current.compatToolbarYPercent,
         )
-        if (current.compatToolbarInMainWindow != !available) {
-            _state.value = current.copy(compatToolbarInMainWindow = !available)
+        val contentReady = toolbarReady && host.applyCompatPanel(
+            kind = CompatPanelKind.Content,
+            visible = current.compatContentVisible,
+            // 候选词面板的位置由光标决定（或前后都没有光标时贴屏幕底部），这里没有百分比可说。
+            xPercent = AppSettings.UNSET_POSITION,
+            yPercent = AppSettings.UNSET_POSITION,
+        )
+        val ready = toolbarReady && contentReady
+        if (!ready) host.removeCompatPanels()
+        // 开不出来时，只有一种原因用户自己能解决：没有「显示在其他应用上层」。
+        val needsPermission = !ready && !Settings.canDrawOverlays(service)
+        publishCompatWindowState(ready = ready, needsPermission = needsPermission)
+        return ready
+    }
+
+    private fun publishCompatWindowState(ready: Boolean, needsPermission: Boolean) {
+        val current = _state.value
+        if (current.compatWindowsReady == ready &&
+            current.compatNeedsOverlayPermission == needsPermission
+        ) {
+            return
         }
-        return available
+        _state.value = current.copy(
+            compatWindowsReady = ready,
+            compatNeedsOverlayPermission = needsPermission,
+        )
     }
 
-    /**
-     * 键鼠兼容面板出现 / 消失时，把两个窗口的规矩一起同步：工具面板该不该出现、候选词面板要不要
-     * 跟着光标走（见 [InputWindowHost.setCaretFollowing]）。
-     */
-    fun syncCompatWindows(): Boolean {
-        val panel = _state.value.showsCompatPanel
-        windowHost?.setCaretFollowing(panel)
-        return syncToolbarWindow()
+    /** Drag delta from one panel's grip. */
+    fun moveCompatPanelBy(kind: CompatPanelKind, dx: Float, dy: Float) {
+        windowHost?.moveCompatPanelBy(kind, dx, dy)
     }
 
-    /** Drag delta from the tool panel's grip. */
-    fun moveCompatToolbar(dx: Float, dy: Float) {
-        windowHost?.moveToolbarWindowBy(dx, dy)
+    /** 松手：把落点记下来（只有工具面板需要记）。 */
+    fun commitCompatPanelPosition(kind: CompatPanelKind) {
+        windowHost?.commitCompatPanelPosition(kind)
     }
 
-    fun commitCompatToolbarPosition() {
-        windowHost?.commitToolbarWindowPosition()
+    /** 两块面板要悬浮在别的应用上层，这一条只有用户自己能给。 */
+    fun openOverlayPermissionSettings() {
+        val intent = Intent(
+            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+            Uri.parse("package:${service.packageName}"),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        service.startActivity(intent)
     }
 
     /** 服务把工具面板拖完之后的落点写回来（屏幕百分比）。 */
@@ -765,8 +820,12 @@ class ImeController(
      * 打完一个词，联想下一个词: with the reading buffer empty, the candidate strip lists the words
      * the association table says tend to follow what was just committed. Tapping one commits it and
      * chains into its own predictions; typing anything replaces the strip with normal candidates.
+     *
+     * **键鼠兼容模式下不联想**（用户点名）：外接键盘的人手在键盘上，候选栏本来就只是"看一眼要选
+     * 哪个"，打完一个词还弹一排下一个词的预测，除了挡屏幕没有别的用处。
      */
     private fun showAssociations(seed: String) {
+        if (_state.value.showsCompatPanel) return
         val predictions = engine.associations(seed)
         associationSeed = seed.takeIf { predictions.isNotEmpty() }
         _state.value = _state.value.copy(
