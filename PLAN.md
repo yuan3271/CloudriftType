@@ -215,6 +215,7 @@
 | 210 | 发布 0.3.3（versionCode 50）：tag `v0.3.3`、[Release 云隙输入 0.3.3](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.3)（id `403404579`）已上传资产 `cloudrift-type-0.3.3-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:fec3ba0e…` 与本地逐字节一致）；远端 `main` `ad5ef25e` → `21d8b365`，树与本地 `168` 个文件逐个核对相同 | 完成 |
 | 211 | 修掉"**按空格选候选还会多出一个空格**"：物理键盘的空格在拼写中改成**只选首选词**（0.3.1 里那句"选完首选再补一个空格"是想多了），与屏上那颗空格、以及 0.2.40 记录里"英文布局不额外补空格、别再动"的口径统一；一个候选都拿不到时仍把这串字母原样上屏，不让这颗空格白按 | 完成 |
 | 212 | 本地构建 0.3.4（versionCode 51）：196 个用例全绿 + `assembleRelease`，产物 `dist/cloudrift-type-0.3.4-release.apk`（4,220,028 字节，sha256 `ea4fac82…`，签名 `CN=yuan3271`） | 完成 |
+| 213 | 发布 0.3.4（versionCode 51）：tag `v0.3.4`、[Release 云隙输入 0.3.4](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.4)（id `403410274`）已上传资产 `cloudrift-type-0.3.4-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:ea4fac82…` 与本地逐字节一致）；远端 `main` `b708ad63` → `23e063d`，树与本地 `168` 个文件逐个核对相同 | 完成 |
 
 ## 键鼠兼容模式：空格选候选不再多补一个空格（0.3.4）
 
@@ -251,6 +252,18 @@ private fun hardwareSpace() {
 | `./gradlew testDebugUnitTest` | 196 个用例全绿（这一条在 `ImeController.hardwareSpace` 里，它依赖 `InputMethodService`，和这个类其余的按键路径一样进不了 JVM 用例，靠真机复验） |
 | `./gradlew assembleRelease` | 通过（R8 全量压缩 + lintVital），产物 `dist/cloudrift-type-0.3.4-release.apk`，4,220,028 字节，sha256 `ea4fac82…`，`apksigner verify` 签名 `CN=yuan3271`，versionCode 51 / versionName 0.3.4 |
 | 未验证 | 真机手感（中文选词 / 英文补全按空格后不再多出空格）——按约定不使用模拟器，需要真机复验 |
+
+### 发布记录（0.3.4）
+
+- 本地产物 `dist/cloudrift-type-0.3.4-release.apk`：4,220,028 字节，sha256
+  `ea4fac8257a79edc3bc39020b4ba4e5928e43069915314f82de9f2a930201e0b`，`apksigner verify` 通过，
+  签名 `CN=yuan3271`，versionCode 51 / versionName 0.3.4。
+- 远端：`github.com:443` 仍不通，提交 / tag / Release / 资产继续走 REST + Git Data API；远端
+  `main` 现在是 `23e063dc`，tree `088d5df5` 与本地 `168` 个文件逐个核对相同。
+- 本地 tag `v0.3.4`（annotated，指向 `551a65c`），远端是轻量 tag（指向 `23e063dc`）——同前两轮。
+- 发布脚本这一轮踩过一脚：`VERSION` 的默认值忘了跟着改，第一次跑把标签又建成了 `v0.3.3`（422
+  `Reference already exists`）。顺手给推送那一步加了幂等（本地 tree 已经在远端就跳过），重跑只补
+  标签 / Release / 资产，没有再叠一个提交。脚本在 `work/`（会话临时目录），不入仓库。
 
 ## 键鼠兼容模式：工具栏的显隐口径、候选框跟随光标的修复（0.3.3）
 
