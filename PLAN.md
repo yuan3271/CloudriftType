@@ -206,6 +206,64 @@
 | 201 | 本轮新增 16 个用例：`CompatPlacementTest` 8 条（左下 / 中下 / 右下、下面放不下翻上面、超宽夹进屏幕、压在工具栏上面且居中、贴右边的工具栏不把弹出层顶出屏幕）+ `ImeUiStateTest` 8 条（选完候选不留残状态、空闲两块都收起、只有鼠标时工具栏留着、有内容也不自己冒出来、点开才出现） | 完成 |
 | 202 | 本地构建 0.3.2（versionCode 49）：197 个用例全绿 + `assembleRelease`，产物落 `dist/cloudrift-type-0.3.2-release.apk`（4,220,028 字节，sha256 `33a3b995…`，签名 `CN=yuan3271`） | 完成 |
 | 203 | 发布 0.3.2（versionCode 49）：tag `v0.3.2`、[Release 云隙输入 0.3.2](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.2)（id `403399164`）已上传资产 `cloudrift-type-0.3.2-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:33a3b995…` 与本地逐字节一致）。**0.3.1 那次提交此前没推上去**（远端 `main` 还停在 `54354d3`，即 0.3.0 那一版），这一轮把两段一起推上去：`54354d3` → `81630e8`（0.3.1）→ `5a188d6`（0.3.2），远端树与本地 `168` 个文件逐字节一致 | 完成 |
+| 204 | 工具面板的显隐口径按用户后来的更正改回来：**不是"打字才出现"，而是只要输入模式被激活就出现**（鼠标点一下输入框、可以开始打字了它就在屏幕上），离开输入（点到别处 / 收键盘）跟着收起来；候选词那一块照旧是"打字才出现" | 完成 |
+| 205 | 修掉"候选词框**根本不跟光标**"（0.3.1 起就埋着的硬伤）：`setCaretFollowing` 里有一条"已经开着就早退"的捷径，而 `CURSOR_UPDATE_MONITOR` 挂在当前 `InputConnection` 上——换一个输入框就是新连接，旧的订阅随之作废，第二个输入框起锚点再也不来，候选词框只能停在屏幕底部（用户报的"根本没跟着"）。现在每次同步都重新订阅，并且每次进入输入框都会重新把两块窗口立起来 | 完成 |
+| 206 | 输入结束收干净：`onFinishInputView` / `onWindowHidden` 里 `setCaretFollowing(false)`——真的发 `requestCursorUpdates(0)` 停掉订阅，并丢掉上一个输入框的光标锚点 | 完成 |
+| 207 | 拖动只是**这一次输入里的微调**：进入输入框时把两块面板的拖动偏移归零（`InputWindowHost.resetCompatPanelNudges`）。用户点名"即使被拖来拖去，下次输入时也依然要跟随光标" | 完成 |
+| 208 | 用例跟着改口径：`ImeUiStateTest` 现在断言"输入模式激活工具栏就在 / 候选那一块照旧打字才出现 / 没有外接键鼠时两块都不画 / 有剪贴板内容也不自己冒出来" | 完成 |
+| 209 | 本地构建 0.3.3（versionCode 50）：196 个用例全绿 + `assembleRelease`，产物 `dist/cloudrift-type-0.3.3-release.apk`（4,220,028 字节，sha256 `fec3ba0e…`，签名 `CN=yuan3271`） | 完成 |
+
+## 键鼠兼容模式：工具栏的显隐口径、候选框跟随光标的修复（0.3.3）
+
+0.3.2 上线后用户回了三条更正，前两条是我把他的意思听窄了/听岔了：
+
+```
+① 工具栏不是"打字才出现"——鼠标点一下输入框、能开始输入了，它就该在
+② 候选词框现在**根本跟不上光标**，压根没跟着
+③ 候选词框即使被拖来拖去，下次输入时也依然要跟随光标
+```
+
+### ① 工具栏：输入模式激活就出现
+
+0.3.2 把工具面板和候选词那一块塞进了同一个条件（"打字才出现"），于是刚点开输入框时屏幕上
+空无一物，要用语音 / 符号还得先随便敲一个键。现在这条判断就是 [ImeUiState.compatToolbarVisible]
+= `showsCompatPanel`：**输入会话在，它就在**；输入会话结束，服务把两个窗口一起拆掉（见
+`onFinishInputView`）。候选词那一块没变，仍旧是"有正在拼的读音 / 有候选 / 展开了第二层"才露脸。
+
+### ② 候选词框为什么不跟光标
+
+`CURSOR_UPDATE_MONITOR` 的订阅是挂在**当前 `InputConnection`** 上的，而 `setCaretFollowing` 里
+原来有这么一条：
+
+```kotlin
+if (caretFollowing == enabled) return      // ← 第二次进输入框时在这里就返回了
+```
+
+`caretFollowing` 一旦被设成 true 就再没有回去（只有切走键鼠模式才会），于是**只有第一个输入框
+订阅成功**：之后每换一个输入框，新的连接上没有订阅，`onUpdateCursorAnchorInfo` 再也不回调，
+`caretAnchor` 一直是空 → 候选词框只能走"拿不到锚点就贴屏幕底部"那条退路。这就是"根本没跟着"。
+
+修法是两处一起收：
+
+| 地方 | 现在怎么做 | 为什么 |
+| --- | --- | --- |
+| `setCaretFollowing(true)` | 每次调用都重新 `requestCursorUpdates`（不再早退） | 换输入框就是换连接，必须重新挂 |
+| `ImeController.onStartInputView` | 每次进入输入框都 `syncCompatWindows()` | 窗口在上一次输入结束时被拆过，且这次订阅要挂到新连接上 |
+| `onFinishInputView` / `onWindowHidden` | `setCaretFollowing(false)`：清锚点并真的发 `requestCursorUpdates(0)` | 输入都结束了就不该再要锚点，也把"重新订阅"这件事留给下一次 |
+
+### ③ 拖动只活在这一次输入里
+
+候选词面板的拖动本来就是"**相对光标**的偏移"（拖开一点，光标再走它还在旁边）。用户要的是它
+**别跨输入留着**，所以进入输入框时把偏移归零（`resetCompatPanelNudges`），并且先把上一个输入框
+的锚点丢掉——第一帧就不会按旧位置摆一次。
+
+### 验证
+
+| 项目 | 结果 |
+| --- | --- |
+| `./gradlew testDebugUnitTest` | 196 个用例全绿（显隐口径那两条用例合并成一条，净 -1） |
+| `./gradlew assembleRelease` | 通过（R8 全量压缩 + lintVital），产物 `dist/cloudrift-type-0.3.3-release.apk`，4,220,028 字节，sha256 `fec3ba0e…`，`apksigner verify` 签名 `CN=yuan3271`，versionCode 50 / versionName 0.3.3 |
+| 未验证 | 真机手感（换输入框后候选框是否跟着光标、工具栏是否一进输入框就在）——按约定不使用模拟器，需要真机复验 |
 
 ## 键鼠兼容模式：空格 / 数字重复上屏、两块面板的位置与显隐（0.3.2）
 

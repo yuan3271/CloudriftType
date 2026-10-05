@@ -68,6 +68,15 @@ interface InputWindowHost {
      * true 时服务开始向编辑器要 CursorAnchorInfo（`requestCursorUpdates`），拿到锚点就把候选词
      * 那个窗口摆到光标下面；false / 拿不到锚点时仍旧贴在屏幕底部。跟随期间光标每动一次都要重摆
      * 一次窗口，所以这条链路上不做任何多余的活。
+     *
+     * **每次同步都要重新订阅**：`CURSOR_UPDATE_MONITOR` 是挂在当前 `InputConnection` 上的，
+     * 换一个输入框就是换一条连接，旧订阅也随之作废（见 CloudriftImeService.setCaretFollowing）。
      */
     fun setCaretFollowing(enabled: Boolean)
+
+    /**
+     * 把两块面板上的**拖动偏移**清掉：候选词面板的拖动是"相对光标"的位置微调，只该活在这一次
+     * 输入里——用户点名"即使被拖来拖去，下次输入时也依然要跟随光标"。
+     */
+    fun resetCompatPanelNudges()
 }

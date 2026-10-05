@@ -531,30 +531,41 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
      *
      * 编辑器不支持（`requestCursorUpdates` 返回 false / 从不回调）时什么都不会发生：窗口继续待在
      * 底部，与接这块之前完全一样——跟随光标是加分项，不是前提。
+     *
+     * **每次调用都要重新订阅**（所以这里没有"已经开着就早退"那条捷径）：订阅挂在当前
+     * `InputConnection` 上，而输入法每次换输入框都是新的连接——只订阅一次的话，第二个输入框起
+     * 锚点就再也不会来了，候选词面板只能停在屏幕底部，看起来就是"根本没跟光标"。
      */
     override fun setCaretFollowing(enabled: Boolean) {
-        if (caretFollowing == enabled) return
         caretFollowing = enabled
         caretLogs = 0
         if (!enabled) {
             caretAnchor = null
-            // 停下监听：有的编辑器会一直算锚点，输入法不该在这次输入里继续要它。
+            // 停下监听：有的编辑器会一直算锚点，输入法不该在这次输入之外继续要它。
+            runCatching { currentInputConnection?.requestCursorUpdates(0) }
+            applyWindowLayout()
+            return
         }
         val requested = runCatching {
-            val mode = if (enabled) InputConnection.CURSOR_UPDATE_MONITOR else 0
-            currentInputConnection?.requestCursorUpdates(mode) ?: false
+            currentInputConnection?.requestCursorUpdates(InputConnection.CURSOR_UPDATE_MONITOR)
+                ?: false
         }
             .onFailure { Log.w(TAG, "无法请求光标位置更新", it) }
             .getOrDefault(false)
-        if (enabled) {
-            // 编辑器（或它的输入连接）没接这条：面板就按"不知道光标在哪"处理，贴屏幕底部。
-            if (requested) {
-                Log.i(TAG, "已向编辑器订阅光标位置，候选词面板将跟着光标走")
-            } else {
-                Log.i(TAG, "编辑器不接受光标位置订阅，候选词面板贴屏幕底部")
-            }
+        // 编辑器（或它的输入连接）没接这条：面板就按"不知道光标在哪"处理，贴屏幕底部。
+        if (requested) {
+            Log.i(TAG, "已向编辑器订阅光标位置，候选词面板将跟着光标走")
+        } else {
+            Log.i(TAG, "编辑器不接受光标位置订阅，候选词面板贴屏幕底部")
         }
         applyWindowLayout()
+    }
+
+    override fun resetCompatPanelNudges() {
+        compatWindows.values.forEach { window ->
+            window.nudgeX = 0f
+            window.nudgeY = 0f
+        }
     }
 
     /**
@@ -644,6 +655,11 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         super.onStartInputView(info, restarting)
         // Cheap insurance: the decor can be recreated if the IME process is reused.
         attachComposeOwnersToWindow()
+        // 新输入框 = 新的 InputConnection：上一个框里的光标锚点、用户拖出来的位置偏移，都不该
+        // 带进这一次输入（用户点名"被拖来拖去，下次输入时也依然要跟随光标"）。要赶在下面那次
+        // 同步之前清掉，免得第一帧按旧锚点摆一次。
+        caretAnchor = null
+        resetCompatPanelNudges()
         controller?.onStartInputView()
         // 有些 ROM 在热插拔时不给服务发设备回调，每次弹出键盘再核对一次。
         externalInputs.refresh()
@@ -660,12 +676,15 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         controller?.onFinishInputView()
+        // 这次输入结束了：不再要光标，也不再算"跟着光标"这件事（下次进输入框会重新订阅）。
+        setCaretFollowing(false)
         removeCompatPanels()
         super.onFinishInputView(finishingInput)
     }
 
     override fun onWindowHidden() {
         controller?.onWindowHidden()
+        setCaretFollowing(false)
         removeCompatPanels()
         super.onWindowHidden()
     }

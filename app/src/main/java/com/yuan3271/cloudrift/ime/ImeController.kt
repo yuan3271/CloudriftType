@@ -204,6 +204,10 @@ class ImeController(
         )
         clearAssociations()
         if (!AppGraph.engines.dictionaryReady.value) AppGraph.engines.warmUp()
+        // 每一次进入输入框都要把两块面板重新立起来：输入法窗口在会话结束时被拆掉过（见服务的
+        // onFinishInputView），而"工具栏只要输入激活就该在"这件事就靠这一步；顺带把光标订阅
+        // 重新挂到新的 InputConnection 上（见 CloudriftImeService.setCaretFollowing）。
+        syncCompatWindows()
         // 键盘每次弹出都问一次「该不该检测更新」，判断完全交给 UpdateInterval.isDue：每天 /
         // 每周 / 每月这些档位在这里是空转（间隔没到就返回），选了「每次打开键盘」才是真的一次
         // 一次地问，而且同一时刻只保留一个在途请求。

@@ -43,27 +43,20 @@ class ImeUiStateTest {
     }
 
     @Test
-    fun `the toolbar stays hidden until the user is actually typing`() {
+    fun `the toolbar is up as soon as the input mode is active`() {
+        // 用户把话说清楚了：不是"打字才出现"——鼠标点一下输入框、能开始打字了，工具栏就该在。
         val idle = ImeUiState(externalInputs = ExternalInputSnapshot(keyboard = true))
-        assertFalse("空闲时屏幕上什么都不留", idle.compatToolbarVisible)
-        assertTrue("一开始打字，两块面板一起出现", composing.compatToolbarVisible)
-        assertTrue(
-            "符号页开着的时候工具栏不能跑：它正是从工具栏点开的",
-            ImeUiState(
-                page = KeyboardPage.Symbols,
-                externalInputs = ExternalInputSnapshot(keyboard = true),
-            ).compatToolbarVisible,
-        )
-    }
+        assertTrue("还没按键就已经在输入模式里，工具栏就该在", idle.compatToolbarVisible)
+        assertFalse("但候选词那一块照旧：没在打字就不出现", idle.compatContentVisible)
+        assertTrue("打字之后候选词那一块才跟着出来", composing.compatToolbarVisible && composing.compatContentVisible)
 
-    @Test
-    fun `a mouse-only setup keeps the toolbar on screen`() {
         val mouseOnly = ImeUiState(
             externalInputs = ExternalInputSnapshot(pointing = true, pointingName = "蓝牙鼠标"),
         )
+        assertTrue(mouseOnly.compatToolbarVisible)
 
-        assertTrue("只有鼠标时工具栏是屏幕上唯一的入口，藏起来就没有键盘可用了", mouseOnly.compatToolbarVisible)
-        assertFalse("没有键盘就没有正在打的字，候选那一块还是收着", mouseOnly.compatContentVisible)
+        val noDevice = ImeUiState()
+        assertFalse("没有外接键鼠 = 虚拟键盘那条路，键鼠面板一块都不画", noDevice.compatToolbarVisible)
     }
 
     @Test
@@ -77,7 +70,7 @@ class ImeUiStateTest {
             有内容了也隐藏（用户点名）：键鼠模式下剪贴板只从工具栏的 📋 进，
             刚复制的东西不许自己把面板顶出来
         """.trimIndent(), copied.compatContentVisible)
-        assertFalse(copied.compatToolbarVisible)
+        assertTrue("工具栏照旧在（输入模式是激活的），只是没有候选可看", copied.compatToolbarVisible)
     }
 
     @Test
