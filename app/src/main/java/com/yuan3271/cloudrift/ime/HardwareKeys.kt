@@ -17,7 +17,7 @@ sealed interface HardwareKeyAction {
 
     data object Enter : HardwareKeyAction
 
-    /** 空格：有候选就是"选首选 + 补一个空格"，没有候选就是普通的空格。 */
+    /** 空格：正在拼写就是"选首选"（不额外补空格），没在拼写就是普通的空格。 */
     data object Space : HardwareKeyAction
 
     /** 打断当前输入：把还没上屏的读音丢掉（Esc）。 */

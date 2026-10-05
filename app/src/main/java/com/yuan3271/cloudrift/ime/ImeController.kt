@@ -437,13 +437,15 @@ class ImeController(
     /**
      * 物理键盘上的空格。
      *
-     * 屏上空格在拼写中只选首选词、不补空格（手还要回去点候选），但物理键盘上空格就是词与词
-     * 之间的分隔符：选完首选词再补一个空格，手指不停接着打下个词。
+     * 拼写中它就是**选首选词**——和屏上那颗空格同一条规矩，一个多余的字符都不补：选完候选再
+     * 自己多出一个空格，用户看到的是一句话里凭空多了一个空格（用户点名）。想要词与词之间的
+     * 间隔就再按一下空格，那时缓冲已经空了，走下面 [space] 那条普通空格的路。
      */
     private fun hardwareSpace() {
         if (_state.value.isComposing) {
-            selectCandidate(0)
-            commitText(" ")
+            // 一个候选都拿不到（引擎给不出转换）时，这颗空格至少要把这串字母原样送上去，
+            // 不能白按一下什么都不发生。
+            if (_state.value.candidates.isEmpty()) commitBuffer() else selectCandidate(0)
             return
         }
         space()

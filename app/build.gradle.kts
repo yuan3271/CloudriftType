@@ -20,8 +20,8 @@ android {
         applicationId = "com.yuan3271.cloudrift"
         minSdk = 26
         targetSdk = 36
-        versionCode = 50
-        versionName = "0.3.3"
+        versionCode = 51
+        versionName = "0.3.4"
         vectorDrawables { useSupportLibrary = true }
     }
 
