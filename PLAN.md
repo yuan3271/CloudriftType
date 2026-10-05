@@ -212,6 +212,7 @@
 | 207 | 拖动只是**这一次输入里的微调**：进入输入框时把两块面板的拖动偏移归零（`InputWindowHost.resetCompatPanelNudges`）。用户点名"即使被拖来拖去，下次输入时也依然要跟随光标" | 完成 |
 | 208 | 用例跟着改口径：`ImeUiStateTest` 现在断言"输入模式激活工具栏就在 / 候选那一块照旧打字才出现 / 没有外接键鼠时两块都不画 / 有剪贴板内容也不自己冒出来" | 完成 |
 | 209 | 本地构建 0.3.3（versionCode 50）：196 个用例全绿 + `assembleRelease`，产物 `dist/cloudrift-type-0.3.3-release.apk`（4,220,028 字节，sha256 `fec3ba0e…`，签名 `CN=yuan3271`） | 完成 |
+| 210 | 发布 0.3.3（versionCode 50）：tag `v0.3.3`、[Release 云隙输入 0.3.3](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.3)（id `403404579`）已上传资产 `cloudrift-type-0.3.3-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:fec3ba0e…` 与本地逐字节一致）；远端 `main` `ad5ef25e` → `21d8b365`，树与本地 `168` 个文件逐个核对相同 | 完成 |
 
 ## 键鼠兼容模式：工具栏的显隐口径、候选框跟随光标的修复（0.3.3）
 
@@ -264,6 +265,16 @@ if (caretFollowing == enabled) return      // ← 第二次进输入框时在这
 | `./gradlew testDebugUnitTest` | 196 个用例全绿（显隐口径那两条用例合并成一条，净 -1） |
 | `./gradlew assembleRelease` | 通过（R8 全量压缩 + lintVital），产物 `dist/cloudrift-type-0.3.3-release.apk`，4,220,028 字节，sha256 `fec3ba0e…`，`apksigner verify` 签名 `CN=yuan3271`，versionCode 50 / versionName 0.3.3 |
 | 未验证 | 真机手感（换输入框后候选框是否跟着光标、工具栏是否一进输入框就在）——按约定不使用模拟器，需要真机复验 |
+
+### 发布记录（0.3.3）
+
+- 本地产物 `dist/cloudrift-type-0.3.3-release.apk`：4,220,028 字节，sha256
+  `fec3ba0ef11e15ac5b8c763f32da8adfaf9f13a444d8bdb75b82fa80a0197abe`，`apksigner verify` 通过，
+  签名 `CN=yuan3271`，versionCode 50 / versionName 0.3.3。
+- 远端：`github.com:443` 仍不通，提交 / tag / Release / 资产继续走 REST + Git Data API；远端
+  `main` 现在是 `21d8b365`（按内容重放的那一个），tree `9a049414` 与本地 `168` 个文件逐个核对相同。
+- 本地 tag `v0.3.3`（annotated，指向 `a91e61f`），远端是轻量 tag（指向 `21d8b365`）——同 0.3.2 那一轮。
+- 设计图 `tools/design/compat-panel-preview.png` 仍是旧排布（0.3.2 那一轮记过），继续不挂在 Release 说明里。
 
 ## 键鼠兼容模式：空格 / 数字重复上屏、两块面板的位置与显隐（0.3.2）
 
