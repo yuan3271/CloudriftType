@@ -205,6 +205,7 @@
 | 200 | 换层 / 换显隐立刻重摆：`KeyboardRoot` 的窗口同步键补上 `compatExpandedPanel` 与 `compatToolbarVisible`；工具面板量出尺寸后主动重摆压在它上面的那一层 | 完成 |
 | 201 | 本轮新增 16 个用例：`CompatPlacementTest` 8 条（左下 / 中下 / 右下、下面放不下翻上面、超宽夹进屏幕、压在工具栏上面且居中、贴右边的工具栏不把弹出层顶出屏幕）+ `ImeUiStateTest` 8 条（选完候选不留残状态、空闲两块都收起、只有鼠标时工具栏留着、有内容也不自己冒出来、点开才出现） | 完成 |
 | 202 | 本地构建 0.3.2（versionCode 49）：197 个用例全绿 + `assembleRelease`，产物落 `dist/cloudrift-type-0.3.2-release.apk`（4,220,028 字节，sha256 `33a3b995…`，签名 `CN=yuan3271`） | 完成 |
+| 203 | 发布 0.3.2（versionCode 49）：tag `v0.3.2`、[Release 云隙输入 0.3.2](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.2)（id `403399164`）已上传资产 `cloudrift-type-0.3.2-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:33a3b995…` 与本地逐字节一致）。**0.3.1 那次提交此前没推上去**（远端 `main` 还停在 `54354d3`，即 0.3.0 那一版），这一轮把两段一起推上去：`54354d3` → `81630e8`（0.3.1）→ `5a188d6`（0.3.2），远端树与本地 `168` 个文件逐字节一致 | 完成 |
 
 ## 键鼠兼容模式：空格 / 数字重复上屏、两块面板的位置与显隐（0.3.2）
 
@@ -276,6 +277,25 @@ raw = "nihao"   candidates = [你好, 你, …]   ← 词已经上屏了，缓�
 | `./gradlew testDebugUnitTest` | 197 个用例全绿（本轮新增 16：面板落点 8 + 键鼠面板状态 8） |
 | `./gradlew assembleRelease` | 通过（R8 全量压缩 + lintVital），产物 `dist/cloudrift-type-0.3.2-release.apk`，4,220,028 字节，sha256 `33a3b995…`，`apksigner verify` 签名 `CN=yuan3271`，versionCode 49 / versionName 0.3.2 |
 | 未验证 | 真机手感（空格 / 数字不重复上屏、候选左下 / 中下 / 右下、弹出层压在工具栏上面、空闲时屏幕上没有面板）——按约定不使用模拟器，需要真机复验 |
+
+### 发布记录（0.3.2）
+
+- 本地产物 `dist/cloudrift-type-0.3.2-release.apk`：4,220,028 字节，sha256
+  `33a3b99532fdac5850fada193cdc33c98f8def66fe8c1da341ede21b9c633856`，`apksigner verify` 通过，
+  签名 `CN=yuan3271, OU=Cloudrift Type, O=Cloudrift, L=Shanghai, ST=Shanghai, C=CN`。
+- 远端：`github.com:443` 这一轮**仍然不通**（`curl` 20 秒无响应；`api.github.com` 与
+  `uploads.github.com` 正常），所以提交、tag、Release、资产全部走 REST / Git Data API：
+  blob → tree → commit → ref 手工造对象，判据是"远端 tree 与本地 tree 相同"（`0a98787d`，
+  168 个文件逐个核对）。
+- 远端 `main` 上多出来的两个提交是**按内容重放**的：`81630e8`（0.3.1）与 `5a188d6`（0.3.2），
+  它们的父提交与本地不同（本地那两段挂在 `049e9e9` 上，而远端 main 上是同一棵树的 `54354d3`），
+  所以 sha 与本地不同——这一点和 0.3.0 那一轮一样，是"git 端口被墙"的代价；内容（tree）逐字节一致，
+  本地 `git fetch --tags --force` 之后即可对齐。
+- 本地也打了 tag `v0.3.2`（annotated，指向本地提交 `a53731c`）；远端那个是轻量 tag（指向 `5a188d6`），
+  与远端既有的 `v0.3.0` / `v0.2.42` 保持同一种形状。
+- **设计图 `tools/design/compat-panel-preview.png` 本轮没有重画**：它画的还是"符号页挂在候选面板
+  底下、工具栏常驻"那套旧排布，与新规则（弹出层压在工具栏上面、两块面板默认都隐藏）不一致。
+  这一版 Release 说明里因此不再内嵌它；要内嵌得先把 `render_compat_panel.py` 的排布改过来。
 
 ## 键鼠面板：两块独立窗口、候选栏跟光标（0.3.1）
 
