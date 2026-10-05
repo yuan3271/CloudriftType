@@ -219,6 +219,7 @@
 | 214 | 工具面板可以关掉：设置页「外接键鼠」里新增「显示输入法工具栏」开关（`AppSettings.compatToolbarEnabled`，默认开），**面板最右端那颗 ✕ 关的是同一个设置**——关掉只影响工具栏，候选词那一块照旧"打字才出现" | 完成 |
 | 215 | 没有在输入框里编辑时，物理键盘不归输入法管：`ImeController` 记一个 `editingField`（`onStartInput` 置真、`onFinishInput` 置假，服务转发），`onHardwareKeyDown` 两个条件都满足才接管——没点进输入框时敲键盘既不拼写也不弹候选面板，按键原样交给应用 | 完成 |
 | 216 | 本地构建 0.3.5（versionCode 52）：197 个用例全绿 + `assembleRelease`，产物 `dist/cloudrift-type-0.3.5-release.apk`（4,220,028 字节，sha256 `cb0ed60f…`，签名 `CN=yuan3271`） | 完成 |
+| 217 | 发布 0.3.5（versionCode 52）：tag `v0.3.5`、[Release 云隙输入 0.3.5](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.5)（id `403438064`）已上传资产 `cloudrift-type-0.3.5-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:cb0ed60f…` 与本地逐字节一致）；远端 `main` `29c73bae` → `05c42acb`，树与本地 `168` 个文件逐个核对相同 | 完成 |
 
 ## 键鼠兼容模式：工具栏开关、没有输入框时不接物理键盘（0.3.5）
 
@@ -260,6 +261,17 @@
 | `./gradlew testDebugUnitTest` | 197 个用例全绿（新增 1：关掉工具栏不影响候选词那一块） |
 | `./gradlew assembleRelease` | 通过（R8 全量压缩 + lintVital），产物 `dist/cloudrift-type-0.3.5-release.apk`，4,220,028 字节，sha256 `cb0ed60f…`，`apksigner verify` 签名 `CN=yuan3271`，versionCode 52 / versionName 0.3.5 |
 | 未验证 | 真机手感（✕ 关掉后工具栏不再出现、设置页能重新打开、没点输入框时敲键盘不弹面板）——按约定不使用模拟器，需要真机复验 |
+
+### 发布记录（0.3.5）
+
+- 本地产物 `dist/cloudrift-type-0.3.5-release.apk`：4,220,028 字节，sha256
+  `cb0ed60fd923181c74129b5a9f83b67885ac8e5b626213163159de11be1314c0`，`apksigner verify` 通过，
+  签名 `CN=yuan3271`，versionCode 52 / versionName 0.3.5。
+- 远端：`github.com:443` 仍不通，提交 / tag / Release / 资产继续走 REST + Git Data API；远端
+  `main` 现在是 `05c42acb`，tree `91b2e33a` 与本地 `168` 个文件逐个核对相同。
+- 本地 tag `v0.3.5`（annotated，指向 `32c5f24`），远端是轻量 tag（指向 `05c42acb`）——同前几轮。
+- 设置项新增 `compatToolbarEnabled`（prefs 键 `compat_toolbar_visible`，默认开）；设置页那颗开关与
+  工具面板右端那颗 ✕ 都走 `ImeController.setCompatToolbarEnabled`，一个真相。
 
 ## 键鼠兼容模式：空格选候选不再多补一个空格（0.3.4）
 
