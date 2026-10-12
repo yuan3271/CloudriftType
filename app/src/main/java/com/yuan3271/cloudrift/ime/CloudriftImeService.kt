@@ -6,6 +6,8 @@ import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.ViewGroup
@@ -22,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,7 @@ import com.yuan3271.cloudrift.input.ExternalInputMonitor
 import com.yuan3271.cloudrift.input.InputWindowHost
 import com.yuan3271.cloudrift.theme.CloudriftTheme
 import com.yuan3271.cloudrift.ui.CompatContentWindow
+import com.yuan3271.cloudrift.ui.CompatLanguageBadge
 import com.yuan3271.cloudrift.ui.CompatToolbarWindowContent
 import com.yuan3271.cloudrift.ui.KeyboardRoot
 import kotlin.math.roundToInt
@@ -239,6 +243,108 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
                 .onFailure { Log.w(TAG, "键鼠面板窗口拆不掉", it) }
         }
         compatWindows.clear()
+    }
+
+    // ---- 语言 / 大写闪示 ---------------------------------------------------------------
+    //
+    // 切语言、开关大写锁的时候，眼睛在光标那儿、不在键盘上，所以这一颗贴在**光标右下角**。它自己
+    // 一个窗口：不套面板、没有阴影，样式就是"被选中候选词"那颗胶囊（见 [CompatLanguageBadge]），
+    // 闪一下就走。窗口建一次反复用——每次重开会让它慢半拍。
+
+    private val badgeText = mutableStateOf<String?>(null)
+    private var badgeWindow: View? = null
+    private var badgeParams: WindowManager.LayoutParams? = null
+    private var badgeManager: WindowManager? = null
+    private val badgeHandler = Handler(Looper.getMainLooper())
+    private val hideBadge = Runnable { badgeWindow?.visibility = View.GONE }
+
+    override fun showLanguageBadge(text: String) {
+        val view = ensureBadgeWindow() ?: return
+        badgeText.value = text
+        // 要贴光标就得知道光标在哪。编辑器只在**光标动过 / 文本变过**的时候才报锚点，空输入框里
+        // 静着不动就一次都不报——那时 caretAnchor 是空的，闪示会掉到屏幕右下角（用户报的"没有
+        // 跟随光标"）。所以这里当场要一次：IMMEDIATE 是官方的一次性请求，MONITOR 位一起带上，
+        // 别把正在跑的持续监听停掉。锚点回来后 onUpdateCursorAnchorInfo 会再把闪示摆一次。
+        if (caretFollowing && caretAnchor == null) {
+            runCatching {
+                currentInputConnection?.requestCursorUpdates(
+                    InputConnection.CURSOR_UPDATE_IMMEDIATE or InputConnection.CURSOR_UPDATE_MONITOR,
+                )
+            }
+        }
+        view.visibility = View.VISIBLE
+        // 位置要用宽度、宽度要等这一帧量完：先让它显示，量完再摆（"中"和"大写"还不一样宽）。
+        view.post { placeBadgeWindow(view) }
+        badgeHandler.removeCallbacks(hideBadge)
+        badgeHandler.postDelayed(hideBadge, LANGUAGE_BADGE_MS)
+    }
+
+    private fun ensureBadgeWindow(): View? {
+        badgeWindow?.let { return it }
+        val active = controller ?: return null
+        val context = overlayContext()
+        val manager = context.getSystemService(WINDOW_SERVICE) as? WindowManager ?: return null
+        val view = ComposeView(context).apply {
+            setViewTreeLifecycleOwner(this@CloudriftImeService)
+            setViewTreeViewModelStoreOwner(this@CloudriftImeService)
+            setViewTreeSavedStateRegistryOwner(this@CloudriftImeService)
+            setContent { badgeText.value?.let { CompatLanguageBadge(active, it) } }
+        }
+        // "中"和"大写"不一样宽：文字换了、量出来的宽度也变了，得重摆一次，不然会顶出屏幕。
+        view.addOnLayoutChangeListener { target, left, top, right, bottom, _, _, _, _ ->
+            if (right - left <= 0 || bottom - top <= 0) return@addOnLayoutChangeListener
+            if (target.visibility == View.VISIBLE) placeBadgeWindow(target)
+        }
+        val params = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                // 这一颗只是给人看的，一个触摸都不该接住。
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT,
+        ).apply { gravity = Gravity.TOP or Gravity.START }
+        return runCatching {
+            manager.addView(view, params)
+            badgeWindow = view
+            badgeParams = params
+            badgeManager = manager
+            view
+        }.getOrElse {
+            // 没有「显示在其他应用上层」时开不出来：安静地不显示，输入本身不受影响。
+            Log.w(TAG, "语言闪示窗口开不出来", it)
+            null
+        }
+    }
+
+    private fun placeBadgeWindow(view: View) {
+        val params = badgeParams ?: return
+        val manager = badgeManager ?: return
+        val width = view.width.toFloat()
+        val height = view.height.toFloat()
+        if (width <= 0f || height <= 0f) return
+        val metrics = resources.displayMetrics
+        val inset = systemBarBottomInset()
+        val gapX = BADGE_GAP_X_DP * resources.displayMetrics.density
+        val gapY = BADGE_GAP_Y_DP * resources.displayMetrics.density
+        val anchor = caretAnchor
+        val x: Float
+        val y: Float
+        if (anchor != null) {
+            // 光标的右下角：横向从光标右边起，纵向挂到光标那一行下面（和候选面板同一条基线）。
+            x = anchor.x + gapX
+            y = anchor.y + CARET_LINE_PX + CARET_GAP_Y_PX
+        } else {
+            // 拿不到光标（编辑器不给锚点）时退回右下角，总比不出现强。
+            x = metrics.widthPixels - width - gapX
+            y = metrics.heightPixels - inset - height - gapY - FALLBACK_MARGIN_PX
+        }
+        params.x = x.coerceIn(0f, (metrics.widthPixels - width).coerceAtLeast(0f)).roundToInt()
+        params.y = y.coerceIn(0f, (metrics.heightPixels - inset - height).coerceAtLeast(0f)).roundToInt()
+        runCatching { manager.updateViewLayout(view, params) }
     }
 
     private fun createCompatWindow(kind: CompatPanelKind, startHidden: Boolean): CompatWindow? {
@@ -600,6 +706,8 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
             point[0].coerceIn(0f, metrics.widthPixels.toFloat()),
             point[1].coerceIn(0f, metrics.heightPixels.toFloat()),
         )
+        // 语言闪示正挂着的话，锚点一回来就把它挪到光标右下角去（它一开始可能落在兜底位置上）。
+        badgeWindow?.takeIf { it.visibility == View.VISIBLE }?.let { placeBadgeWindow(it) }
         placeCompatContentWindow()
         // 两块面板都在自己的窗口里时，输入法窗口只是个 1dp 的壳，没什么好重摆的；退回把面板画进
         // 输入法窗口的那条路上，窗口本身才需要跟着光标走。
@@ -751,6 +859,10 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
                 unicode = event.getUnicodeChar(event.metaState),
                 ctrlPressed = event.isCtrlPressed,
                 altPressed = event.isAltPressed,
+                // ⌘ / Win。`isMetaPressed` 要 API 29，直接读 Meta 位，minSdk 26 也能用。
+                metaPressed = event.metaState and KeyEvent.META_META_ON != 0,
+                // 按住不放时系统会补发重复按下（Caps Lock 的长按靠它，见 ImeController）。
+                repeatCount = event.repeatCount,
             )
         ) {
             return true
@@ -758,8 +870,24 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         return super.onKeyDown(keyCode, event)
     }
 
+    /**
+     * 物理键盘的抬起：Shift 与 Caps Lock 的"短按 / 长按"只有靠这一对事件才分得出来（见
+     * [ImeController.onHardwareKeyUp]）。其余按键输入法不看抬起，原样交回系统。
+     */
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        val active = controller
+        if (active != null && active.onHardwareKeyUp(keyCode)) return true
+        return super.onKeyUp(keyCode, event)
+    }
+
     override fun onDestroy() {
         removeCompatPanels()
+        badgeHandler.removeCallbacks(hideBadge)
+        badgeWindow?.let { view ->
+            runCatching { badgeManager?.removeViewImmediate(view) }
+                .onFailure { Log.w(TAG, "语言闪示窗口拆不掉", it) }
+        }
+        badgeWindow = null
         externalInputs.stop()
         controller?.dispose()
         super.onDestroy()
@@ -776,6 +904,11 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         const val CARET_LINE_PX = 8f
         /** 光标锚点只记前几条日志，用来核对坐标空间（真机排查用）。 */
         const val CARET_LOG_LIMIT = 3
+        /** 语言 / 大写闪示挂多久：够看清、又不至于在打字时挡着。 */
+        const val LANGUAGE_BADGE_MS = 700L
+        /** 闪示相对光标右下角让开的距离。 */
+        const val BADGE_GAP_X_DP = 6f
+        const val BADGE_GAP_Y_DP = 4f
         /**
          * 弹出层（符号页 / 语音 / 剪贴板）与工具面板之间留的空，和两张卡片之间的 6dp 同一档
          * （见 CompatPanel 的 PANEL_GAP）：两块面板看上去才是同一套东西的两层。

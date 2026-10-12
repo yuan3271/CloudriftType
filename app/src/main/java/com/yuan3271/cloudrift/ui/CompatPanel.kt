@@ -4,6 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.widthIn
@@ -25,6 +27,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
@@ -97,6 +101,39 @@ fun CompatToolbarWindowContent(controller: ImeController) {
             maxWidth = state.toolbarMaxWidth(),
         ) {
             CompatToolbar(state = state, controller = controller)
+        }
+    }
+}
+
+/**
+ * 语言 / 大写闪示（它自己的那个小窗口，见 `CloudriftImeService.showLanguageBadge`）。
+ *
+ * 切语言、开关大写锁的时候眼睛在光标那儿，所以这一颗贴在**光标右下角**。样式就是"被选中的候选
+ * 词"那一颗：primaryContainer 底、14dp 圆角、字重 SemiBold。**外面不套面板、不加阴影**——真机上
+ * 它就是一颗孤零零挂在那儿的胶囊，闪 700ms 自己消失。
+ */
+@Composable
+fun CompatLanguageBadge(controller: ImeController, text: String) {
+    val state by controller.state.collectAsStateWithLifecycle()
+    CloudriftTheme(
+        themeMode = state.themeMode,
+        themeSource = state.themeSource,
+        accentHue = state.accentHue,
+        accentSaturation = state.accentSaturation,
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(horizontal = 12.dp, vertical = 5.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
         }
     }
 }
@@ -426,6 +463,14 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
             // 换成 26 键），长按就不再挂别的东西。
             onLongClick = controller::cycleLanguage,
         )
+        // 大写锁是**一直生效**的状态，光闪一下不够——保持大写的时候这一颗就挂在语言键旁边，
+        // 松开（再按一次大小写键）才消失。
+        if (state.capsLock) {
+            // 和语言 / 符号那两颗**同一颗胶囊**（同圆角、同字号、同内边距），只是它不可点、
+            // 底用工具栏自己的"正在生效"画法（primaryContainer）。自己另画一颗 10dp 的小丸子
+            // 会和旁边两颗明显不是一套（用户点名）。
+            ToolbarChip(label = "大写", active = true)
+        }
         // 符号那颗与语言同一颗胶囊：仓库里没有"符号"图标，而键盘上那颗符号键本来就是写字
         // （中文 符、英文布局 ?123），这里照抄同一个字，不另造图标。
         ToolbarChip(

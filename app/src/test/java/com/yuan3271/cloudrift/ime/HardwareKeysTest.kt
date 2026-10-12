@@ -1,6 +1,7 @@
 package com.yuan3271.cloudrift.ime
 
 import android.view.KeyEvent
+import com.yuan3271.cloudrift.data.ExternalKeyFlavor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -19,7 +20,10 @@ class HardwareKeysTest {
         unicode: Int = 0,
         ctrl: Boolean = false,
         alt: Boolean = false,
-    ) = hardwareKeyAction(keyCode, unicode, ctrl, alt)
+        meta: Boolean = false,
+        down: Boolean = true,
+        flavor: ExternalKeyFlavor = ExternalKeyFlavor.Windows,
+    ) = hardwareKeyAction(keyCode, unicode, ctrl, alt, meta, down, flavor)
 
     @Test
     fun `letters digits and punctuation go into the reading buffer`() {
@@ -63,7 +67,53 @@ class HardwareKeysTest {
 
     @Test
     fun `a key that produces no character is not ours`() {
-        assertNull(key(KeyEvent.KEYCODE_SHIFT_LEFT))
         assertNull(key(KeyEvent.KEYCODE_CTRL_LEFT))
+        assertNull(key(KeyEvent.KEYCODE_ALT_LEFT))
+        assertNull(key(KeyEvent.KEYCODE_TAB, 0x09))
+    }
+
+    @Test
+    fun `shift and caps lock are modifiers, and both phases matter`() {
+        // 单击 Shift 切中英、短按 Caps Lock 切中英 / 长按锁大小写，都要看按下与抬起两次事件。
+        assertEquals(HardwareKeyAction.Modifier(ModifierKey.Shift, true), key(KeyEvent.KEYCODE_SHIFT_LEFT))
+        assertEquals(
+            HardwareKeyAction.Modifier(ModifierKey.Shift, false),
+            key(KeyEvent.KEYCODE_SHIFT_RIGHT, down = false),
+        )
+        assertEquals(
+            HardwareKeyAction.Modifier(ModifierKey.CapsLock, true),
+            key(KeyEvent.KEYCODE_CAPS_LOCK),
+        )
+        assertEquals(
+            HardwareKeyAction.Modifier(ModifierKey.CapsLock, false),
+            key(KeyEvent.KEYCODE_CAPS_LOCK, down = false),
+        )
+        assertNull(modifierKey(KeyEvent.KEYCODE_A))
+    }
+
+    @Test
+    fun `command combinations only mean something in the mac flavour`() {
+        // Mac 档：⌘C/⌘V/⌘X/⌘A 翻成编辑器动作。Windows 档：Win 键不是复制粘贴的修饰键，交回系统。
+        val mac = ExternalKeyFlavor.Mac
+        assertEquals(
+            HardwareKeyAction.Edit(EditAction.Copy),
+            key(KeyEvent.KEYCODE_C, meta = true, flavor = mac),
+        )
+        assertEquals(
+            HardwareKeyAction.Edit(EditAction.Paste),
+            key(KeyEvent.KEYCODE_V, meta = true, flavor = mac),
+        )
+        assertEquals(
+            HardwareKeyAction.Edit(EditAction.Cut),
+            key(KeyEvent.KEYCODE_X, meta = true, flavor = mac),
+        )
+        assertEquals(
+            HardwareKeyAction.Edit(EditAction.SelectAll),
+            key(KeyEvent.KEYCODE_A, meta = true, flavor = mac),
+        )
+        assertNull(key(KeyEvent.KEYCODE_C, meta = true))
+        // 没有对应编辑器动作的 ⌘ 组合（⌘Z、⌘Q…）一律放行，别被输入法悄悄吃掉。
+        assertNull(key(KeyEvent.KEYCODE_Z, meta = true, flavor = mac))
+        assertNull(key(KeyEvent.KEYCODE_SPACE, ' '.code, meta = true, flavor = mac))
     }
 }

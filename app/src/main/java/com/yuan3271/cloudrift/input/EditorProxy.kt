@@ -52,6 +52,20 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
         connection?.deleteSurroundingText(length, 0)
     }
 
+    // ---- 编辑器自己的编辑动作（外接键盘的 ⌘C / ⌘V / ⌘X / ⌘A）--------------------------
+    //
+    // 输入法**不该**自己去读写剪贴板：那拿不到别的应用选中的内容、要额外的权限，也绕过了编辑器
+    // 自己的撤销栈。`performContextMenuAction` 是官方给输入法留的口子，等于替用户点了长按菜单里
+    // 那一项；编辑器不支持时返回 false，调用方当作"这颗键没接住"。
+
+    fun copySelection() = contextMenuAction(android.R.id.copy)
+    fun cutSelection() = contextMenuAction(android.R.id.cut)
+    fun pasteFromClipboard() = contextMenuAction(android.R.id.paste)
+    fun selectAllText() = contextMenuAction(android.R.id.selectAll)
+
+    private fun contextMenuAction(id: Int): Boolean =
+        runCatching { connection?.performContextMenuAction(id) == true }.getOrDefault(false)
+
     /**
      * 编辑器**此刻**是否有一段被选中的文本。
      *

@@ -59,6 +59,15 @@ interface InputWindowHost {
     /** The drag ended: persist where it was left. */
     fun commitCompatPanelPosition(kind: CompatPanelKind)
 
+    /**
+     * 在光标右下角闪一下"中 / 英 / 大写 / 日"。
+     *
+     * 切语言、开关大写锁的时候，眼睛在光标那儿、不在键盘上：面板上的标签太小又太远，所以这一颗
+     * 就贴在光标右下角，样子和"被选中的候选词"同一套（胶囊、primaryContainer 底），**不套面板、
+     * 不加阴影**，闪完自己消失。窗口开不出来（没有悬浮窗权限）时安静地什么都不做。
+     */
+    fun showLanguageBadge(text: String)
+
     /** 键鼠兼容模式关掉了：把两个窗口都拆掉（下次进这条模式再重建）。 */
     fun removeCompatPanels()
 

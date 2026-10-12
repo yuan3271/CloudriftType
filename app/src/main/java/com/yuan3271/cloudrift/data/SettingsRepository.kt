@@ -66,6 +66,9 @@ class SettingsRepository(context: Context) {
                 KEY_COMPAT_TOOLBAR_Y,
                 defaults.compatToolbarYPercent,
             ),
+            externalKeyFlavor = ExternalKeyFlavor.fromKey(
+                prefs.getString(KEY_EXTERNAL_KEY_FLAVOR, null),
+            ),
             updateCheckInterval = UpdateInterval.fromKey(prefs.getString(KEY_UPDATE_INTERVAL, null)),
             showUpdateDot = prefs.getBoolean(KEY_UPDATE_DOT, defaults.showUpdateDot),
             candidateOrder = CandidateOrder.fromKey(prefs.getString(KEY_CANDIDATE_ORDER, null)),
@@ -111,6 +114,7 @@ class SettingsRepository(context: Context) {
             putBoolean(KEY_COMPAT_TOOLBAR, settings.compatToolbarEnabled)
             putInt(KEY_COMPAT_TOOLBAR_X, settings.compatToolbarXPercent)
             putInt(KEY_COMPAT_TOOLBAR_Y, settings.compatToolbarYPercent)
+            putString(KEY_EXTERNAL_KEY_FLAVOR, settings.externalKeyFlavor.name)
             putString(KEY_UPDATE_INTERVAL, settings.updateCheckInterval.name)
             putBoolean(KEY_UPDATE_DOT, settings.showUpdateDot)
             putString(KEY_CANDIDATE_ORDER, settings.candidateOrder.name)
@@ -184,6 +188,7 @@ class SettingsRepository(context: Context) {
         private const val KEY_COMPAT_TOOLBAR = "compat_toolbar_visible"
         private const val KEY_COMPAT_TOOLBAR_X = "compat_toolbar_x_percent"
         private const val KEY_COMPAT_TOOLBAR_Y = "compat_toolbar_y_percent"
+        private const val KEY_EXTERNAL_KEY_FLAVOR = "external_key_flavor"
         private const val KEY_UPDATE_INTERVAL = "update_check_interval"
         private const val KEY_UPDATE_DOT = "update_dot"
         private const val KEY_CANDIDATE_ORDER = "candidate_order"

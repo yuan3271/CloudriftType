@@ -91,6 +91,27 @@ enum class ExternalInputMode {
 }
 
 /**
+ * 外接键盘上的修饰键按哪一套习惯走。
+ *
+ * 两档里 Shift（单击切中英）与 Caps Lock（短按切中英 / 长按锁大小写）的行为是一样的，差别只在
+ * ⌘ / Ctrl 这一层：Windows 键盘上 Ctrl+C 本来就是应用自己的快捷键，输入法原样放行即可；Mac
+ * 键盘上复制粘贴是 ⌘C，而 Android 应用只认 Ctrl，所以要由输入法把 ⌘ 那一套翻译成编辑器动作。
+ */
+enum class ExternalKeyFlavor {
+    /** Ctrl 组合原样交给应用，输入法不碰。 */
+    Windows,
+
+    /** ⌘(Command/Meta) 组合由输入法翻成编辑器动作（复制 / 粘贴 / 剪切 / 全选）。 */
+    Mac,
+    ;
+
+    companion object {
+        fun fromKey(key: String?): ExternalKeyFlavor =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: Windows
+    }
+}
+
+/**
  * 语音输入录音期间，外面正在放的声音怎么办。
  *
  * 录音要把人声收干净，而手机可能正在放歌 / 播视频。三种选择对应 Android 的三种音频焦点：
@@ -259,6 +280,11 @@ data class AppSettings(
      */
     val compatToolbarXPercent: Int = UNSET_POSITION,
     val compatToolbarYPercent: Int = UNSET_POSITION,
+    /**
+     * 外接键盘的修饰键习惯（见 [ExternalKeyFlavor]）。只在外接键鼠在场、而且有输入框正在被编辑
+     * 时起作用。
+     */
+    val externalKeyFlavor: ExternalKeyFlavor = ExternalKeyFlavor.Windows,
 
     /** How often to look for a newer release; Never turns the check off completely. */
     val updateCheckInterval: UpdateInterval = UpdateInterval.Daily,

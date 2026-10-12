@@ -455,7 +455,15 @@ class PinyinEngine(
         // 一次算完整张列表的习惯分（前缀只切一遍），不是每个候选各扫一遍——这条路径每次按键都跑。
         val counts = profile.habitCounts(code, ranked.map { it.text })
         val habits = ranked.mapIndexed { index, candidate -> candidate to counts[index] }
+        // 只有"把这一整串码都答完"的候选才配被顶到最前。
+        //
+        // 习惯是按码记的，而查习惯会把当前码的**所有前缀**都算进来（"ni 选过 你好"因此对 "nih"
+        // 也说话）。这条前缀规则只对"完整答案"成立：用户打 "women" 时顺手点过两次 我（我 只吃
+        // 掉 wo 那两个字母），那是"我对 wo 这个码的习惯"，不是"打 women 时我想要 我"。少了这道
+        // 闸，`women` 的第一名会变成 我、长句输入里点过两次的单字会永远压在整句前面——而且每被
+        // 点一次就更稳，用户看到的就是"长句只能一个字一个字地拿"。
         val promoted = habits.filter { it.second >= UserProfile.HABIT_THRESHOLD }
+            .filter { it.first.consumed >= code.length }
             .sortedByDescending { it.second }
             .map { it.first }
         val invented = profile.inventedWord(code)
@@ -518,11 +526,18 @@ class PinyinEngine(
         // every one of them; comparing against the covered reading instead would let the fragment
         // ride along for free and always win.
         val alternatives = ArrayList<Reading>()
-        for (syllable in dictionary.syllablesStartingWith(fragment, PARTIAL_SYLLABLE_LIMIT)) {
+        // 碎片能补成的音节**一个都不能少**：这里原来取的是"该字母开头、按语料权重排前 12 的音节"，
+        // 而常见的 l/h/z/s/t 音下都有二十多个音节——le(了)、lai(来)、zai(在)、zui(最)、shuo(说)、
+        // 很、他、对、都 全被截掉了。截掉的结果是"整句末尾那个字只能用单字硬凑"：打
+        // `wojintianqul` 出来的是 我今天去另/领/啰/嘞…，而正确的 我今天去了 连候选集合都进不去。
+        for (syllable in dictionary.syllablesStartingWith(fragment, FRAGMENT_SYLLABLE_LIMIT)) {
             if (syllable == fragment) continue
             val extended = buffer + syllable.substring(fragment.length)
             val extendedBounds = syllableSplit(extended)?.bounds ?: continue
-            alternatives.addAll(decodeTop(extended, extendedBounds, SENTENCE_LIMIT))
+            // 每个候选音节只要它**最好**的那条读法：这里只是拿不同的收尾音节去比大小，同一个音节
+            // 内部的同音字兄弟由整句那条路（[SENTENCE_LIMIT]）负责铺。试满 8 条等于把整条长缓冲的
+            // 解码重复二十几遍，实测 45 字母的碎片结尾会从 0.2ms 涨到 15ms。
+            alternatives.addAll(decodeTop(extended, extendedBounds, 1))
         }
         if (alternatives.isEmpty()) return emptyList()
         return attested(alternatives.sortedByDescending { it.score })
@@ -660,7 +675,7 @@ class PinyinEngine(
                         push(
                             paths[start + 1],
                             path.score + CHARACTER_SCORE - UNIT_PENALTY +
-                                pair * BIGRAM_WEIGHT + TAIL_PARTICLE_BONUS,
+                                pair * CHAR_BIGRAM_WEIGHT + TAIL_PARTICLE_BONUS,
                             path.text + character,
                             count,
                             lastToken = character.toString(),
@@ -675,7 +690,7 @@ class PinyinEngine(
                     push(
                         paths[start + 1],
                         path.score + CHARACTER_SCORE - rank * SENTENCE_CHAR_DECAY - UNIT_PENALTY +
-                            pair * BIGRAM_WEIGHT,
+                            pair * CHAR_BIGRAM_WEIGHT,
                         path.text + character,
                         count,
                         lastToken = character.toString(),
@@ -1125,7 +1140,7 @@ class PinyinEngine(
                             text = combined,
                             score = path.score + (
                                 CHARACTER_SCORE - rank * SENTENCE_CHAR_DECAY - UNIT_PENALTY +
-                                    pair * BIGRAM_WEIGHT
+                                    pair * CHAR_BIGRAM_WEIGHT
                                 ).toInt(),
                             lastWord = character,
                             usedWord = path.usedWord,
@@ -1600,6 +1615,12 @@ class PinyinEngine(
          */
         private const val CHAR_LIMIT = 100
         private const val PARTIAL_SYLLABLE_LIMIT = 12
+        /**
+         * 末尾碎片补全时最多试多少个音节。和 [PARTIAL_SYLLABLE_LIMIT] 分开：那个 12 是"一个字母
+         * 能开哪些词"的展示上限，这里是**完整音节表**——`z` 底下有 37 个音节，按权重只取前 12
+         * 就会把 在/最/走/早/怎/总 全丢掉。数一下：任何字母开头的音节能有几个，这个常量就得比它大。
+         */
+        private const val FRAGMENT_SYLLABLE_LIMIT = 64
         /** How many "words this code can still become" to offer. */
         private const val COMPLETION_LIMIT = 12
         /**
@@ -1686,6 +1707,15 @@ class PinyinEngine(
         private const val CHARACTER_SCORE = 905f
         /** How much a seen word pair (score 1..1000) is worth next to word frequencies. */
         private const val BIGRAM_WEIGHT = 2f
+        /**
+         * 单字那一步的搭配权重，故意比 [BIGRAM_WEIGHT] 低。
+         *
+         * 搭配分是 1..1000，乘 2 就最多 +2000，把"一个单元"的 [UNIT_PENALTY]（1200）整个盖过去了：
+         * `woxianzai` 于是解码成 我|先|在（我→先 651、先→在 247）而 我|现在 反而输——词输给了一串
+         * 单字。这正是用户看到的"整句一个字一个字地冒对应"：越长的句子，能凑出强搭配的单字链越多。
+         * 单字不是词，链上两颗单字的搭配证据不该比一个真词还重；词与词之间仍然是 [BIGRAM_WEIGHT]。
+         */
+        private const val CHAR_BIGRAM_WEIGHT = 1f
         /**
          * The same idea for the 首字母 path, where the competition is between ways of cutting a
          * run of initials into words. Word frequencies are close together there, so the pair has

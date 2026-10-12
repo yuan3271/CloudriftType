@@ -211,19 +211,40 @@ private const val UpdateMarkPillMs = 1200L
  * 工具栏上的胶囊键：语言那颗是「地球 + 当前语言」，符号那颗没有图标，只有一个字（`符` /
  * `?123`）。两颗共用同一个壳：同一个圆角、同一档底色、同一个内边距——工具栏里出现两个尺寸不一的
  * 胶囊，看起来就像两套控件。
+ *
+ * [onClick] / [onLongClick] 都为 null 时它就是一颗**只用来提示**的胶囊（大写锁那颗）：壳、
+ * 圆角、字号、内边距和能点的两颗完全一样，只是不接点击。[active] 是工具栏自己的"正在生效"画法
+ * （见 [ToolbarButton]）：同样的壳，换成 primaryContainer 底。
  */
 @Composable
 internal fun ToolbarChip(
     label: String,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     icon: ImageVector? = null,
+    active: Boolean = false,
 ) {
+    val container = if (active) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val content = if (active) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .then(
+                if (onClick != null || onLongClick != null) {
+                    Modifier.combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
+                } else {
+                    Modifier
+                },
+            )
+            .background(container)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -232,7 +253,7 @@ internal fun ToolbarChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (active) content else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp),
             )
         }
@@ -240,7 +261,7 @@ internal fun ToolbarChip(
             text = label,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = content,
         )
     }
 }

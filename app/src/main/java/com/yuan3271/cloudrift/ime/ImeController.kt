@@ -4,6 +4,7 @@ import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import android.view.HapticFeedbackConstants
 import android.view.SoundEffectConstants
 import android.view.inputmethod.EditorInfo
@@ -11,6 +12,7 @@ import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.data.ClipboardStore
+import com.yuan3271.cloudrift.data.ExternalKeyFlavor
 import com.yuan3271.cloudrift.data.SettingsRepository
 import com.yuan3271.cloudrift.data.SymbolWidth
 import com.yuan3271.cloudrift.data.ThemeMode
@@ -103,6 +105,19 @@ class ImeController(
      * 用户自己选的布局还在设置里躺着，拔掉键鼠就还回去。
      */
     private var layoutSwitchedForHardware = false
+
+    /**
+     * 中 ⇄ 英 来回切时，英文那边要回到哪个中文布局（见 [toggleLanguage]）。跟着用户自己选的布局
+     * 走：9 键用户被快捷键切到英文，切回来还得是 9 键。
+     */
+    private var languageReturn: LayoutId = LayoutId.Pinyin26
+
+    /** Shift / Caps Lock 的按下时刻，以及"这次 Shift 期间有没有按过别的键"（见 [onHardwareKeyUp]）。 */
+    private var shiftDownAt = 0L
+    private var shiftDirty = false
+    private var capsDownAt = 0L
+    /** Caps Lock 的长按已经处理过了：抬起时不再把它当短按。 */
+    private var capsLongFired = false
 
     /**
      * 屏幕上那条联想候选是替哪个词做的预测（见 [showAssociations]）。null 表示当前没有联想条。
@@ -418,9 +433,37 @@ class ImeController(
         unicode: Int,
         ctrlPressed: Boolean,
         altPressed: Boolean,
+        metaPressed: Boolean = false,
+        repeatCount: Int = 0,
     ): Boolean {
         if (!editingField || !_state.value.externalInputs.present) return false
-        return when (val action = hardwareKeyAction(keyCode, unicode, ctrlPressed, altPressed)) {
+        // Shift 期间只要按过别的键，这一次 Shift 就是当修饰键用的（Shift+字母打大写、Shift+方向键
+        // 选字），抬起时不该再切中英。
+        //
+        // Shift 自己按下时**要把标记清掉**：这个标志是"这一轮 Shift 里有没有按过别的键"，不是"最近
+        // 有没有打过字"。不清的话上一次打字的 true 会留到下一次单击 Shift，把切中英整个吃掉——真机
+        // 上就是这么表现的：先打几个字，再按 Shift 没反应。
+        if (modifierKey(keyCode) == ModifierKey.Shift) shiftDirty = false else shiftDirty = true
+        val action = hardwareKeyAction(
+            keyCode = keyCode,
+            unicode = unicode,
+            ctrlPressed = ctrlPressed,
+            altPressed = altPressed,
+            metaPressed = metaPressed,
+            down = true,
+            flavor = settings.current.externalKeyFlavor,
+        )
+        if (action is HardwareKeyAction.Modifier || action is HardwareKeyAction.Edit) {
+            logHardwareKey(
+                direction = "down",
+                keyCode = keyCode,
+                detail = "$action repeat=$repeatCount meta=$metaPressed ctrl=$ctrlPressed alt=$altPressed",
+            )
+        }
+        // ⌘ / Win 按着的时候**每一颗键都记一行**：用户键盘上那颗"桌面键"到底发什么 keycode、
+        // 有没有 meta 位，全靠这行（它不经过上面那条路——没有对应编辑器动作时 action 是 null）。
+        if (metaPressed) logHardwareKey(direction = "meta", keyCode = keyCode, detail = "action=$action")
+        return when (action) {
             null -> false
             is HardwareKeyAction.Type -> {
                 // 正在拼写时，数字 1-9 是"选第 N 个候选"：键鼠面板里每颗候选前面就写着这个号
@@ -452,6 +495,105 @@ class ImeController(
             } else {
                 false
             }
+
+            is HardwareKeyAction.Modifier -> when (action.key) {
+                // Shift 自己不吃掉：按住 Shift 打字母要由系统换算成大写（见 [hardwareKeyAction]），
+                // 输入法只在"单独按了一下就抬起"时才动手（见 [onHardwareKeyUp]）。
+                ModifierKey.Shift -> {
+                    // 长按 Shift 会被系统送成"重复按下"，那只说明键一直按着，不该重新开始计时。
+                    if (repeatCount == 0) shiftDownAt = System.currentTimeMillis()
+                    false
+                }
+
+                // Caps Lock 由输入法整个接管：短按切中英、长按锁大小写（见 [onHardwareKeyUp]）。
+                // 吃掉它，系统就不会再自己把大写状态切一遍。
+                ModifierKey.CapsLock -> {
+                    if (repeatCount == 0) {
+                        capsDownAt = System.currentTimeMillis()
+                        capsLongFired = false
+                    } else if (!capsLongFired &&
+                        System.currentTimeMillis() - capsDownAt >= CAPS_LOCK_LONG_PRESS_MS
+                    ) {
+                        // 按住不放时系统会补发重复按下。**只有真的超过阈值才算长按**：这台平板上
+                        // 系统的长按重复来得比 400ms 还早，直接拿它当长按会把"慢一点的单击"也锁成
+                        // 大写。够时长就当长按，当场给反馈，不必等抬起。
+                        capsLongFired = true
+                        toggleCapsLock()
+                    }
+                    true
+                }
+            }
+
+            is HardwareKeyAction.Edit -> performEdit(action.action)
+        }
+    }
+
+    /**
+     * 修饰键与 ⌘ 组合的按下 / 抬起打一行日志。
+     *
+     * 只在这几种键上打：字母、数字、退格那些不经过这里（它们每秒都可能来好几颗），而"Shift 单击
+     * 切中英""Caps Lock 短按 / 长按"这两条偏偏是**看不见摸不着**的——真机上要确认那颗键到底有没有
+     * 送到输入法、送的是哪个 keycode，这行日志是唯一线索（`adb logcat -s CloudriftIme`）。
+     */
+    private fun logHardwareKey(direction: String, keyCode: Int, detail: String = "") {
+        Log.i(LOG_TAG, "hw-$direction keyCode=$keyCode $detail")
+    }
+
+    /**
+     * 物理键盘的抬起。只有 Shift 与 Caps Lock 需要它——"短按一次"和"按住不放"靠按下与抬起这一对
+     * 事件才分得出来。返回 true 表示输入法把这颗键消化了。
+     */
+    fun onHardwareKeyUp(keyCode: Int): Boolean {
+        val mine = editingField && _state.value.externalInputs.present
+        if (modifierKey(keyCode) != null) {
+            logHardwareKey(direction = "up", keyCode = keyCode, detail = "mine=$mine")
+        }
+        if (!mine) return false
+        return when (modifierKey(keyCode)) {
+            ModifierKey.Shift -> {
+                val tapped = !shiftDirty && System.currentTimeMillis() - shiftDownAt <= SHIFT_TAP_MAX_MS
+                shiftDirty = false
+                // Mac 档切中英的是**大小写键**，Shift 在那边是纯粹的修饰键（Shift+字母打大写），
+                // 单击不该切语言；Windows 档反过来——切中英的是 Shift，大小写键只管大小写。
+                if (tapped && settings.current.externalKeyFlavor == ExternalKeyFlavor.Windows) {
+                    toggleLanguage()
+                    true
+                } else {
+                    false
+                }
+            }
+
+            ModifierKey.CapsLock -> {
+                // 重复按下那条路已经处理过（长按）就不重复处理；没有重复事件（有些键盘不给）时按住
+                // 了多久也算数，两条路都留。
+                if (!capsLongFired) {
+                    val mac = settings.current.externalKeyFlavor == ExternalKeyFlavor.Mac
+                    val held = System.currentTimeMillis() - capsDownAt
+                    // Mac：短按切中英、长按锁大小写。Windows：大小写键就是大小写锁，不切中英。
+                    if (mac && held < CAPS_LOCK_LONG_PRESS_MS) toggleLanguage() else toggleCapsLock()
+                }
+                capsLongFired = false
+                true
+            }
+
+            null -> false
+        }
+    }
+
+    /**
+     * Mac 档下 ⌘C / ⌘V / ⌘X / ⌘A 翻成编辑器动作（见 [ExternalKeyFlavor.Mac]）。
+     *
+     * 输入法不自己去读写剪贴板，只用 `performContextMenuAction` 替用户点长按菜单里那一项；编辑器
+     * 不给做就返回 false，把这颗键原样交回系统，不至于被输入法闷掉。
+     */
+    private fun performEdit(action: EditAction): Boolean {
+        // 手里的拼写先定下来，否则复制到的是"还没上屏的拼音"和输入框里那串预览的混合。
+        commitBuffer()
+        return when (action) {
+            EditAction.Copy -> editor.copySelection()
+            EditAction.Cut -> editor.cutSelection()
+            EditAction.Paste -> editor.pasteFromClipboard()
+            EditAction.SelectAll -> editor.selectAllText()
         }
     }
 
@@ -496,14 +638,18 @@ class ImeController(
      * 会先把拼写定下来（[commitLiteral] 自己处理），这和屏上从符号页打字是同一个规矩。
      */
     private fun typeFromHardware(text: String) {
+        val current = _state.value
         val letter = text.length == 1 && text[0].isAsciiLetter()
         if (!letter) {
             commitLiteral(text)
             return
         }
+        // Caps Lock 被输入法接管了，系统那份大写状态不会跟着走，所以这里自己把字母变大写。
+        // Shift 那条路不用管：按住 Shift 打出来的字符本来就由系统换算好了（见 [hardwareKeyAction]）。
+        val cased = if (current.capsLock && text[0].isLowerCase()) text.uppercase() else text
         // 符号页上敲字母 = 回到字母页继续拼（屏上做不到这件事，物理键盘做得到）。
-        if (_state.value.page != KeyboardPage.Letters) showPage(KeyboardPage.Letters)
-        appendReading(text)
+        if (current.page != KeyboardPage.Letters) showPage(KeyboardPage.Letters)
+        appendReading(cased)
     }
 
     // ---- 外接键鼠 ---------------------------------------------------------------------
@@ -841,7 +987,12 @@ class ImeController(
         val candidate = current.candidates.getOrNull(index) ?: return
         if (settings.current.hapticFeedback) haptics.candidate()
         clipboard.acknowledgePending()
-        learn(current.raw, candidate)
+        // 学的是"这个候选真正答完的那段码"，不是"当时屏幕上还剩多长"。
+        //
+        // 整句输入里点一个单字（我 只吃掉 `wo`）时，记成整条 `wojintianqulebeijing` 是错的：那条
+        // 记录既不能给 `wo` 用，又会在下次打同一句时把 我 顶到整句前面——而它每被点一次就更稳，
+        // 于是"长句只能一个字一个字地拿"。按被吃掉的那段码记，单字就只是"wo 这个码的习惯"。
+        learn(current.raw.take(candidate.consumed), candidate)
         val remaining = if (candidate.consumed >= current.raw.length) {
             ""
         } else {
@@ -920,7 +1071,14 @@ class ImeController(
         )
         engine = AppGraph.engines.engineFor(layout.engine)
         voice.layoutHint = layout
-        if (persist) settings.update { it.copy(lastLayout = layout.name) }
+        // 切语言在光标右下角闪一下"中 / 英 / 日"：眼睛在光标那儿，面板上那颗标签太远。
+        windowHost?.showLanguageBadge(badgeText())
+        if (persist) {
+            settings.update { it.copy(lastLayout = layout.name) }
+            // 用户自己选的中文布局要记住：快捷键从英文切回来时用它，而不是一律回 26 键
+            // （外接键鼠那次临时的 9→26 切换走的是 persist = false，不会污染这里）。
+            if (layout.isChinese) languageReturn = layout
+        }
         updateEnterLabel()
         if (layout == LayoutId.Pinyin9) warmUpNineKey()
     }
@@ -1206,6 +1364,43 @@ class ImeController(
         }
     }
 
+    /**
+     * 中 ⇄ 英 一步切换：外接键盘上单独按一下 Shift，或短按一下 Caps Lock。
+     *
+     * 和工具栏那颗语言键不一样：那颗是在 中 → 英 → 日 里转圈，日文开着的时候要按两下才回得来。
+     * 快捷键要的就是"切一下中英"，所以从英文回去时回到用户上一次用的那个中文布局——9 键用户不该
+     * 被顺手换成 26 键。
+     */
+    private fun toggleLanguage() {
+        val current = _state.value.layout
+        if (current.isChinese) {
+            languageReturn = current
+            selectLayout(LayoutId.English)
+        } else {
+            selectLayout(languageReturn)
+        }
+    }
+
+    /** Caps Lock 长按：锁大小写，再长按一次解除（短按是 [toggleLanguage]）。 */
+    private fun toggleCapsLock() {
+        val current = _state.value
+        _state.value = current.copy(capsLock = !current.capsLock, shifted = false)
+        // 大写锁是"一直生效"的状态，面板上另有常驻提示（见 CompatToolbar 的那颗"大写"胶囊），
+        // 这里再闪一下，按下去的那一下就有反馈。
+        windowHost?.showLanguageBadge(badgeText())
+    }
+
+    /** 闪示上写什么：大写锁优先，否则是当前语言（中 / 英 / 日）。 */
+    private fun badgeText(): String {
+        val state = _state.value
+        return when {
+            state.capsLock -> "大写"
+            state.layout.isChinese -> "中"
+            state.layout.isJapanese -> "日"
+            else -> "英"
+        }
+    }
+
     /** Walks the enabled layouts: 中 ⇄ 英, with 日 in the rotation only when it is switched on. */
     fun cycleLanguage() {
         val order = LayoutId.cycleFor(settings.current.japaneseEnabled)
@@ -1245,6 +1440,7 @@ class ImeController(
         _state.value = _state.value.copy(layout = saved)
         engine = AppGraph.engines.engineFor(saved.engine)
         voice.layoutHint = saved
+        if (saved.isChinese) languageReturn = saved
     }
 
     /**
@@ -1332,6 +1528,12 @@ class ImeController(
         )
 
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
+        /** 与 [CloudriftImeService] 同一个 tag：`adb logcat -s CloudriftIme` 一条就够。 */
+        private const val LOG_TAG = "CloudriftIme"
+        /** 单独按一下 Shift、且这么久以内抬起，才算"单击切中英"（按住 Shift 打字不算）。 */
+        private const val SHIFT_TAP_MAX_MS = 500L
+        /** Caps Lock 按住超过这么久算长按（锁大小写）；不到就是短按（切中英）。 */
+        private const val CAPS_LOCK_LONG_PRESS_MS = 400L
         /** How long two single character commits may be apart and still belong to one learned word. */
         private const val AUTO_WORD_WINDOW_MS = 3000L
         /** Longest run of single characters that is still remembered as one learned word. */

@@ -67,6 +67,7 @@ import com.yuan3271.cloudrift.data.ApiStyle
 import com.yuan3271.cloudrift.data.CandidateOrder
 import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.ExternalInputMode
+import com.yuan3271.cloudrift.data.ExternalKeyFlavor
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.data.ThemeMode
@@ -402,6 +403,37 @@ fun SettingsScreen(
                     checked = settings.compatToolbarEnabled,
                     onCheckedChange = { value -> onUpdate { it.copy(compatToolbarEnabled = value) } },
                 )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "外接键盘的快捷键按哪一套走",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "两档里 Shift（单独按一下切中英）和 Caps Lock（短按切中英 / 长按锁大小写）" +
+                        "是一样的，差别只在 ⌘ / Ctrl：Windows 的 Ctrl+C 本来就是应用自己的快捷键，" +
+                        "输入法原样放行；Mac 的 ⌘C / ⌘V 安卓应用不认，由输入法翻成复制 / 粘贴 / 剪切 / " +
+                        "全选。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(6.dp))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val flavors = listOf(
+                        ExternalKeyFlavor.Windows to "Windows",
+                        ExternalKeyFlavor.Mac to "macOS",
+                    )
+                    flavors.forEachIndexed { index, (flavor, label) ->
+                        SegmentedButton(
+                            selected = settings.externalKeyFlavor == flavor,
+                            onClick = { onUpdate { it.copy(externalKeyFlavor = flavor) } },
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = flavors.size),
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
                 // 检测状态摆在这儿，是因为这条设置只对外接键鼠生效：看得见"现在有没有检测到"，
                 // 才知道刚才的选择到底会不会起作用。
                 val externalInputs = rememberExternalInputs()

@@ -85,11 +85,33 @@ class PinyinAttestationTest {
     }
 
     @Test
+    fun `a half typed tail reaches every syllable of its letter, not the top twelve`() {
+        // 末尾只打了半个音节时，补全原来是"该字母开头、按语料权重前 12 个音节"里挑的。l 底下有
+        // 26 个音节——le(了)、la(啦)、lai(来) 全在门外，于是 `wojintianqul` 只能用单字把末尾凑出来
+        // （我今天去另/领/啰/嘞…），正确的 我今天去了 连候选集合都进不去。h/z/s/t/d 底下同样丢字
+        // （很/在/最/说/对/都 都能被截掉）。
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("我今天去了", engine.evaluate("wojintianqul").candidates.first().text)
+    }
+
+    @Test
     fun `phrases and names are unaffected by the sentence filter`() {
         val engine = PinyinEngine(dictionary, nineKey = false)
 
         assertEquals("中国人民大学", engine.evaluate("zhongguorenmindaxue").candidates.first().text)
         assertEquals("北京大学", engine.evaluate("beijingdaxue").candidates.first().text)
+    }
+
+    @Test
+    fun `a real word beats a chain of single characters`() {
+        // 单字那一步的搭配权重原来和词一样是 2，于是两颗强搭配的字（我→先 651、先→在 247）就能
+        // 凑出比真词更高的分：`woxianzai` 解码成 我|先|在 而不是 我|现在。整句越长能凑出的单字链
+        // 越多，这正是"一个字一个字地冒对应"的另一半来源——把单字那一步的权重降到 1 以后，
+        // 广谱台全拼 top1 从 496/573 涨到 508/573。
+        val engine = PinyinEngine(dictionary, nineKey = false)
+
+        assertEquals("我现在", engine.evaluate("woxianzai").candidates.first().text)
     }
 
     @Test

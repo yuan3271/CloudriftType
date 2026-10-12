@@ -382,6 +382,30 @@ class PinyinEngineTest {
     }
 
     @Test
+    fun `a candidate that only answered part of the code never jumps ahead of a longer one`() {
+        val store = object : StringStore {
+            private val values = HashMap<String, String>()
+            override fun read(key: String): String? = values[key]
+            override fun write(key: String, value: String) {
+                values[key] = value
+            }
+        }
+        val learner = UserProfile(store, CoroutineScope(Dispatchers.Unconfined))
+        // 打 wo 选两次 我——这是"wo 这个码"的习惯，不是"打 women 时我想要 我"。
+        repeat(2) { learner.recordChoice(code = "wo", text = "我", reading = "wo") }
+        val engine = PinyinEngine(dictionary, nineKey = false, profile = learner)
+
+        // 少了这道闸，`women` 的第一名会变成 我，把 我们 顶下去（实测确实如此）。而长句输入里
+        // 点过两次的那个单字会永远压在整句前面——每被点一次就更稳，用户看到的就是"长句只能一个
+        // 字一个字地拿"。这条锁住"只有把整串码答完的候选才配被提升"。
+        assertEquals("我们", engine.evaluate("women").candidates.first().text)
+        assertEquals(
+            "我今天去了北京",
+            engine.evaluate("wojintianqulebeijing").candidates.first().text,
+        )
+    }
+
+    @Test
     fun `a word the user spelled out becomes a candidate`() {
         val store = object : StringStore {
             private val values = HashMap<String, String>()
