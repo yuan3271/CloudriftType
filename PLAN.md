@@ -222,7 +222,8 @@
 | 217 | 发布 0.3.5（versionCode 52）：tag `v0.3.5`、[Release 云隙输入 0.3.5](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.5)（id `403438064`）已上传资产 `cloudrift-type-0.3.5-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:cb0ed60f…` 与本地逐字节一致）；远端 `main` `29c73bae` → `05c42acb`，树与本地 `168` 个文件逐个核对相同 | 完成 |
 | 218 | 拼音三处修正（先在真机复现再改）：① **学习把单字偏好挂到整句的码上**——`selectCandidate` 改成记"候选真正吃掉的那段码"、`personalize` 只提升"把整串码答完"的候选，于是 `wo` 选两次我 不再让 `women` 的首选变成我（实测改前是 `我 / 我们`）、长句里点过的单字也不再压住整句；② **末尾半个音节的补全只试了该字母权重前 12 个音节**（l 底下 26 个，le/la/lai 全在门外，`wojintianqul` 只能出「我今天去另」），改成完整音节表后首位是**我今天去了**；③ 单字那一步的搭配权重 2 → 1（一串单字不再凑过真词），广谱台全拼 **top1 496 → 508/573**、top5 526 → 527，`woxianzai` 从「我先在」回到**我现在** | 完成 |
 | 219 | 外接键盘快捷键 + 两种提示（真机验证）：Shift / Caps Lock 切中英**按档走**——macOS 档**大小写键单击切中英**、Shift 只当修饰键，Windows 档 **Shift 单击切中英**、大小写键只管锁大写；Caps Lock 长按锁大写（只认第一次按下计时，且平台的重复按下要真的超过 400ms 才算长按）；macOS 档下 ⌘C/⌘V/⌘X/⌘A 翻成编辑器动作（`performContextMenuAction`，输入法不自己碰剪贴板）；切语言 / 开关大写时**光标右下角闪一下「中 / 英 / 大写 / 日」**（选中候选同款胶囊、自己一个窗口、不套面板无阴影），保持大写时工具面板上常驻一颗同款「大写」胶囊 | 完成 |
-| 220 | 本地构建 0.3.6（versionCode 53）：202 个用例全绿 + `assembleRelease`，产物落 `dist/` | 完成 |
+| 220 | 本地构建 0.3.6（versionCode 53）：202 个用例全绿 + `assembleRelease`，产物 `dist/cloudrift-type-0.3.6-release.apk`（4,220,028 字节，sha256 `1cd09ccf…`，签名 `CN=yuan3271`） | 完成 |
+| 221 | 发布 0.3.6（versionCode 53）：tag `v0.3.6`、[Release 云隙输入 0.3.6](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.6)（id `410684826`）已上传资产 `cloudrift-type-0.3.6-release.apk`（4,220,028 字节，资产 API 的 `digest` `sha256:1cd09ccf…` 与本地逐字节一致）；远端 `main` `a568583` → `f4d86e7`。**本轮 git 通道恢复可用**（`git ls-remote` 与 `git push` 都通），所以这次是真 `git push` 而不是 REST/Git Data API，并且顺手把分叉了十几条的本地 `main` 对齐到了远端那条线上（两边 tree 本来逐字节相同，只是 sha 不同） | 完成 |
 
 ## 键鼠兼容模式：工具栏开关、没有输入框时不接物理键盘（0.3.5）
 
@@ -2725,7 +2726,16 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
 
 ### 发布记录（0.3.6）
 
-见下一条提交后的表格行与 Release 资产 digest。
+- 本地产物 `dist/cloudrift-type-0.3.6-release.apk`：4,220,028 字节，sha256
+  `1cd09ccffb1cb14adef9fb23629174681ead6e2cd7ecbbb5bd77ef0215fd31f1`，`apksigner verify` 通过，
+  签名 `CN=yuan3271, OU=Cloudrift Type, O=Cloudrift, L=Shanghai, ST=Shanghai, C=CN`。
+- Release：[云隙输入 0.3.6](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.6)（id
+  `410684826`），资产 `cloudrift-type-0.3.6-release.apk`，资产 API 的 `digest`
+  `sha256:1cd09ccffb1cb14adef9fb23629174681ead6e2cd7ecbbb5bd77ef0215fd31f1` 与本地逐字节一致。
+  第一次上传到 `uploads.github.com` 卡成 **HTTP 408**，关掉 `Expect: 100-continue` 并带重试后
+  3.5 秒传完（这条留给下轮：大资产上传时先加 `-H "Expect:"`）。
+- git 通道恢复：`a568583`（远端 main）→ `f4d86e7`，本地 `main` 也已对齐同一条线（不再分叉）；
+  远端 tree 与本地 tree 均为 `4a8ecfc9…` 之上的同一次提交内容。
 
 ## 待办（未纳入本次范围）
 
