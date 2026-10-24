@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.ThemeMode
@@ -43,6 +44,7 @@ import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
+import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlin.math.roundToInt
 
@@ -64,7 +66,7 @@ fun QuickSettingsPanel(
     val autoHeight = KeyboardLayouts.autoKeyHeight(screenHeight)
     val keyHeight = (if (state.keyHeightDp > 0) state.keyHeightDp.toFloat() else autoHeight).dp
 
-    Surface(
+    CloudriftSurface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
@@ -101,7 +103,7 @@ fun QuickSettingsPanel(
             // even though the keyboard itself is behind the sheet.
             Column(modifier = Modifier.padding(horizontal = 14.dp)) {
                 LabeledRow("外观预览") {
-                    Surface(
+                    CloudriftSurface(
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
                         shape = RoundedCornerShape(18.dp),
                         modifier = Modifier
@@ -128,7 +130,28 @@ fun QuickSettingsPanel(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 // ---- theme ---------------------------------------------------------
-                LabeledRow("主题") {
+                LabeledRow("界面主题") {
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        val themes = listOf(
+                            AppTheme.Material3Expressive to "M3 Expressive",
+                            AppTheme.LiquidGlass to "液态玻璃",
+                        )
+                        themes.forEachIndexed { index, (theme, label) ->
+                            SegmentedButton(
+                                selected = state.appTheme == theme,
+                                onClick = { onUpdate { it.copy(appTheme = theme) } },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = themes.size,
+                                ),
+                            ) {
+                                Text(label, style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
+
+                LabeledRow("明暗模式") {
                     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                         val modes = listOf(
                             ThemeMode.System to "跟随系统",

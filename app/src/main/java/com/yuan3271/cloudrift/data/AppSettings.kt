@@ -1,5 +1,21 @@
 package com.yuan3271.cloudrift.data
 
+/** The visual language used by the keyboard and the settings screen. */
+enum class AppTheme {
+    /** The established Material 3 Expressive look, including all existing colour options. */
+    Material3Expressive,
+
+    /** Refracted glass surfaces rendered with AndroidLiquidGlass/Backdrop. */
+    LiquidGlass,
+    ;
+
+    companion object {
+        fun fromKey(key: String?): AppTheme =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) }
+                ?: Material3Expressive
+    }
+}
+
 /** Which colour scheme the keyboard should use. */
 enum class ThemeMode {
     System,
@@ -225,6 +241,12 @@ data class ApiEndpoint(
 }
 
 data class AppSettings(
+    val appTheme: AppTheme = AppTheme.Material3Expressive,
+    /**
+     * False on a fresh install and after upgrading from releases that predate the theme picker.
+     * The renderer still has a safe default, but the UI blocks interaction until this becomes true.
+     */
+    val appThemeChosen: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.System,
     val themeSource: ThemeSource = ThemeSource.Dynamic,
     /** Accent hue in degrees, used when [themeSource] is [ThemeSource.Custom]. */
@@ -341,6 +363,10 @@ data class AppSettings(
 
     val lastLayout: String = "",
 ) {
+    /** Records the blocking first-run choice without touching any existing colour preference. */
+    fun withAppThemeChoice(theme: AppTheme): AppSettings =
+        copy(appTheme = theme, appThemeChosen = true)
+
     companion object {
         const val DEFAULT_SPEECH_BASE_URL = "https://api.openai.com/v1"
         const val DEFAULT_SPEECH_MODEL = "whisper-1"

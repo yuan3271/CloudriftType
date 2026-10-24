@@ -20,8 +20,8 @@ android {
         applicationId = "com.yuan3271.cloudrift"
         minSdk = 26
         targetSdk = 36
-        versionCode = 57
-        versionName = "0.4.0"
+        versionCode = 58
+        versionName = "1.0.0"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -95,6 +95,8 @@ dependencies {
 
     // Material 3 Expressive lives on the 1.5 line; the BOM still pins 1.4.x.
     implementation(libs.androidx.compose.material3)
+    // Apache-2.0 backdrop, refraction, and specular highlights for the Liquid Glass theme.
+    implementation(libs.liquid.glass)
 
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)

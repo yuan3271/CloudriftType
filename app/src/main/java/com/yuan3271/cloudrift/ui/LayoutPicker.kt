@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.input.LayoutId
+import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 
 /**
@@ -47,7 +48,7 @@ fun LayoutPickerOverlay(
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        Surface(
+        CloudriftSurface(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(enabled = false) {}

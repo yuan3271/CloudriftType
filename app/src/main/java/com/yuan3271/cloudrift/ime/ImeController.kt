@@ -10,6 +10,7 @@ import android.view.SoundEffectConstants
 import android.view.inputmethod.EditorInfo
 import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.data.AppSettings
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.data.ClipboardStore
 import com.yuan3271.cloudrift.data.ExternalKeyFlavor
@@ -732,6 +733,12 @@ class ImeController(
 
     /** Quick settings edits the same store the full settings screen writes to. */
     fun updateSettings(transform: (AppSettings) -> AppSettings) = settings.update(transform)
+
+    /** Persists the blocking first-run choice and immediately updates the visible keyboard. */
+    fun chooseAppTheme(theme: AppTheme) {
+        settings.update { it.withAppThemeChoice(theme) }
+        refreshSettings()
+    }
 
     /**
      * 工具面板开不开。设置页里是一个开关，面板右端那颗 ✕ 关的也是它——同一个设置，两条路。
@@ -1555,6 +1562,8 @@ class ImeController(
      * stops the two settings paths (live flow and refresh) from drifting apart.
      */
     private fun ImeUiState.withAppearance(snapshot: AppSettings) = copy(
+            appTheme = snapshot.appTheme,
+            appThemeChosen = snapshot.appThemeChosen,
             themeMode = snapshot.themeMode,
             themeSource = snapshot.themeSource,
             accentHue = snapshot.accentHue,

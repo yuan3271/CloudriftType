@@ -17,8 +17,10 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.data.AppGraph
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ImportOutcome
 import com.yuan3271.cloudrift.theme.CloudriftTheme
+import com.yuan3271.cloudrift.ui.AppThemeChoiceDialog
 
 class SettingsActivity : ComponentActivity() {
 
@@ -33,6 +35,7 @@ class SettingsActivity : ComponentActivity() {
             val update by AppGraph.updates.available.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { AppGraph.updates.checkIfDue() }
             CloudriftTheme(
+                appTheme = settings.appTheme,
                 themeMode = settings.themeMode,
                 themeSource = settings.themeSource,
                 accentHue = settings.accentHue,
@@ -65,6 +68,11 @@ class SettingsActivity : ComponentActivity() {
                         finish = ::finish,
                     ),
                 )
+                if (!settings.appThemeChosen) {
+                    AppThemeChoiceDialog { theme ->
+                        AppGraph.settings.update { it.withAppThemeChoice(theme) }
+                    }
+                }
             }
         }
     }

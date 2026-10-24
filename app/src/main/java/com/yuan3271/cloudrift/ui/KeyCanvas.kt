@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
@@ -55,6 +56,7 @@ import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.input.KeyStyle
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -294,6 +296,7 @@ private fun KeyFace(
     modifier: Modifier = Modifier,
     content: @Composable (contentColor: Color) -> Unit,
 ) {
+    val glass = isLiquidGlassTheme()
     // Keyboard feedback has to feel instant, so the press animation uses the fast spatial
     // spec from the Material 3 Expressive motion scheme rather than a default spring.
     val scale by animateFloatAsState(
@@ -310,12 +313,19 @@ private fun KeyFace(
     val isAccent = active || key.style == KeyStyle.Accent
     val container = when {
         isAccent -> MaterialTheme.colorScheme.primary
+        glass && key.style == KeyStyle.Space ->
+            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.62f)
+        glass && keyBackground == KeyBackground.Filled ->
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.58f)
         key.style == KeyStyle.Space -> MaterialTheme.colorScheme.surfaceContainerHigh
         keyBackground == KeyBackground.Filled -> MaterialTheme.colorScheme.surfaceContainerHighest
         else -> Color.Transparent
     }
     val pressedContainer = when {
+        glass && key.style == KeyStyle.Accent ->
+            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.90f)
         key.style == KeyStyle.Accent -> MaterialTheme.colorScheme.tertiaryContainer
+        glass -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.76f)
         else -> MaterialTheme.colorScheme.primaryContainer
     }
     val contentColor = when {
@@ -323,8 +333,8 @@ private fun KeyFace(
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val background = if (pressed) pressedContainer else container
-    val outline = keyBackground == KeyBackground.Outlined && !isAccent &&
-        key.style != KeyStyle.Space
+    val outline = !isAccent &&
+        (glass || keyBackground == KeyBackground.Outlined && key.style != KeyStyle.Space)
 
     Box(
         modifier = modifier
@@ -333,10 +343,29 @@ private fun KeyFace(
             .clip(RoundedCornerShape(corner))
             .background(background)
             .then(
+                if (glass) {
+                    Modifier.background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.20f),
+                                Color.White.copy(alpha = 0.02f),
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                            ),
+                        ),
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .then(
                 if (outline) {
                     Modifier.border(
                         width = 1.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant,
+                        color = if (glass) {
+                            Color.White.copy(alpha = 0.30f)
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
                         shape = RoundedCornerShape(corner),
                     )
                 } else {

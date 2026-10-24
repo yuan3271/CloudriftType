@@ -62,6 +62,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.BuildConfig
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ApiEndpoint
 import com.yuan3271.cloudrift.data.ApiStyle
 import com.yuan3271.cloudrift.data.CandidateOrder
@@ -80,6 +81,7 @@ import com.yuan3271.cloudrift.input.ExternalInputMonitor
 import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
+import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.ui.CursorSpeedSelector
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
@@ -168,8 +170,19 @@ fun SettingsScreen(
             SectionTitle("外观", CloudriftIcons.Palette)
             SettingsCard {
                 Text(
-                    text = "主题",
+                    text = "界面主题",
                     style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(8.dp))
+                AppThemeSelector(
+                    current = settings.appTheme,
+                    onSelect = { theme -> onUpdate { it.copy(appTheme = theme) } },
+                )
+                Spacer(Modifier.height(14.dp))
+                Text(
+                    text = "明暗模式",
+                    style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
@@ -185,7 +198,7 @@ fun SettingsScreen(
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "配色来源",
+                    text = "主题配色",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(top = 4.dp),
@@ -224,7 +237,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
-                Surface(
+                CloudriftSurface(
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth(),
@@ -958,16 +971,114 @@ private fun rememberExternalInputs(): ExternalInputSnapshot {
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+    CloudriftSurface(
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) { content() }
     }
 }
+
+/**
+ * Two complete visual languages, not two colour palettes. Material 3 Expressive remains the
+ * default so existing installations keep the exact look they had before this setting existed.
+ */
+@Composable
+private fun AppThemeSelector(current: AppTheme, onSelect: (AppTheme) -> Unit) {
+    val options = listOf(
+        AppThemeOption(
+            theme = AppTheme.Material3Expressive,
+            title = "Material 3 Expressive",
+            subtitle = "原有的 Material 3 配色、形状与动效",
+            icon = CloudriftIcons.Palette,
+        ),
+        AppThemeOption(
+            theme = AppTheme.LiquidGlass,
+            title = "液态玻璃",
+            subtitle = "背景采样、折射、模糊与镜面高光",
+            icon = CloudriftIcons.Cloud,
+        ),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEach { option ->
+            val (theme, title, subtitle, icon) = option
+            val selected = theme == current
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable { onSelect(theme) }
+                    .background(
+                        if (selected) {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.88f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.70f)
+                        },
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.55f)
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+                        },
+                        shape = RoundedCornerShape(18.dp),
+                    )
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (selected) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier.size(22.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.78f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+                if (selected) {
+                    Icon(
+                        imageVector = CloudriftIcons.Check,
+                        contentDescription = "已选择",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class AppThemeOption(
+    val theme: AppTheme,
+    val title: String,
+    val subtitle: String,
+    val icon: ImageVector,
+)
 
 @Composable
 private fun SwitchRow(

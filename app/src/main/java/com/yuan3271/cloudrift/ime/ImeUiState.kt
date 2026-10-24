@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.ime
 
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.data.CursorSpeed
 import com.yuan3271.cloudrift.data.ExternalInputMode
@@ -71,6 +72,8 @@ data class ImeUiState(
     val holdToTalk: Boolean = false,
 
     val enterLabel: String = "换行",
+    val appTheme: AppTheme = AppTheme.Material3Expressive,
+    val appThemeChosen: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.System,
     val themeSource: ThemeSource = ThemeSource.Dynamic,
     val accentHue: Int = 222,

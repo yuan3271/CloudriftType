@@ -44,6 +44,7 @@ import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.theme.CloudriftTheme
+import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 
@@ -117,6 +118,7 @@ fun CompatToolbarWindowContent(controller: ImeController) {
 fun CompatLanguageBadge(controller: ImeController, text: String) {
     val state by controller.state.collectAsStateWithLifecycle()
     CloudriftTheme(
+        appTheme = state.appTheme,
         themeMode = state.themeMode,
         themeSource = state.themeSource,
         accentHue = state.accentHue,
@@ -202,6 +204,7 @@ fun CompatPanel(
 @Composable
 private fun CompatWindowTheme(state: ImeUiState, content: @Composable () -> Unit) {
     CloudriftTheme(
+        appTheme = state.appTheme,
         themeMode = state.themeMode,
         themeSource = state.themeSource,
         accentHue = state.accentHue,
@@ -242,7 +245,7 @@ private fun FloatPanelWithGrip(
     maxWidth: Dp,
     content: @Composable () -> Unit,
 ) {
-    Surface(
+    CloudriftSurface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = androidx.compose.foundation.shape.RoundedCornerShape(PANEL_CORNER),
     ) {

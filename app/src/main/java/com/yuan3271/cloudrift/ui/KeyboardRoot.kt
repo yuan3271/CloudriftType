@@ -71,6 +71,7 @@ import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.theme.CloudriftTheme
+import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 import kotlin.math.abs
@@ -133,6 +134,7 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
     }
 
     CloudriftTheme(
+        appTheme = state.appTheme,
         themeMode = state.themeMode,
         themeSource = state.themeSource,
         accentHue = state.accentHue,
@@ -204,6 +206,12 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
                 )
             }
 
+            if (!state.appThemeChosen) {
+                AppThemeChoiceOverlay(
+                    onSelect = controller::chooseAppTheme,
+                    modifier = Modifier.matchParentSize(),
+                )
+            }
         }
     }
 }
@@ -301,7 +309,7 @@ private fun KeyboardSurface(
         controller.resizeFloatingKeyboard(widthPercent, keyHeightDeltaDp)
     }
 
-    Surface(
+    CloudriftSurface(
         modifier = if (floating) {
             Modifier
                 .fillMaxWidth()

@@ -571,10 +571,16 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         var placementAttempts = 0
     }
 
+    @Suppress("DEPRECATION")
     private fun systemBarBottomInset(): Int =
         runCatching {
             val decor = window?.window?.decorView ?: return 0
-            decor.rootWindowInsets?.getInsets(android.view.WindowInsets.Type.systemBars())?.bottom ?: 0
+            val insets = decor.rootWindowInsets ?: return 0
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                insets.getInsets(android.view.WindowInsets.Type.systemBars()).bottom
+            } else {
+                insets.systemWindowInsetBottom
+            }
         }.getOrDefault(0)
 
     private val windowManager: WindowManager

@@ -31,6 +31,8 @@ class SettingsRepository(context: Context) {
     private fun read(): AppSettings {
         val defaults = AppSettings()
         return AppSettings(
+            appTheme = AppTheme.fromKey(prefs.getString(KEY_APP_THEME, null)),
+            appThemeChosen = prefs.getBoolean(KEY_APP_THEME_CHOSEN, false),
             themeMode = ThemeMode.fromKey(prefs.getString(KEY_THEME_MODE, null)),
             themeSource = ThemeSource.fromKey(prefs.getString(KEY_THEME_SOURCE, null)),
             accentHue = prefs.getInt(KEY_ACCENT_HUE, defaults.accentHue),
@@ -94,6 +96,8 @@ class SettingsRepository(context: Context) {
 
     private fun write(settings: AppSettings) {
         prefs.edit {
+            putString(KEY_APP_THEME, settings.appTheme.name)
+            putBoolean(KEY_APP_THEME_CHOSEN, settings.appThemeChosen)
             putString(KEY_THEME_MODE, settings.themeMode.name)
             putString(KEY_THEME_SOURCE, settings.themeSource.name)
             putInt(KEY_ACCENT_HUE, settings.accentHue)
@@ -169,6 +173,8 @@ class SettingsRepository(context: Context) {
     companion object {
         const val FILE_NAME = "cloudrift_settings"
 
+        private const val KEY_APP_THEME = "app_theme"
+        private const val KEY_APP_THEME_CHOSEN = "app_theme_chosen"
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_THEME_SOURCE = "theme_source"
         private const val KEY_ACCENT_HUE = "accent_hue"

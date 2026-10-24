@@ -7,8 +7,13 @@ import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
 
@@ -20,6 +25,7 @@ import com.yuan3271.cloudrift.data.ThemeSource
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CloudriftTheme(
+    appTheme: AppTheme = AppTheme.Material3Expressive,
     themeMode: ThemeMode = ThemeMode.System,
     themeSource: ThemeSource = ThemeSource.Dynamic,
     accentHue: Int = 222,
@@ -33,7 +39,7 @@ fun CloudriftTheme(
         ThemeMode.Dark -> true
     }
     val base = if (dark) CloudriftDarkScheme else CloudriftLightScheme
-    val colorScheme = when (themeSource) {
+    val baseColorScheme = when (themeSource) {
         ThemeSource.Dynamic -> dynamicScheme(dark) ?: base
         ThemeSource.Cloudrift -> base
         ThemeSource.Custom -> accentColorScheme(
@@ -42,8 +48,30 @@ fun CloudriftTheme(
             dark = dark,
         )
     }
+    val colorScheme = if (appTheme == AppTheme.LiquidGlass) {
+        glassColorScheme(baseColorScheme, dark)
+    } else {
+        baseColorScheme
+    }
 
-    MaterialExpressiveTheme(colorScheme = colorScheme, content = content)
+    MaterialExpressiveTheme(colorScheme = colorScheme) {
+        CompositionLocalProvider(
+            LocalAppTheme provides appTheme,
+            LocalLiquidGlassBackdrop provides if (appTheme == AppTheme.LiquidGlass) {
+                rememberCloudriftGlassBackdrop(dark, colorScheme)
+            } else {
+                null
+            },
+        ) {
+            if (appTheme == AppTheme.LiquidGlass) {
+                Box(modifier = Modifier.background(cloudriftGlassBackground(dark, colorScheme))) {
+                    content()
+                }
+            } else {
+                content()
+            }
+        }
+    }
 }
 
 @Composable

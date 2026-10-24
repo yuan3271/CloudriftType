@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.theme.VoiceActiveRed
+import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 import kotlinx.coroutines.delay
@@ -66,7 +67,7 @@ fun VoicePanel(
     onOpenPermission: () -> Unit,
     onCancelAutoApply: () -> Unit = {},
 ) {
-    Surface(
+    CloudriftSurface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {

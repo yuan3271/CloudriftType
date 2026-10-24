@@ -8,8 +8,12 @@
 | 组件 | 许可 | 用途 |
 | --- | --- | --- |
 | AndroidX / Jetpack Compose / Material 3 | Apache-2.0 | UI 框架、Material 3 Expressive 主题 |
+| [Kyant0/AndroidLiquidGlass](https://github.com/Kyant0/AndroidLiquidGlass)（Backdrop 2.0.1） | Apache-2.0 | 液态玻璃主题的背景采样、模糊、折射与镜面高光 |
 | OkHttp | Apache-2.0 | 语音识别与文本修正的 HTTP 调用 |
 | Kotlin / kotlinx.coroutines | Apache-2.0 | 语言与协程运行时 |
+
+AndroidLiquidGlass/Backdrop 的完整 Apache-2.0 许可文本随 APK 放在
+`assets/licenses/AndroidLiquidGlass-LICENSE.txt`。
 
 ## 词典与数据资产
 

@@ -2987,3 +2987,39 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v0.4.0/cloudrift-type-0.4.0-release.apk)；
   GitHub 资产 API 的 digest 与下载后逐字节核对结果均为
   `sha256:cff2512467c3fec3059fef0a88b379f9f6c5ee00a4a4dbd8cfef007c848cbbf1`。
+
+## 云隙输入 1.0.0：Material 3 Expressive 与液态玻璃双主题
+
+| 阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| 1 | 将原有外观正式归入 `Material3Expressive`，新增持久化的 `LiquidGlass` 主题族 | 完成 |
+| 2 | 接入 Kyant0/AndroidLiquidGlass（Apache-2.0，Backdrop 2.0.1）的模糊、折射和镜面效果 | 完成 |
+| 3 | 外观设置与键盘内快捷设置都提供主题切换，保留明暗模式和配色来源 | 完成 |
+| 4 | 新安装与旧版升级首次启动显示不可取消的二选一主题弹窗 | 完成 |
+| 5 | 单元测试、Lint、Debug/Release 构建与产物核验 | 完成 |
+
+### 设计与兼容
+
+- 默认值仍写作 `Material3Expressive`，但新增独立的 `appThemeChosen` 标记；只有用户主动选择才
+  置为 true。因此旧版升级不会把“默认就是 Material”误当成用户已经选过。
+- 设置 Activity 使用不可取消的 `Dialog`；输入法窗口不依赖第二个系统窗口，而是在键盘内部绘制
+  同一张阻塞式选择卡，处理 Back 和遮罩点击。两条入口看到的选择记录完全一致。
+- Backdrop 的 AGSL 折射在 Android 13+ 启用；Android 12 保留模糊能力；更早版本自动退回
+  半透明渐变与高光层，不影响按键、候选和输入行为。
+- 折射着色器只画在面板层，按键层使用轻量半透明高光，避免整块键盘为每颗按键创建离屏图层。
+
+### 验证
+
+- `./gradlew :app:testDebugUnitTest`：227 条、0 失败。新增 3 条主题测试锁定缺省选择状态、
+  持久化键解析和“选择主题不覆盖原有明暗/配色”。
+- `./gradlew :app:lintDebug :app:assembleRelease`：通过，**0 errors / 8 warnings**；
+  R8 与 release 签名校验成功。
+- 顺手修复 Lint 报出的 3 个既有 `NewApi` 错误：API 30+ 使用
+  `WindowInsets.Type.systemBars()`，API 26–29 使用旧 `systemWindowInsetBottom`。
+- 本地产物 `dist/cloudrift-type-1.0.0-release.apk`：4,247,466 字节，sha256
+  `b3117a3af96c17ca82316c5c481d310b10c30715ed0be2d48f9d55d77ca9583f`，
+  版本 `1.0.0 (58)`，签名证书 `CN=yuan3271`，APK 内 `assets/NOTICE.md` 已包含
+  AndroidLiquidGlass/Backdrop 的 Apache-2.0 归属，完整许可文本位于
+  `assets/licenses/AndroidLiquidGlass-LICENSE.txt`。
+- **未验**：`adb devices` 为空，本机也没有可用 AVD；首次选择弹窗的最终视觉、玻璃折射观感、
+  返回键/遮罩拦截与 Android 26–32 的降级效果仍需真机复核。
