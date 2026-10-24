@@ -2839,3 +2839,13 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   `8db43ad0183a7f6c7cb467aabd301b054d02938f0b381424a3acec6397be795c`，版本号
   `0.3.8 (55)`，`apksigner verify` 通过。
 - **未验**：当前 `adb devices` 仍为空，可见光标在真机上的最终表现需安装 0.3.8 后用实体键盘复核。
+
+### 发布记录（0.3.8）
+
+- 发布提交 `b72b451`（`main`），tag `v0.3.8`。
+- Release：[云隙输入 0.3.8](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.8)
+  （id `422641820`）。
+- 资产 `cloudrift-type-0.3.8-release.apk`（id `671868326`，4,220,040 字节）：
+  [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v0.3.8/cloudrift-type-0.3.8-release.apk)；
+  GitHub 资产 API 的 digest 与下载后逐字节核对结果均为
+  `sha256:8db43ad0183a7f6c7cb467aabd301b054d02938f0b381424a3acec6397be795c`。
