@@ -27,6 +27,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidGlassPanel
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 
 /**
@@ -80,15 +83,34 @@ fun LayoutPickerOverlay(
 
 @Composable
 private fun LayoutRow(layout: LayoutId, selected: Boolean, onClick: () -> Unit) {
+    val liquidGlass = isLiquidGlassTheme()
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 46.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .background(
-                if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+            .then(
+                if (liquidGlass) {
+                    Modifier.liquidGlassPanel(
+                        shape = RoundedCornerShape(18.dp),
+                        tint = if (selected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
+                        } else {
+                            glassSurfaceTint()
+                        },
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (selected) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                Color.Transparent
+                            },
+                        )
+                },
             )
+            .clickable(onClick = onClick)
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),

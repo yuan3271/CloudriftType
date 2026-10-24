@@ -44,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -82,8 +84,13 @@ import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
 import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.ui.CloudriftSegmentedControl
 import com.yuan3271.cloudrift.ui.CursorSpeedSelector
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
+import com.yuan3271.cloudrift.ui.LiquidChoiceCard
+import com.yuan3271.cloudrift.ui.LiquidSlider
+import com.yuan3271.cloudrift.ui.LiquidSwitch
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlin.math.roundToInt
 
@@ -102,6 +109,7 @@ fun SettingsScreen(
     val grantState = rememberMicrophoneGranted()
     var hasMicrophone by remember { mutableStateOf(grantState) }
     var confirmClearLearning by remember { mutableStateOf(false) }
+    val liquidGlass = isLiquidGlassTheme()
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted -> hasMicrophone = granted }
@@ -113,8 +121,16 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        containerColor = if (liquidGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (liquidGlass) {
+                        Color.Transparent
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                ),
                 title = {
                     Column {
                         Text(text = "云隙输入", style = MaterialTheme.typography.titleLarge)
@@ -298,21 +314,17 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    val frames = listOf(
-                        KeyboardFrame.Floating to "悬浮",
-                        KeyboardFrame.Full to "全屏",
-                    )
-                    frames.forEachIndexed { index, (frame, label) ->
-                        SegmentedButton(
-                            selected = settings.landscapeFrame == frame,
-                            onClick = { onUpdate { it.copy(landscapeFrame = frame) } },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = frames.size),
-                        ) {
-                            Text(label)
-                        }
-                    }
-                }
+                val frames = listOf(
+                    KeyboardFrame.Floating to "悬浮",
+                    KeyboardFrame.Full to "全屏",
+                )
+                CloudriftSegmentedControl(
+                    options = frames.map { it.second },
+                    selectedIndex = frames.indexOfFirst { it.first == settings.landscapeFrame },
+                    onSelected = { index ->
+                        onUpdate { it.copy(landscapeFrame = frames[index].first) }
+                    },
+                )
                 if (settings.landscapeFrame == KeyboardFrame.Floating) {
                     ValueSlider(
                         title = "悬浮键盘宽度",
@@ -392,21 +404,17 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    val modes = listOf(
-                        ExternalInputMode.CompatPanel to "键鼠兼容面板",
-                        ExternalInputMode.VirtualKeyboard to "虚拟键盘",
-                    )
-                    modes.forEachIndexed { index, (mode, label) ->
-                        SegmentedButton(
-                            selected = settings.externalInputMode == mode,
-                            onClick = { onUpdate { it.copy(externalInputMode = mode) } },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                        ) {
-                            Text(label)
-                        }
-                    }
-                }
+                val inputModes = listOf(
+                    ExternalInputMode.CompatPanel to "键鼠兼容面板",
+                    ExternalInputMode.VirtualKeyboard to "虚拟键盘",
+                )
+                CloudriftSegmentedControl(
+                    options = inputModes.map { it.second },
+                    selectedIndex = inputModes.indexOfFirst { it.first == settings.externalInputMode },
+                    onSelected = { index ->
+                        onUpdate { it.copy(externalInputMode = inputModes[index].first) }
+                    },
+                )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = when (settings.externalInputMode) {
@@ -443,21 +451,17 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(6.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    val flavors = listOf(
-                        ExternalKeyFlavor.Windows to "Windows",
-                        ExternalKeyFlavor.Mac to "macOS",
-                    )
-                    flavors.forEachIndexed { index, (flavor, label) ->
-                        SegmentedButton(
-                            selected = settings.externalKeyFlavor == flavor,
-                            onClick = { onUpdate { it.copy(externalKeyFlavor = flavor) } },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = flavors.size),
-                        ) {
-                            Text(label)
-                        }
-                    }
-                }
+                val flavors = listOf(
+                    ExternalKeyFlavor.Windows to "Windows",
+                    ExternalKeyFlavor.Mac to "macOS",
+                )
+                CloudriftSegmentedControl(
+                    options = flavors.map { it.second },
+                    selectedIndex = flavors.indexOfFirst { it.first == settings.externalKeyFlavor },
+                    onSelected = { index ->
+                        onUpdate { it.copy(externalKeyFlavor = flavors[index].first) }
+                    },
+                )
                 // 检测状态摆在这儿，是因为这条设置只对外接键鼠生效：看得见"现在有没有检测到"，
                 // 才知道刚才的选择到底会不会起作用。
                 val externalInputs = rememberExternalInputs()
@@ -490,21 +494,17 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(8.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    val orders = listOf(
-                        CandidateOrder.LongFirst to "长句优先",
-                        CandidateOrder.CharacterFirst to "单字优先",
-                    )
-                    orders.forEachIndexed { index, (order, label) ->
-                        SegmentedButton(
-                            selected = settings.candidateOrder == order,
-                            onClick = { onUpdate { it.copy(candidateOrder = order) } },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = orders.size),
-                        ) {
-                            Text(label)
-                        }
-                    }
-                }
+                val orders = listOf(
+                    CandidateOrder.LongFirst to "长句优先",
+                    CandidateOrder.CharacterFirst to "单字优先",
+                )
+                CloudriftSegmentedControl(
+                    options = orders.map { it.second },
+                    selectedIndex = orders.indexOfFirst { it.first == settings.candidateOrder },
+                    onSelected = { index ->
+                        onUpdate { it.copy(candidateOrder = orders[index].first) }
+                    },
+                )
                 Spacer(Modifier.height(6.dp))
                 Text(
                     text = if (settings.candidateOrder == CandidateOrder.LongFirst) {
@@ -614,25 +614,20 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    val behaviors = listOf(
-                        VoiceMediaBehavior.Duck to "压低",
-                        VoiceMediaBehavior.Mute to "静音",
-                        VoiceMediaBehavior.LeaveAlone to "不处理",
-                    )
-                    behaviors.forEachIndexed { index, (behavior, label) ->
-                        SegmentedButton(
-                            selected = settings.voiceMediaBehavior == behavior,
-                            onClick = { onUpdate { it.copy(voiceMediaBehavior = behavior) } },
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = behaviors.size,
-                            ),
-                        ) {
-                            Text(label)
-                        }
-                    }
-                }
+                val behaviors = listOf(
+                    VoiceMediaBehavior.Duck to "压低",
+                    VoiceMediaBehavior.Mute to "静音",
+                    VoiceMediaBehavior.LeaveAlone to "不处理",
+                )
+                CloudriftSegmentedControl(
+                    options = behaviors.map { it.second },
+                    selectedIndex = behaviors.indexOfFirst {
+                        it.first == settings.voiceMediaBehavior
+                    },
+                    onSelected = { index ->
+                        onUpdate { it.copy(voiceMediaBehavior = behaviors[index].first) }
+                    },
+                )
                 Spacer(Modifier.height(6.dp))
                 Text(
                     text = when (settings.voiceMediaBehavior) {
@@ -971,12 +966,24 @@ private fun rememberExternalInputs(): ExternalInputSnapshot {
 
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
-    CloudriftSurface(
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) { content() }
+    if (isLiquidGlassTheme()) {
+        CloudriftSurface(
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            shape = RoundedCornerShape(28.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) { content() }
+        }
+    } else {
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            ),
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) { content() }
+        }
     }
 }
 
@@ -1000,6 +1007,19 @@ private fun AppThemeSelector(current: AppTheme, onSelect: (AppTheme) -> Unit) {
             icon = CloudriftIcons.Cloud,
         ),
     )
+    if (isLiquidGlassTheme()) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            options.forEach { option ->
+                LiquidChoiceCard(
+                    title = option.title,
+                    subtitle = option.subtitle,
+                    icon = option.icon,
+                    onClick = { onSelect(option.theme) },
+                )
+            }
+        }
+        return
+    }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         options.forEach { option ->
             val (theme, title, subtitle, icon) = option
@@ -1110,7 +1130,15 @@ private fun SwitchRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        if (isLiquidGlassTheme()) {
+            LiquidSwitch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+            )
+        } else {
+            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        }
     }
 }
 
@@ -1121,6 +1149,14 @@ private fun ThemeSourceSelector(current: ThemeSource, onSelect: (ThemeSource) ->
         Triple(ThemeSource.Cloudrift, "云隙蓝", CloudriftIcons.Cloud),
         Triple(ThemeSource.Custom, "自定义", CloudriftIcons.Palette),
     )
+    if (isLiquidGlassTheme()) {
+        CloudriftSegmentedControl(
+            options = options.map { it.second },
+            selectedIndex = options.indexOfFirst { it.first == current },
+            onSelected = { onSelect(options[it].first) },
+        )
+        return
+    }
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, (source, label, icon) ->
             SegmentedButton(
@@ -1146,12 +1182,21 @@ private fun AccentPicker(
     onSaturation: (Int) -> Unit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Slider(
-            value = hue.toFloat(),
-            onValueChange = { onHue(it.roundToInt()) },
-            valueRange = 0f..359f,
-            modifier = Modifier.weight(1f),
-        )
+        if (isLiquidGlassTheme()) {
+            LiquidSlider(
+                value = hue.toFloat(),
+                onValueChange = { onHue(it.roundToInt()) },
+                valueRange = 0f..359f,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            Slider(
+                value = hue.toFloat(),
+                onValueChange = { onHue(it.roundToInt()) },
+                valueRange = 0f..359f,
+                modifier = Modifier.weight(1f),
+            )
+        }
         Spacer(Modifier.width(12.dp))
         Box(
             modifier = Modifier
@@ -1168,12 +1213,21 @@ private fun AccentPicker(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(56.dp),
         )
-        Slider(
-            value = saturation.toFloat(),
-            onValueChange = { onSaturation(it.roundToInt()) },
-            valueRange = 10f..85f,
-            modifier = Modifier.weight(1f),
-        )
+        if (isLiquidGlassTheme()) {
+            LiquidSlider(
+                value = saturation.toFloat(),
+                onValueChange = { onSaturation(it.roundToInt()) },
+                valueRange = 10f..85f,
+                modifier = Modifier.weight(1f),
+            )
+        } else {
+            Slider(
+                value = saturation.toFloat(),
+                onValueChange = { onSaturation(it.roundToInt()) },
+                valueRange = 10f..85f,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
@@ -1184,6 +1238,14 @@ private fun KeyBackgroundSelector(current: KeyBackground, onSelect: (KeyBackgrou
         KeyBackground.Outlined to "描边",
         KeyBackground.Ghost to "无底",
     )
+    if (isLiquidGlassTheme()) {
+        CloudriftSegmentedControl(
+            options = options.map { it.second },
+            selectedIndex = options.indexOfFirst { it.first == current },
+            onSelected = { onSelect(options[it].first) },
+        )
+        return
+    }
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, (style, label) ->
             SegmentedButton(
@@ -1220,12 +1282,20 @@ private fun ValueSlider(
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onChange(it.roundToInt()) },
-            valueRange = range.first.toFloat()..range.last.toFloat(),
-            steps = (range.last - range.first - 1).coerceAtLeast(0),
-        )
+        if (isLiquidGlassTheme()) {
+            LiquidSlider(
+                value = value.toFloat(),
+                onValueChange = { onChange(it.roundToInt().coerceIn(range)) },
+                valueRange = range.first.toFloat()..range.last.toFloat(),
+            )
+        } else {
+            Slider(
+                value = value.toFloat(),
+                onValueChange = { onChange(it.roundToInt()) },
+                valueRange = range.first.toFloat()..range.last.toFloat(),
+                steps = (range.last - range.first - 1).coerceAtLeast(0),
+            )
+        }
     }
 }
 
@@ -1236,6 +1306,14 @@ private fun ThemeModeSelector(current: ThemeMode, onSelect: (ThemeMode) -> Unit)
         Triple(ThemeMode.Light, "浅色", CloudriftIcons.Sun),
         Triple(ThemeMode.Dark, "深色", CloudriftIcons.Moon),
     )
+    if (isLiquidGlassTheme()) {
+        CloudriftSegmentedControl(
+            options = options.map { it.second },
+            selectedIndex = options.indexOfFirst { it.first == current },
+            onSelected = { onSelect(options[it].first) },
+        )
+        return
+    }
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, (mode, label, icon) ->
             SegmentedButton(
@@ -1402,6 +1480,14 @@ private fun ProviderSelector(current: ApiStyle, onSelect: (ApiStyle) -> Unit) {
         ApiStyle.OpenAiCompatible to "OpenAI 兼容",
         ApiStyle.AliyunQianwen to "阿里云千问",
     )
+    if (isLiquidGlassTheme()) {
+        CloudriftSegmentedControl(
+            options = options.map { it.second },
+            selectedIndex = options.indexOfFirst { it.first == current },
+            onSelected = { onSelect(options[it].first) },
+        )
+        return
+    }
     SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
         options.forEachIndexed { index, (style, label) ->
             SegmentedButton(

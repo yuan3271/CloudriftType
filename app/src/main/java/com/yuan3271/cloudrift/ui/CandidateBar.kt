@@ -1,8 +1,11 @@
 package com.yuan3271.cloudrift.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -25,12 +28,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -45,6 +50,10 @@ import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
+import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidGlassPanel
 
 /**
  * A fixed height strip so the keyboard never changes size while typing. When there is
@@ -64,6 +73,34 @@ fun CandidateBar(
      */
     idle: @Composable () -> Unit = { IdleStrip(state = state) },
 ) {
+    if (isLiquidGlassTheme()) {
+        CloudriftSurface(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(CANDIDATE_BAR_HEIGHT + 8.dp)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(18.dp),
+            color = Color.Transparent,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(CANDIDATE_BAR_HEIGHT)
+                    .padding(horizontal = 6.dp),
+                contentAlignment = Alignment.CenterStart,
+            ) {
+                CandidateStrip(
+                    state = state,
+                    onCandidate = onCandidate,
+                    onExpand = onExpand,
+                    onPasteClipboardOffer = onPasteClipboardOffer,
+                    onDismissClipboardOffer = onDismissClipboardOffer,
+                    idle = idle,
+                )
+            }
+        }
+        return
+    }
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -348,6 +385,13 @@ private fun CandidatePill(
         else -> MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val container by animateColorAsState(target, label = "candidate-container")
+    val liquidGlass = isLiquidGlassTheme()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val pressure by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        label = "candidate-pressure",
+    )
     val content = if (emphasised) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
@@ -356,9 +400,35 @@ private fun CandidatePill(
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .background(container)
+            .graphicsLayer {
+                val stretch = 1f + pressure * 0.045f
+                scaleX = stretch
+                scaleY = 2f - stretch
+            }
+            .then(
+                if (liquidGlass) {
+                    Modifier
+                        .liquidGlassPanel(
+                            shape = RoundedCornerShape(16.dp),
+                            tint = if (emphasised) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
+                            } else {
+                                glassSurfaceTint()
+                            },
+                            interactive = pressure,
+                        )
+                        .clickable(
+                            interactionSource = interaction,
+                            indication = null,
+                            onClick = onClick,
+                        )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable(onClick = onClick)
+                        .background(container)
+                },
+            )
             .padding(horizontal = 12.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center,
     ) {

@@ -41,6 +41,9 @@ import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
+import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidGlassPanel
 import com.yuan3271.cloudrift.voice.VoiceState
 
 /**
@@ -99,27 +102,50 @@ fun KeyboardToolbar(
 
         Spacer(Modifier.weight(1f))
 
-        FilledIconButton(
-            onClick = onVoiceClick,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = when {
-                    recording -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.primary
+        val voiceIcon = when {
+            recording -> CloudriftIcons.Stop
+            busy -> CloudriftIcons.Refresh
+            else -> CloudriftIcons.Mic
+        }
+        if (isLiquidGlassTheme()) {
+            LiquidIconButton(
+                onClick = onVoiceClick,
+                active = true,
+                tint = if (recording) {
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.82f)
+                } else {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
                 },
-            ),
-            modifier = Modifier.size(38.dp),
-        ) {
-            Icon(
-                imageVector = when {
-                    recording -> CloudriftIcons.Stop
-                    busy -> CloudriftIcons.Refresh
-                    else -> CloudriftIcons.Mic
-                },
-                contentDescription = "语音输入",
-                modifier = Modifier
-                    .size(20.dp)
-                    .rotate(if (busy) spin else 0f),
-            )
+                contentColor = Color.White,
+            ) { tint ->
+                Icon(
+                    imageVector = voiceIcon,
+                    contentDescription = "语音输入",
+                    tint = tint,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(if (busy) spin else 0f),
+                )
+            }
+        } else {
+            FilledIconButton(
+                onClick = onVoiceClick,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = when {
+                        recording -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
+                    },
+                ),
+                modifier = Modifier.size(38.dp),
+            ) {
+                Icon(
+                    imageVector = voiceIcon,
+                    contentDescription = "语音输入",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(if (busy) spin else 0f),
+                )
+            }
         }
         SmallIconButton(
             icon = CloudriftIcons.Clipboard,
@@ -234,9 +260,25 @@ internal fun ToolbarChip(
     } else {
         MaterialTheme.colorScheme.onSurface
     }
+    val glass = isLiquidGlassTheme()
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(50))
+            .then(
+                if (glass) {
+                    Modifier.liquidGlassPanel(
+                        shape = RoundedCornerShape(50),
+                        tint = if (active) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.58f)
+                        } else {
+                            glassSurfaceTint()
+                        },
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(container)
+                },
+            )
             .then(
                 if (onClick != null || onLongClick != null) {
                     Modifier.combinedClickable(onClick = onClick ?: {}, onLongClick = onLongClick)
@@ -244,7 +286,6 @@ internal fun ToolbarChip(
                     Modifier
                 },
             )
-            .background(container)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -287,22 +328,28 @@ internal fun ToolbarButton(
     active: Boolean = false,
     content: @Composable (Color) -> Unit,
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier
-            .size(38.dp)
-            .clip(RoundedCornerShape(50))
-            .background(
-                if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-            ),
-    ) {
-        content(
-            if (active) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-        )
+    if (isLiquidGlassTheme()) {
+        LiquidIconButton(onClick = onClick, active = active) { tint ->
+            content(tint)
+        }
+    } else {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(50))
+                .background(
+                    if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+                ),
+        ) {
+            content(
+                if (active) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
     }
 }
 

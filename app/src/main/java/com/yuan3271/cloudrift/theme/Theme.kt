@@ -8,10 +8,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ThemeMode
@@ -57,16 +54,9 @@ fun CloudriftTheme(
     MaterialExpressiveTheme(colorScheme = colorScheme) {
         CompositionLocalProvider(
             LocalAppTheme provides appTheme,
-            LocalLiquidGlassBackdrop provides if (appTheme == AppTheme.LiquidGlass) {
-                rememberCloudriftGlassBackdrop(dark, colorScheme)
-            } else {
-                null
-            },
         ) {
             if (appTheme == AppTheme.LiquidGlass) {
-                Box(modifier = Modifier.background(cloudriftGlassBackground(dark, colorScheme))) {
-                    content()
-                }
+                LiquidGlassCanvas(dark = dark) { content() }
             } else {
                 content()
             }

@@ -1,11 +1,6 @@
 package com.yuan3271.cloudrift.ui
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.yuan3271.cloudrift.data.CursorSpeed
@@ -23,15 +18,10 @@ internal fun CursorSpeedSelector(
     modifier: Modifier = Modifier,
 ) {
     val speeds = CursorSpeed.entries
-    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
-        speeds.forEachIndexed { index, speed ->
-            SegmentedButton(
-                selected = current == speed,
-                onClick = { onSelect(speed) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = speeds.size),
-            ) {
-                Text(speed.label(), style = MaterialTheme.typography.labelMedium)
-            }
-        }
-    }
+    CloudriftSegmentedControl(
+        options = speeds.map(CursorSpeed::label),
+        selectedIndex = speeds.indexOf(current),
+        onSelected = { onSelect(speeds[it]) },
+        modifier = modifier,
+    )
 }

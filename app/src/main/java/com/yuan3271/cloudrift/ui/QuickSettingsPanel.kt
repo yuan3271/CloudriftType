@@ -45,6 +45,7 @@ import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
 import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlin.math.roundToInt
 
@@ -131,62 +132,47 @@ fun QuickSettingsPanel(
             ) {
                 // ---- theme ---------------------------------------------------------
                 LabeledRow("界面主题") {
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        val themes = listOf(
-                            AppTheme.Material3Expressive to "M3 Expressive",
-                            AppTheme.LiquidGlass to "液态玻璃",
-                        )
-                        themes.forEachIndexed { index, (theme, label) ->
-                            SegmentedButton(
-                                selected = state.appTheme == theme,
-                                onClick = { onUpdate { it.copy(appTheme = theme) } },
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = themes.size,
-                                ),
-                            ) {
-                                Text(label, style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
+                    val themes = listOf(
+                        AppTheme.Material3Expressive to "M3 Expressive",
+                        AppTheme.LiquidGlass to "液态玻璃",
+                    )
+                    CloudriftSegmentedControl(
+                        options = themes.map { it.second },
+                        selectedIndex = themes.indexOfFirst { it.first == state.appTheme },
+                        onSelected = { index ->
+                            onUpdate { it.copy(appTheme = themes[index].first) }
+                        },
+                    )
                 }
 
                 LabeledRow("明暗模式") {
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        val modes = listOf(
-                            ThemeMode.System to "跟随系统",
-                            ThemeMode.Light to "浅色",
-                            ThemeMode.Dark to "深色",
-                        )
-                        modes.forEachIndexed { index, (mode, label) ->
-                            SegmentedButton(
-                                selected = state.themeMode == mode,
-                                onClick = { onUpdate { it.copy(themeMode = mode) } },
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
-                            ) {
-                                Text(label, style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
+                    val modes = listOf(
+                        ThemeMode.System to "跟随系统",
+                        ThemeMode.Light to "浅色",
+                        ThemeMode.Dark to "深色",
+                    )
+                    CloudriftSegmentedControl(
+                        options = modes.map { it.second },
+                        selectedIndex = modes.indexOfFirst { it.first == state.themeMode },
+                        onSelected = { index ->
+                            onUpdate { it.copy(themeMode = modes[index].first) }
+                        },
+                    )
                 }
 
                 LabeledRow("配色") {
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        val sources = listOf(
-                            ThemeSource.Dynamic to "跟壁纸",
-                            ThemeSource.Cloudrift to "云隙蓝",
-                            ThemeSource.Custom to "自定义",
-                        )
-                        sources.forEachIndexed { index, (source, label) ->
-                            SegmentedButton(
-                                selected = state.themeSource == source,
-                                onClick = { onUpdate { it.copy(themeSource = source) } },
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = sources.size),
-                            ) {
-                                Text(label, style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
+                    val sources = listOf(
+                        ThemeSource.Dynamic to "跟壁纸",
+                        ThemeSource.Cloudrift to "云隙蓝",
+                        ThemeSource.Custom to "自定义",
+                    )
+                    CloudriftSegmentedControl(
+                        options = sources.map { it.second },
+                        selectedIndex = sources.indexOfFirst { it.first == state.themeSource },
+                        onSelected = { index ->
+                            onUpdate { it.copy(themeSource = sources[index].first) }
+                        },
+                    )
                 }
 
                 if (state.themeSource == ThemeSource.Custom) {
@@ -200,22 +186,18 @@ fun QuickSettingsPanel(
 
                 // ---- key appearance -------------------------------------------------
                 LabeledRow("按键背景") {
-                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                        val styles = listOf(
-                            KeyBackground.Filled to "填充",
-                            KeyBackground.Outlined to "描边",
-                            KeyBackground.Ghost to "无底",
-                        )
-                        styles.forEachIndexed { index, (style, label) ->
-                            SegmentedButton(
-                                selected = state.keyBackground == style,
-                                onClick = { onUpdate { it.copy(keyBackground = style) } },
-                                shape = SegmentedButtonDefaults.itemShape(index = index, count = styles.size),
-                            ) {
-                                Text(label, style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
+                    val styles = listOf(
+                        KeyBackground.Filled to "填充",
+                        KeyBackground.Outlined to "描边",
+                        KeyBackground.Ghost to "无底",
+                    )
+                    CloudriftSegmentedControl(
+                        options = styles.map { it.second },
+                        selectedIndex = styles.indexOfFirst { it.first == state.keyBackground },
+                        onSelected = { index ->
+                            onUpdate { it.copy(keyBackground = styles[index].first) }
+                        },
+                    )
                 }
 
                 SliderRow(
@@ -285,21 +267,41 @@ fun QuickSettingsPanel(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                OutlinedButton(
-                    onClick = onClose,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(CloudriftIcons.ExpandMore, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("完成")
-                }
-                Button(
-                    onClick = onOpenFullSettings,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(CloudriftIcons.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("更多设置")
+                if (isLiquidGlassTheme()) {
+                    LiquidPillButton(
+                        onClick = onClose,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(CloudriftIcons.ExpandMore, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("完成")
+                    }
+                    LiquidPillButton(
+                        onClick = onOpenFullSettings,
+                        modifier = Modifier.weight(1f),
+                        primary = true,
+                    ) {
+                        Icon(CloudriftIcons.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("更多设置")
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = onClose,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(CloudriftIcons.ExpandMore, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("完成")
+                    }
+                    Button(
+                        onClick = onOpenFullSettings,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(CloudriftIcons.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("更多设置")
+                    }
                 }
             }
         }
@@ -344,13 +346,22 @@ private fun SliderRow(
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-        Slider(
-            value = value,
-            onValueChange = onChange,
-            valueRange = range,
-            steps = steps,
-            modifier = Modifier.height(28.dp),
-        )
+        if (isLiquidGlassTheme()) {
+            LiquidSlider(
+                value = value,
+                onValueChange = { onChange(it.roundToInt().toFloat()) },
+                valueRange = range,
+                modifier = Modifier.height(38.dp),
+            )
+        } else {
+            Slider(
+                value = value,
+                onValueChange = onChange,
+                valueRange = range,
+                steps = steps,
+                modifier = Modifier.height(28.dp),
+            )
+        }
     }
 }
 
@@ -366,7 +377,11 @@ private fun SwitchRow(title: String, checked: Boolean, onCheckedChange: (Boolean
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
         )
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        if (isLiquidGlassTheme()) {
+            LiquidSwitch(checked = checked, onCheckedChange = onCheckedChange)
+        } else {
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
+        }
     }
 }
 
@@ -386,14 +401,23 @@ private fun ColorPicker(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(40.dp),
             )
-            Slider(
-                value = hue.toFloat(),
-                onValueChange = { onHue(it.roundToInt()) },
-                valueRange = 0f..359f,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(28.dp),
-            )
+            if (isLiquidGlassTheme()) {
+                LiquidSlider(
+                    value = hue.toFloat(),
+                    onValueChange = { onHue(it.roundToInt()) },
+                    valueRange = 0f..359f,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                Slider(
+                    value = hue.toFloat(),
+                    onValueChange = { onHue(it.roundToInt()) },
+                    valueRange = 0f..359f,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(28.dp),
+                )
+            }
             Box(
                 modifier = Modifier
                     .size(24.dp)
@@ -409,14 +433,23 @@ private fun ColorPicker(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(40.dp),
             )
-            Slider(
-                value = saturation.toFloat(),
-                onValueChange = { onSaturation(it.roundToInt()) },
-                valueRange = 10f..85f,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(28.dp),
-            )
+            if (isLiquidGlassTheme()) {
+                LiquidSlider(
+                    value = saturation.toFloat(),
+                    onValueChange = { onSaturation(it.roundToInt()) },
+                    valueRange = 10f..85f,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
+                Slider(
+                    value = saturation.toFloat(),
+                    onValueChange = { onSaturation(it.roundToInt()) },
+                    valueRange = 10f..85f,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(28.dp),
+                )
+            }
             Spacer(Modifier.width(28.dp))
         }
     }

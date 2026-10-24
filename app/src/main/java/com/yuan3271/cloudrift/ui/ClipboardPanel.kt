@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
+import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidGlassPanel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -157,6 +160,7 @@ fun ClipboardPanel(
 @Composable
 private fun ClipRow(entry: ClipEntry, onPick: () -> Unit, armedColor: Color?) {
     var expanded by remember { mutableStateOf(false) }
+    val liquidGlass = isLiquidGlassTheme()
     val container = armedColor ?: MaterialTheme.colorScheme.surfaceContainerHigh
     val content = if (armedColor == null) {
         MaterialTheme.colorScheme.onSurface
@@ -166,9 +170,19 @@ private fun ClipRow(entry: ClipEntry, onPick: () -> Unit, armedColor: Color?) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .then(
+                if (liquidGlass) {
+                    Modifier.liquidGlassPanel(
+                        shape = RoundedCornerShape(18.dp),
+                        tint = armedColor?.copy(alpha = 0.66f) ?: glassSurfaceTint(),
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(container)
+                },
+            )
             .combinedClickable(onClick = onPick, onLongClick = { expanded = !expanded })
-            .background(container)
             .padding(horizontal = 12.dp, vertical = 9.dp),
     ) {
         Text(

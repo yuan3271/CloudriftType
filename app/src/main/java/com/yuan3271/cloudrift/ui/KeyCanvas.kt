@@ -40,6 +40,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
@@ -57,10 +59,14 @@ import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.input.KeyStyle
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import androidx.compose.ui.draw.drawWithContent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 /**
  * Interaction contract for one key, so the canvas can route every gesture without knowing
@@ -236,6 +242,8 @@ private fun RowScope.KeyButton(
     onLongPress: (Rect) -> Unit,
 ) {
     var pressed by remember { mutableStateOf(false) }
+    var touchPosition by remember { mutableStateOf(Offset.Zero) }
+    var dragVector by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val repeatScope = rememberCoroutineScope()
     val density = LocalDensity.current
@@ -250,6 +258,8 @@ private fun RowScope.KeyButton(
         keyBackground = keyBackground,
         active = active,
         pressed = pressed,
+        touchPosition = touchPosition,
+        dragVector = dragVector,
         modifier = modifier
             .onGloballyPositioned { bounds = it.boundsInWindow() }
             .pointerInput(key.code, key.output, key.alternates, key.swipeUp, keyBackground) {
@@ -258,6 +268,10 @@ private fun RowScope.KeyButton(
                     swipeThreshold = swipeThreshold,
                     repeatScope = repeatScope,
                     onPressedChange = { pressed = it },
+                    onPointer = { position, drag ->
+                        touchPosition = position
+                        dragVector = drag
+                    },
                     repeat = { callbacks.onKey(key) },
                     tap = { callbacks.onKey(key) },
                     longPress = {
@@ -293,6 +307,8 @@ private fun KeyFace(
     keyBackground: KeyBackground,
     active: Boolean,
     pressed: Boolean,
+    touchPosition: Offset? = null,
+    dragVector: Offset = Offset.Zero,
     modifier: Modifier = Modifier,
     content: @Composable (contentColor: Color) -> Unit,
 ) {
@@ -300,9 +316,31 @@ private fun KeyFace(
     // Keyboard feedback has to feel instant, so the press animation uses the fast spatial
     // spec from the Material 3 Expressive motion scheme rather than a default spring.
     val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.9f else 1f,
+        targetValue = when {
+            glass && pressed -> 1.035f
+            pressed -> 0.9f
+            else -> 1f
+        },
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "key-scale",
+    )
+    val horizontalStretch by animateFloatAsState(
+        targetValue = if (glass && pressed) {
+            1f + (abs(dragVector.x) / 180f).coerceAtMost(0.16f)
+        } else {
+            1f
+        },
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "key-stretch-x",
+    )
+    val verticalStretch by animateFloatAsState(
+        targetValue = if (glass && pressed) {
+            1f + (abs(dragVector.y) / 180f).coerceAtMost(0.10f)
+        } else {
+            1f
+        },
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        label = "key-stretch-y",
     )
     val corner by animateDpAsState(
         targetValue = if (pressed) cornerRadius + 6.dp else cornerRadius,
@@ -339,22 +377,44 @@ private fun KeyFace(
     Box(
         modifier = modifier
             .height(height)
-            .scale(scale)
+            .graphicsLayer {
+                scaleX = scale * horizontalStretch
+                scaleY = scale * verticalStretch
+            }
             .clip(RoundedCornerShape(corner))
-            .background(background)
             .then(
                 if (glass) {
-                    Modifier.background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.20f),
-                                Color.White.copy(alpha = 0.02f),
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            ),
-                        ),
-                    )
-                } else {
                     Modifier
+                        .liquidGlassPanel(
+                            shape = RoundedCornerShape(corner),
+                            tint = if (isAccent) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.54f)
+                            } else {
+                                glassSurfaceTint()
+                            },
+                            interactive = if (pressed) 1f else 0f,
+                        )
+                        .drawWithContent {
+                            if (pressed && touchPosition != null) {
+                                drawCircle(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(
+                                            Color.White.copy(alpha = 0.28f),
+                                            Color.White.copy(alpha = 0.04f),
+                                            Color.Transparent,
+                                        ),
+                                        center = touchPosition,
+                                        radius = size.minDimension * 1.1f,
+                                    ),
+                                    radius = size.minDimension * 1.1f,
+                                    center = touchPosition,
+                                    blendMode = BlendMode.Plus,
+                                )
+                            }
+                            drawContent()
+                        }
+                } else {
+                    Modifier.background(background)
                 },
             )
             .then(
@@ -362,7 +422,7 @@ private fun KeyFace(
                     Modifier.border(
                         width = 1.dp,
                         color = if (glass) {
-                            Color.White.copy(alpha = 0.30f)
+                            Color.White.copy(alpha = 0.24f)
                         } else {
                             MaterialTheme.colorScheme.outlineVariant
                         },
@@ -464,6 +524,8 @@ private suspend fun PointerInputScope.keyGesture(
     swipeThreshold: Float,
     repeatScope: kotlinx.coroutines.CoroutineScope,
     onPressedChange: (Boolean) -> Unit,
+    /** Current finger position plus displacement from the press origin, used by the glass lens. */
+    onPointer: (position: Offset, drag: Offset) -> Unit,
     repeat: () -> Unit,
     tap: () -> Unit,
     longPress: () -> Unit,
@@ -481,6 +543,7 @@ private suspend fun PointerInputScope.keyGesture(
         val down = awaitFirstDown(requireUnconsumed = false)
         down.consume()
         onPressedChange(true)
+        onPointer(down.position, Offset.Zero)
         val startedAt = System.currentTimeMillis()
         // Anything else already claimed the gesture, so the release must not also tap.
         var claimed = false
@@ -536,6 +599,13 @@ private suspend fun PointerInputScope.keyGesture(
                 break
             }
             val dy = change.position.y - down.position.y
+            onPointer(
+                change.position,
+                Offset(
+                    change.position.x - down.position.x,
+                    change.position.y - down.position.y,
+                ),
+            )
 
             if (!claimed && key.swipeUp.isNotEmpty() && dy < -swipeThreshold) {
                 claimed = true
@@ -577,6 +647,7 @@ private suspend fun PointerInputScope.keyGesture(
         // 手势结束了，计时器不能再自己触发一次长按（抬手那一刻的竞态就是"时而触发、时而不触发"）。
         longPressTimer.cancel()
         onPressedChange(false)
+        onPointer(down.position, Offset.Zero)
         if (clearArmed) clearAllArmedChanged(false)
         if (released && clearArmed) clearAll()
         // A cancelled gesture (the system took the pointer) keeps recording on purpose: the

@@ -72,6 +72,7 @@ import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.theme.CloudriftTheme
 import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 import kotlin.math.abs
@@ -244,6 +245,7 @@ private fun KeyboardSurface(
     val screenHeight = LocalConfiguration.current.screenHeightDp
     // 屏幕宽度一律用 dp 参与缩放换算：拖动量也是 dp，两边单位一致，横拖与纵拖的手感才对得上。
     val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
+    val liquidGlass = isLiquidGlassTheme()
     val autoHeight = KeyboardLayouts.autoKeyHeight(screenHeight)
     // The floating card is sized by its own values: 键盘高度 and 距屏幕底部 are the upright
     // keyboard's business, and shrinking the upright one must not shrink the floating one.
@@ -310,16 +312,19 @@ private fun KeyboardSurface(
     }
 
     CloudriftSurface(
-        modifier = if (floating) {
+        modifier = if (floating || liquidGlass) {
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .padding(
+                    horizontal = if (liquidGlass) 8.dp else 10.dp,
+                    vertical = 6.dp,
+                )
         } else {
             Modifier.fillMaxWidth()
         },
         color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = if (floating) {
-            RoundedCornerShape(24.dp)
+        shape = if (floating || liquidGlass) {
+            RoundedCornerShape(if (liquidGlass) 30.dp else 24.dp)
         } else {
             RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
         },
