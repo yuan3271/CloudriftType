@@ -3080,3 +3080,13 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
 - 本地产物 `dist/cloudrift-type-1.1.1-release.apk`：4,263,778 字节，sha256
   `e7b8028c81c3b6caeb044996fd936adc3915c366c5cd14c7db305f57b252f05a`，
   版本 `1.1.1 (60)`，签名证书 `CN=yuan3271`。
+
+### 发布记录（1.1.1）
+
+- 发布提交 `49484a9`（`main`），tag `v1.1.1`。
+- Release：[云隙输入 1.1.1：紧急禁用液态玻璃](https://github.com/yuan3271/CloudriftType/releases/tag/v1.1.1)
+  （id `422855825`）。
+- 资产 `cloudrift-type-1.1.1-release.apk`（id `672786270`，4,263,778 字节）：
+  [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v1.1.1/cloudrift-type-1.1.1-release.apk)；
+  GitHub 资产 API 的 digest 与回下载、本地逐字节比较均为
+  `sha256:e7b8028c81c3b6caeb044996fd936adc3915c366c5cd14c7db305f57b252f05a`。
