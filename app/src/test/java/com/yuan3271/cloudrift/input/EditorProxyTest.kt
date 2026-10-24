@@ -41,6 +41,19 @@ class EditorProxyTest {
         assertEquals(emptyList<String>(), host.calls.map { it.name })
     }
 
+    @Test
+    fun `setting a composition can keep the caret at the edited position`() {
+        val host = RecordingConnection()
+        val editor = EditorProxy { host.proxy }
+
+        // 插在 n|hao 的 i 之后：编辑器内的相对位置是 3（前两个字之后）。
+        editor.setComposing("nihao", cursorOffset = 2)
+
+        val call = host.calls.single { it.name == "setComposingText" }
+        assertEquals("nihao", call.args[0])
+        assertEquals(3, call.args[1])
+    }
+
     /** A recording stand-in for [InputConnection]; uninteresting methods answer with a default. */
     private class RecordingConnection {
         val calls = mutableListOf<Call>()

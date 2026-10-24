@@ -516,7 +516,40 @@ class PinyinEngine(
         // characters that came from the fragment are left dimmed.
         val fragment = split.fragment
         if (fragment.isEmpty()) {
-            return attested(decodeTop(buffer, bounds, SENTENCE_LIMIT))
+            // A dictionary word that spells the whole buffer owns this reading. Alternative
+            // syllable cuts are for recovering phrases the longest-match split missed, not for
+            // putting 盘|地|按 in front of the real word 盘点.
+            val wholeWordOwnsReading = dictionary.wordsFor(buffer, 1).isNotEmpty()
+            val segmentations = buildList {
+                add(bounds)
+                // 最长匹配只回答"能不能覆盖"，没有回答"这样切的词是不是人话"：`gen gei` 与
+                // `geng ei`、`me ne` 与 `men e` 覆盖同样的字母。只解码第一种，会让正确整句
+                // 连候选池都进不去。把等价切法一起交给同一个词频与搭配模型来挑。
+                if (!wholeWordOwnsReading) {
+                    addAll(
+                        completeSegmentations(buffer, SEGMENTATION_LIMIT)
+                            // "Equivalent" means the same number of spoken syllables. Recutting
+                            // 推荐 as 推|及|按 invents an extra syllable, so it is not an
+                            // alternative reading of what the user typed; it is a different
+                            // pronunciation and belongs nowhere near the primary candidates.
+                            .filter { it.size == bounds.size },
+                    )
+                }
+            }.distinctBy { it.contentHashCode() }
+            val readings = buildList {
+                addAll(decodeTop(buffer, bounds, SENTENCE_PATHS))
+                // Keep the primary split's homophone depth, but only each alternative split's best
+                // few readings. Alternatives are recovery paths; letting eight of them contribute
+                // 32 readings each flooded the shortlist and pushed 实施这个 out of the hand-picked
+                // regression's top five.
+                for (candidateBounds in segmentations.drop(1)) {
+                    addAll(decodeTop(buffer, candidateBounds, ALTERNATIVE_READINGS_PER_SPLIT))
+                }
+            }
+                .sortedByDescending { it.score }
+                .distinctBy { it.text }
+            return attested(readings)
+                .take(SENTENCE_LIMIT)
                 .map { it.text }
                 .filter { it != buffer }
                 .map { sentence(it, buffer, unmatchedFrom = -1) }
@@ -561,10 +594,14 @@ class PinyinEngine(
      * 一句正常话（广谱回归台实测）。词组与专名是词典里的词，走另一条候选来源，不受影响。
      */
     private fun attested(readings: List<Reading>): List<Reading> {
+        // Only readings that can actually reach the bar may vote on whether this run has corpus
+        // evidence. A low-scoring alternative split used to contribute one backed reading and
+        // then unlock dozens of unrelated homophone washes above it.
+        val shortlist = readings.take(SENTENCE_LIMIT)
         // 没有搭配模型时"证据"恒为 0，那不是"语料里没连过"，是"无从知道"（测试里的词典就是
         // 这种），照删会把每条读法都删掉。
-        if (!dictionary.hasAssociationModel) return readings
-        if (readings.size <= UNBACKED_READINGS) return readings
+        if (!dictionary.hasAssociationModel) return shortlist
+        if (shortlist.size <= UNBACKED_READINGS) return shortlist
         // 只要有一条读法带着语料证据，就一条都不删。
         //
         // 这一条是量出来的，不是保守：同一个字形骨架下常常有真也有假（`那|挺|好|的` 对
@@ -573,8 +610,8 @@ class PinyinEngine(
         // 证据都没有**：那不是"挑了错的"，而是"这串音节根本没被语料读到过"，剩下的全是同音字洗牌
         // （`毫无|青年`、`辛苦|里`、`不及|慢慢|来`、`转账|一|不错`），留一条最好的猜测就够，铺满
         // 八条只会让候选栏看起来全是"不成句的结果"。
-        if (readings.any { it.evidence > 0 }) return readings
-        return readings.take(UNBACKED_READINGS)
+        if (shortlist.any { it.evidence > 0 }) return shortlist
+        return shortlist.take(UNBACKED_READINGS)
     }
 
     /**
@@ -683,10 +720,15 @@ class PinyinEngine(
                         )
                         continue
                     }
-                    // The best character of a syllable is always a path. A lower-ranked homophone
-                    // only joins in when the pair model actually expects it here (走 -> 吧), so the
-                    // bar does not fill with 我门/我闷-style variants of a word that is already right.
-                    if (rank > 0 && pair <= 0) continue
+                    // 句首没有前一段可以问搭配模型，只允许字表第一名会让一整类正确句子根本
+                    // 进不了候选池：bei 只会从 被 起步，背了一半 因此永远不存在；jiang→讲、
+                    // yao→药、shou→瘦、xiao→笑 同样被丢掉。这里给句首几个同音字一个按字表
+                    // 顺序衰减的入口。句中仍然要求搭配证据，免得 我门/我闷 铺满候选栏。
+                    if (rank > 0 && pair <= 0 &&
+                        (start > 0 || rank >= SENTENCE_START_CHAR_LIMIT)
+                    ) {
+                        continue
+                    }
                     push(
                         paths[start + 1],
                         path.score + CHARACTER_SCORE - rank * SENTENCE_CHAR_DECAY - UNIT_PENALTY +
@@ -836,6 +878,59 @@ class PinyinEngine(
         splitCache[buffer] = plan
         return plan
     }
+
+    /**
+     * Complete ways to cut the run into syllables, best-looking first. This is a small beam rather
+     * than an exhaustive list: a long sentence can have thousands of valid splits, while the
+     * decoder only needs the few plausible alternatives that word and pair scores can compare.
+     *
+     * The primary longest-match split is added separately by [sentenceCandidates], so this beam
+     * can improve recall without suppressing an answer the previous path already offered.
+     */
+    private fun completeSegmentations(buffer: String, limit: Int): List<IntArray> {
+        if (nineKey) return emptyList()
+        val size = buffer.length
+        val memo = arrayOfNulls<List<SplitPath>>(size + 1)
+
+        fun pathsFrom(start: Int): List<SplitPath> {
+            memo[start]?.let { return it }
+            if (start == size) return listOf(SplitPath(0, intArrayOf(size)))
+            val paths = ArrayList<SplitPath>()
+            val upper = minOf(size, start + PinyinSyllables.maxLength)
+            // Longer syllables first keeps the established longest-match preference on ties.
+            for (end in upper downTo start + 1) {
+                if (!isSyllableToken(buffer, start, end)) continue
+                val token = buffer.substring(start, end)
+                val tokenCost = when {
+                    !converts(buffer, start, end) -> 20
+                    // One-letter syllables are valid (啊 / 哦 / 嗯), but are also the usual sign that
+                    // a longer syllable was split by accident (`me|ne` -> `men|e`).
+                    token.length == 1 && token !in SENTENCE_VOWEL_SYLLABLES && token != "n" -> 2
+                    else -> 0
+                }
+                for (tail in pathsFrom(end)) {
+                    paths += SplitPath(
+                        cost = tail.cost + tokenCost,
+                        bounds = intArrayOf(start) + tail.bounds,
+                    )
+                }
+            }
+            paths.sortBy { it.cost }
+            val selected = ArrayList<SplitPath>(limit)
+            val seen = HashSet<String>(limit * 2)
+            for (path in paths) {
+                if (!seen.add(path.bounds.contentToString())) continue
+                selected += path
+                if (selected.size >= limit) break
+            }
+            memo[start] = selected
+            return selected
+        }
+
+        return pathsFrom(0).map { it.bounds }
+    }
+
+    private data class SplitPath(val cost: Int, val bounds: IntArray)
 
     /**
      * Whether the dictionary can turn this syllable into text at all. A syllable that is only in
@@ -1479,15 +1574,33 @@ class PinyinEngine(
      * directly; nine key input matches the syllable's keypad signature, either a table syllable or
      * one with a nine key reading in the dictionary.
      *
-     * One letter syllables (a/e/o/m/n) are interjections: nobody types "nhao" meaning 嗯好.
-     * Counting them as a syllable makes a 首字母+全拼 run look like full pinyin (n | hao) and hides
-     * the reading the user meant (n + hao -> 你好), so a single letter only stands on its own at
-     * the end of the buffer, where it cannot be the initial of the syllable that follows it.
+     * One letter syllables (a/e/o/m/n) are interjections. Treating every occurrence as one makes a
+     * mixed run such as n|hao look like full pinyin and hides 你好, so the normal rule requires a
+     * whole-buffer interjection. Two unambiguous exceptions are allowed: an interior `a` (行啊几点)
+     * and an opening `n` before n/y (嗯你也是 / 嗯一定).
      */
     private fun isSyllableToken(buffer: String, start: Int, end: Int): Boolean {
         val token = buffer.substring(start, end)
         val match = if (nineKey) matchesNineKey(token) else PinyinSyllables.isSyllable(token)
-        return match && (nineKey || end - start > 1 || end == buffer.length)
+        // A standalone 啊 in the middle of a run is unambiguous: `xing a ji dian` can only mean
+        // 行啊几点. Other vowel-looking fragments (`ha|o` -> 哈喔, `xia|ng` -> 下嗯) are almost
+        // always a long syllable cut in two, so they stay excluded.
+        val standaloneVowel = token == "a" && start > 0
+        // 单独的 n 在 `nni` / `nyi` 里只能是叹词「嗯……」：n 后面接不了以 n/y 开头的更长
+        // 音节，拆成 n|ni、n|yi 没有第二种全拼解释。`nhao` 仍不在这里放开，它要继续走
+        // n(声母)+hao 的混合输入，否则「你好」会被「嗯好」挤走。
+        val nasalInterjection = token == "n" && start == 0 &&
+            end < buffer.length &&
+            buffer[end] in SENTENCE_NASAL_FOLLOWERS
+        val wholeBufferSingle = start == 0 && end == buffer.length
+        // `ng` / `hm` / `hng` are dictionary syllables for interjections such as 嗯, but using
+        // them inside another run produces 嗯一地嗯 / 下嗯-style noise. They are only plausible
+        // when the whole buffer is exactly one of them.
+        val rareNasal = token in SENTENCE_RARE_NASALS && !wholeBufferSingle
+        return match && !rareNasal && (
+            nineKey || end - start > 1 || wholeBufferSingle ||
+                standaloneVowel || nasalInterjection
+        )
     }
 
     private fun matchesNineKey(digits: String): Boolean {
@@ -1647,6 +1760,11 @@ class PinyinEngine(
          */
         private const val SENTENCE_CHAR_LIMIT = 16
         /**
+         * 句首没有左邻字，搭配模型无法在几个同音字之间作判断。允许字表前几名进入整句解码，
+         * 但仍按名次衰减；否则 `bei` 永远只能以「被」开头，`背了一半` 连候选池都进不去。
+         */
+        private const val SENTENCE_START_CHAR_LIMIT = 8
+        /**
          * Characters tried for the *last* syllable of a run, when that syllable can close a
          * sentence. The 句末语气词 sit deep in their syllable's table - 呗 is the 16th character of
          * "bei", 嘞 the 18th of "lei" - and they are the one class of character that a sentence can
@@ -1679,8 +1797,19 @@ class PinyinEngine(
          * not in this list can never become one.
          */
         private const val WORDS_PER_STEP = 6
+        /**
+         * 每个格点保留的整句路径。句首现在会试几个同音字，若仍在每个位置只保留 8 条，
+         * `xing|a|ji|dian` 里正确那条可能在中间就被另一读音挤出窄束，最后只剩 `新|尬|几点`。
+         */
+        private const val SENTENCE_PATHS = 32
+        /**
+         * 最长匹配之外再保留几种完整音节切法。`gen|gei` 与 `geng|ei` 都能覆盖同一串字母，
+         * 正确读法要靠词频与搭配来选，不能由"先试到哪个音节"决定。
+         */
+        private const val SEGMENTATION_LIMIT = 8
+        private const val ALTERNATIVE_READINGS_PER_SPLIT = 3
         /** How many whole-sentence readings to offer. */
-        private const val SENTENCE_LIMIT = 8
+        private const val SENTENCE_LIMIT = 12
         /**
          * 只转换第一个音节那条兜底路可以带多少字。和 [CHAR_LIMIT] 同一个理由：**一颗字都不许省**。
          */
@@ -1745,6 +1874,9 @@ class PinyinEngine(
          * 句子开头的左侧上下文，与 `tools/dictgen/build_bigram.py` 的 `BOUNDARY` 同一个键。
          */
         private const val SENTENCE_START = "^"
+        private val SENTENCE_VOWEL_SYLLABLES = setOf("a", "e", "o")
+        private val SENTENCE_RARE_NASALS = setOf("ng", "hm", "hng")
+        private val SENTENCE_NASAL_FOLLOWERS = setOf('n', 'y')
         /**
          * Per-unit cost of the 首字母 path, the same role [UNIT_PENALTY] plays in the sentence
          * decoder: without it every letter could be covered by its own character and the longest

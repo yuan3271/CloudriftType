@@ -18,9 +18,16 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
 
     private val connection: InputConnection? get() = connectionProvider()
 
-    fun setComposing(text: String) {
+    /**
+     * @param cursorOffset where the caret should land inside [text]. The default puts it after the
+     *   whole preview; editing in the middle of an existing composition passes the edited offset.
+     */
+    fun setComposing(text: String, cursorOffset: Int = text.length) {
         if (text.isEmpty()) return
-        connection?.setComposingText(text, 1)
+        // InputConnection cursor positions are one-based relative to the composing region:
+        // 1 is just after its first character, text.length + 1 is after the whole region.
+        val relative = cursorOffset.coerceIn(0, text.length) + 1
+        connection?.setComposingText(text, relative)
         isComposing = true
     }
 

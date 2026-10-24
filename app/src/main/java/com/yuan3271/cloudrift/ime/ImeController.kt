@@ -84,6 +84,10 @@ class ImeController(
     private var editorInfo: EditorInfo? = null
     private var engine: InputEngine = AppGraph.engines.engineFor(LayoutId.Pinyin26.engine)
     private var selfEditCounter = 0
+    /**
+     * 用户在组合区里把光标挪到哪里（相对原始读音的字符偏移）。null 表示正常在末尾继续输入。
+     */
+    private var compositionCaret: Int? = null
     private var lastSpaceAt = 0L
     private var doubleSpaceArmed = false
     /** Timer that applies a finished transcript on its own; see voiceAutoApplyDelayMs. */
@@ -206,7 +210,8 @@ class ImeController(
     fun onStartInput(info: EditorInfo?, restarting: Boolean) {
         editingField = true
         editorInfo = info
-        commitBuffer()
+        // 生命周期回调偶尔会跳过 onFinishInputView；这时也把原始读音上屏，绝不替用户采用首选词。
+        commitCompositionVerbatim()
         // 新的一次输入会话：上一条联想说的是**上一个**输入框里的事。
         clearAssociations()
         updateEnterLabel()
@@ -218,6 +223,7 @@ class ImeController(
      */
     fun onFinishInput() {
         editingField = false
+        commitCompositionVerbatim()
     }
 
     fun onStartInputView() {
@@ -248,7 +254,7 @@ class ImeController(
     }
 
     fun onFinishInputView() {
-        commitBuffer()
+        commitCompositionVerbatim()
         if (_state.value.isVoiceActive) voice.cancel()
     }
 
@@ -257,6 +263,7 @@ class ImeController(
      * the microphone is handed back to the system here rather than at the two minute cap.
      */
     fun onWindowHidden() {
+        commitCompositionVerbatim()
         voice.releaseMicrophone()
     }
 
@@ -265,15 +272,43 @@ class ImeController(
      * means the user tapped somewhere else, so the pending reading is committed.
      */
     fun onSelectionChanged() {
-        onSelectionChanged(selectionStart = -1, selectionEnd = -1)
+        onSelectionChanged(
+            selectionStart = -1,
+            selectionEnd = -1,
+            composingStart = -1,
+            composingEnd = -1,
+        )
     }
 
     /**
      * @param selectionStart selectionEnd as the editor reports them; equal means a plain caret.
+     * @param composingStart candidatesStart from Android's selection callback. A caret that stays
+     *   inside this range is the user editing the raw reading, not moving away from it.
      */
-    fun onSelectionChanged(selectionStart: Int, selectionEnd: Int) {
+    fun onSelectionChanged(
+        selectionStart: Int,
+        selectionEnd: Int,
+        composingStart: Int = -1,
+        composingEnd: Int = -1,
+    ) {
         if (selectionStart >= 0 && selectionEnd >= 0) {
             hasSelection = selectionStart != selectionEnd
+        }
+        val current = _state.value
+        val caret = compositionCaretOffset(
+            selectionStart = selectionStart,
+            selectionEnd = selectionEnd,
+            composingStart = composingStart,
+            composingEnd = composingEnd,
+            previewLength = current.preview.length,
+        )
+        if (caret != null && current.isComposing) {
+            // A callback caused by our own setComposingText may still be in flight. Consume that
+            // bookkeeping here, but treat an actual arrow-key move the same way: update the edit
+            // point and leave the candidate buffer untouched.
+            if (selfEditCounter > 0) selfEditCounter--
+            compositionCaret = caret
+            return
         }
         if (selfEditCounter > 0) {
             selfEditCounter--
@@ -282,7 +317,9 @@ class ImeController(
         // The caret moved without us: the user is editing somewhere else, so the character chain
         // that could become a learned word is broken.
         characterChain.clear()
-        if (_state.value.isComposing) commitBuffer()
+        // Losing the composing caret must not silently choose the first candidate. What the user
+        // actually typed stays visible until they explicitly pick a conversion.
+        commitCompositionVerbatim()
         dropStaleAssociations()
     }
 
@@ -435,8 +472,16 @@ class ImeController(
         altPressed: Boolean,
         metaPressed: Boolean = false,
         repeatCount: Int = 0,
+        shiftPressed: Boolean = false,
     ): Boolean {
         if (!editingField || !_state.value.externalInputs.present) return false
+        // 方向键在组合区里是改拼音，不是离开这次拼写。显式接管左右键，不依赖编辑器是否把
+        // candidatesStart/End 完整回传；Shift+方向仍交给应用做选字。
+        if (!ctrlPressed && !altPressed && !metaPressed && !shiftPressed &&
+            keyCode in COMPOSITION_ARROW_KEYS && moveCompositionCaret(keyCode)
+        ) {
+            return true
+        }
         // Shift 期间只要按过别的键，这一次 Shift 就是当修饰键用的（Shift+字母打大写、Shift+方向键
         // 选字），抬起时不该再切中英。
         //
@@ -1180,10 +1225,29 @@ class ImeController(
         } else {
             text
         }
-        applyBuffer(current.raw + shiftedText)
+        val edited = insertReading(current.raw, compositionCaret, shiftedText)
+        applyBuffer(edited.text, edited.caret)
         if (current.shifted && !current.capsLock) {
             _state.value = _state.value.copy(shifted = false)
         }
+    }
+
+    /** Moves inside the raw composing preview and keeps the editor caret there. */
+    private fun moveCompositionCaret(keyCode: Int): Boolean {
+        val current = _state.value
+        if (!current.isComposing || current.preview.length != current.raw.length) return false
+        val previous = compositionCaret ?: current.raw.length
+        val target = movedReadingCaret(
+            raw = current.raw,
+            caret = compositionCaret,
+            delta = if (keyCode == android.view.KeyEvent.KEYCODE_DPAD_LEFT) -1 else 1,
+        )
+        // At either end let the host move out of the composition.
+        if (target == previous) return false
+        compositionCaret = target
+        selfEditCounter++
+        editor.setComposing(current.preview, target)
+        return true
     }
 
     /**
@@ -1199,9 +1263,10 @@ class ImeController(
         }
     }
 
-    private fun applyBuffer(raw: String) {
+    private fun applyBuffer(raw: String, caret: Int? = null) {
         val output = engine.evaluate(raw, engine.candidateLimit)
         val preview = output.composingPreview.ifEmpty { raw }
+        val rawCaret = caret?.coerceIn(0, raw.length) ?: raw.length
         _state.value = _state.value.copy(
             raw = raw,
             preview = preview,
@@ -1209,14 +1274,20 @@ class ImeController(
             candidatesExpanded = _state.value.candidatesExpanded && output.candidates.isNotEmpty(),
         )
         if (raw.isEmpty()) {
+            compositionCaret = null
             clearComposingQuietly()
         } else {
+            // The engine may translate as you type (kana / romaji). In that case the editor caret
+            // is in preview characters, not raw input characters; keep the edit point at the end.
+            val previewCaret = if (preview.length == raw.length) rawCaret else preview.length
+            compositionCaret = if (preview.length == raw.length) rawCaret else null
             selfEditCounter++
-            editor.setComposing(preview)
+            editor.setComposing(preview, previewCaret)
         }
     }
 
     private fun clearBuffer() {
+        compositionCaret = null
         _state.value = _state.value.clearedBuffer()
         clearComposingQuietly()
     }
@@ -1245,7 +1316,17 @@ class ImeController(
             ?: engine.literal(current.raw)
         selfEditCounter++
         editor.commit(text)
+        compositionCaret = null
         _state.value = current.clearedBuffer()
+    }
+
+    /**
+     * Ends the current composition exactly as the user typed it. Focus loss is not an instruction
+     * to accept the top candidate: `nihao` must remain `nihao`, just as every conventional IME
+     * preserves a half-finished composition when the keyboard leaves.
+     */
+    private fun commitCompositionVerbatim() {
+        if (_state.value.isComposing) commitRawLiteral()
     }
 
     private fun commitLiteral(text: String) {
@@ -1286,8 +1367,12 @@ class ImeController(
         }
         val current = _state.value
         if (current.raw.isNotEmpty()) {
-            applyBuffer(current.raw.dropLast(1))
-            if (current.raw.length == 1) clearBuffer()
+            val edited = backspaceReading(current.raw, compositionCaret)
+            if (edited.text.isEmpty()) {
+                clearBuffer()
+            } else {
+                applyBuffer(edited.text, edited.caret)
+            }
             return
         }
         // Deleting into text that is already in the editor: the 联想 strip was about what used to
@@ -1352,6 +1437,7 @@ class ImeController(
         learn(current.raw, Candidate(text = literal, consumed = current.raw.length, kind = CandidateKind.Raw))
         selfEditCounter++
         editor.commit(literal)
+        compositionCaret = null
         _state.value = current.clearedBuffer()
     }
 
@@ -1532,6 +1618,10 @@ class ImeController(
         private const val LOG_TAG = "CloudriftIme"
         /** 单独按一下 Shift、且这么久以内抬起，才算"单击切中英"（按住 Shift 打字不算）。 */
         private const val SHIFT_TAP_MAX_MS = 500L
+        private val COMPOSITION_ARROW_KEYS = setOf(
+            android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+            android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
+        )
         /** Caps Lock 按住超过这么久算长按（锁大小写）；不到就是短按（切中英）。 */
         private const val CAPS_LOCK_LONG_PRESS_MS = 400L
         /** How long two single character commits may be apart and still belong to one learned word. */

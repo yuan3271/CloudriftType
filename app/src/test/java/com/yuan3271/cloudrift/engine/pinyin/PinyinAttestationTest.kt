@@ -115,6 +115,37 @@ class PinyinAttestationTest {
     }
 
     @Test
+    fun `ordinary sentences survive ambiguous starts and syllable boundaries`() {
+        // 句首没有左邻字可问搭配，只试字表第一名会丢掉整类正常句子：背了一半、讲的是什么、
+        // 笑一下好了、药吃了吗、瘦了不少。它们错在第一步，后面的候选过滤再怎么严格也救不回来。
+        val cases = listOf(
+            Triple("beileyiban", "背了一半", 0),
+            Triple("jiangdeshishenme", "讲的是什么", 0),
+            Triple("xiaoyixiahaole", "笑一下好了", 0),
+            Triple("yaochilema", "药吃了吗", 0),
+            // 受了不少 也是正常搭配，只是不如 瘦了不少 贴合这里；前两名都算可接受的候选召回。
+            Triple("shoulebushao", "瘦了不少", 1),
+            Triple("xingajidian", "行啊几点", 0),
+            Triple("nniyeshi", "嗯你也是", 0),
+            Triple("nyiding", "嗯一定", 0),
+            Triple("dailelianggenyigengeini", "带了两根一根给你", 0),
+            Triple("nixiangchidianshenmene", "你想吃点什么呢", 0),
+            Triple("henhaokanwotuijiangeini", "很好看我推荐给你", 0),
+        )
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        for ((code, sentence, expectedRank) in cases) {
+            val candidates = engine.evaluate(code).candidates
+            println("$code -> ${candidates.take(8).map { "${it.text}/${it.kind}" }}")
+            assertTrue("$code 的整句候选缺失: ${candidates.take(8).map { it.text }}", candidates.any { it.text == sentence })
+            assertEquals(
+                "$code 的 ${sentence} 应该在候选第 ${expectedRank + 1} 位: ${candidates.take(8).map { it.text }}",
+                sentence,
+                candidates[expectedRank].text,
+            )
+        }
+    }
+
+    @Test
     fun `a dictionary without an association model keeps every reading`() {
         // 没有搭配表时 bigramScore 对每一对都返回 0，那是"无从知道"，不是"语料里没连过"。把它
         // 当成没证据，整句候选会被清空——测试用的词典正是这一种。
@@ -128,6 +159,20 @@ class PinyinAttestationTest {
 
         assertTrue("没有搭配表时依然要给出整句读法: $texts", texts.contains("试试这个"))
         assertTrue("没有搭配表时依然要给出整句读法: $texts", texts.contains("实施这个"))
+    }
+
+    @Test
+    fun `slang and formal readings of one code both stay available`() {
+        val texts = PinyinEngine(dictionary, nineKey = false)
+            .evaluate("shishizhege")
+            .candidates
+            .map { it.text }
+
+        println("shishizhege with pairs -> ${texts.take(12)}")
+        // 搭配语料更偏口语的 试试这个，但正式写法也必须留在展开列表里。实测 top5 从 31/31
+        // 掉到 30/31 的唯一一条就是它；候选扩展后仍可直接选中，不再需要逐字凑。
+        assertTrue("实施这个 应保留在展开候选里: ${texts.take(16)}", "实施这个" in texts.take(16))
+        assertTrue("试试这个 应保留: ${texts.take(16)}", "试试这个" in texts.take(16))
     }
 
     private fun reader(name: String) = BufferedReader(

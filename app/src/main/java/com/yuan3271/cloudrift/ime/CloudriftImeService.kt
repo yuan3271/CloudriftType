@@ -824,7 +824,12 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         )
         // The selection itself is what a backspace has to act on when the user has highlighted a
         // range, so the two ends are passed on rather than just "something changed".
-        controller?.onSelectionChanged(selectionStart = newSelStart, selectionEnd = newSelEnd)
+        controller?.onSelectionChanged(
+            selectionStart = newSelStart,
+            selectionEnd = newSelEnd,
+            composingStart = candidatesStart,
+            composingEnd = candidatesEnd,
+        )
     }
 
     /**
@@ -863,6 +868,7 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
                 metaPressed = event.metaState and KeyEvent.META_META_ON != 0,
                 // 按住不放时系统会补发重复按下（Caps Lock 的长按靠它，见 ImeController）。
                 repeatCount = event.repeatCount,
+                shiftPressed = event.isShiftPressed,
             )
         ) {
             return true
