@@ -195,6 +195,9 @@ EXTRA_WORD_LISTS = [
 # 它高的词。
 HSK30 = TOOLS / "raw/hsk30.csv"
 HSK30_FLOOR = {1: 480, 2: 400, 3: 330, 4: 270, 5: 220, 6: 180, 7: 140}
+# Everyday compounds that the corpus lists miss but a Chinese keyboard should still own as words.
+# 月考 keeps 月 and 考 together instead of letting the 月/乐 homophone contest decide the first word.
+EXTRA_DAILY_WORDS = {"月考": 1400}
 # A second reading earns its own entry in the character table when the frequency dictionary shows
 # it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
 # jiào in 15%). Below that the reading exists but is rare enough that the primary placement is
@@ -924,6 +927,8 @@ def main() -> int:
     # jieba 与 THUOCL 都没有的日常词补进词表——用户要的正是这一层，而不是成语。
     daily = load_hsk30()
     for word, floor in daily.items():
+        word_scores[word] = max(word_scores.get(word, 0), floor)
+    for word, floor in EXTRA_DAILY_WORDS.items():
         word_scores[word] = max(word_scores.get(word, 0), floor)
     print(f"日常词汇表: {len(daily)} 个词（HSK 3.0 等级保底）")
 

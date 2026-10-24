@@ -24,12 +24,45 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
      */
     fun setComposing(text: String, cursorOffset: Int = text.length) {
         if (text.isEmpty()) return
-        // InputConnection cursor positions are one-based relative to the composing region:
-        // 1 is just after its first character, text.length + 1 is after the whole region.
-        val relative = cursorOffset.coerceIn(0, text.length) + 1
-        connection?.setComposingText(text, relative)
+        val connection = connection ?: return
+        val offset = cursorOffset.coerceIn(0, text.length)
+        var selectionEnd: Int? = null
+        var target: Int? = null
+        connection.beginBatchEdit()
+        try {
+            // Ask the host to put the caret at the end first. That makes the composing region's
+            // end unambiguous; the absolute selection below is the one that keeps the visible
+            // caret where the user is editing.
+            connection.setComposingText(text, text.length + 1)
+            selectionEnd = extractedSelectionEnd(connection)
+            target = composingSelectionTarget(
+                selectionEndAfterComposing = selectionEnd,
+                textLength = text.length,
+                cursorOffset = offset,
+            )
+        } finally {
+            connection.endBatchEdit()
+        }
+        if (selectionEnd == null) {
+            // The editor refused ExtractedText. Fall back to the relative composing position, which
+            // many editors honour even when they do not expose their full text.
+            connection.setComposingText(text, offset + 1)
+        } else {
+            // Apply the absolute selection after ending the batch: some editors defer selection
+            // updates until the batch closes, and otherwise snap back to the composition end.
+            target?.let { connection.setSelection(it, it) }
+        }
         isComposing = true
     }
+
+    private fun extractedSelectionEnd(connection: InputConnection): Int? = runCatching {
+        val request = ExtractedTextRequest().apply {
+            flags = 0
+            hintMaxChars = 10_000
+            hintMaxLines = 10
+        }
+        connection.getExtractedText(request, 0)?.selectionEnd
+    }.getOrNull()
 
     fun commit(text: String) {
         if (text.isEmpty()) return
@@ -221,4 +254,18 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
                 flags and android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS != 0
         }
     }
+}
+
+/**
+ * Absolute caret position after the host has placed the composing caret at the end:
+ * `nhao` with the caret after `ni` => composing end 14, length 5, offset 2 => 11.
+ */
+internal fun composingSelectionTarget(
+    selectionEndAfterComposing: Int?,
+    textLength: Int,
+    cursorOffset: Int,
+): Int? {
+    val end = selectionEndAfterComposing ?: return null
+    val start = (end - textLength).coerceAtLeast(0)
+    return (start + cursorOffset.coerceIn(0, textLength)).coerceAtMost(end)
 }

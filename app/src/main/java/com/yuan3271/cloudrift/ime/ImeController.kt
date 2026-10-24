@@ -304,9 +304,12 @@ class ImeController(
         )
         if (caret != null && current.isComposing) {
             // A callback caused by our own setComposingText may still be in flight. Consume that
-            // bookkeeping here, but treat an actual arrow-key move the same way: update the edit
-            // point and leave the candidate buffer untouched.
-            if (selfEditCounter > 0) selfEditCounter--
+            // bookkeeping here, but do not let its (often end-of-composition) caret overwrite the
+            // edit point we just restored. A real user move arrives after the counter is zero.
+            if (selfEditCounter > 0) {
+                selfEditCounter--
+                return
+            }
             compositionCaret = caret
             return
         }

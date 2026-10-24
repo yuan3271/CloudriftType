@@ -49,9 +49,12 @@ class EditorProxyTest {
         // 插在 n|hao 的 i 之后：编辑器内的相对位置是 3（前两个字之后）。
         editor.setComposing("nihao", cursorOffset = 2)
 
-        val call = host.calls.single { it.name == "setComposingText" }
-        assertEquals("nihao", call.args[0])
-        assertEquals(3, call.args[1])
+        val calls = host.calls.filter { it.name == "setComposingText" }
+        assertEquals("nihao", calls.first().args[0])
+        // The recording editor exposes no ExtractedText, so use the relative-position fallback.
+        assertEquals(6, calls.first().args[1])
+        assertEquals(3, calls.last().args[1])
+        assertEquals(11, composingSelectionTarget(14, textLength = 5, cursorOffset = 2))
     }
 
     /** A recording stand-in for [InputConnection]; uninteresting methods answer with a default. */

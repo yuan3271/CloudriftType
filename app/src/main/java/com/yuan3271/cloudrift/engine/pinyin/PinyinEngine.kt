@@ -548,11 +548,19 @@ class PinyinEngine(
             }
                 .sortedByDescending { it.score }
                 .distinctBy { it.text }
-            return attested(readings)
+            val decodedTexts = attested(readings)
                 .take(SENTENCE_LIMIT)
                 .map { it.text }
                 .filter { it != buffer }
-                .map { sentence(it, buffer, unmatchedFrom = -1) }
+            // Chinese separable verbs keep the aspect particle inside the dictionary word:
+            // 考试 → 考了试. The local pair model sees 了→十 as stronger than 了→试, so a plain
+            // character path cannot reliably recover the verb. Recognise the exact 词+了+词
+            // construction from the dictionary instead of hard-coding an example.
+            val infixed = infixLeSentence(buffer, bounds)
+            return buildList {
+                if (infixed != null) add(sentence(infixed, buffer, -1))
+                decodedTexts.filter { it != infixed }.forEach { add(sentence(it, buffer, -1)) }
+            }.take(SENTENCE_LIMIT)
         }
         val prefix = decode(buffer.substring(0, split.covered), bounds) ?: return emptyList()
         // Candidates are compared on the *extended* reading, so the fragment itself is paid for by
@@ -623,6 +631,45 @@ class PinyinEngine(
      */
     private fun internalEvidence(lastUnit: String, pair: Int): Int =
         if (lastUnit == SENTENCE_START) 0 else pair
+
+    /**
+     * Recovers separable dictionary verbs with 了 inserted after the verb stem, e.g.
+     * `kao|le|shi` → 考了试, `kao|le|shi` also has the dictionary reading `kaoshi` → 考试.
+     * Only exact dictionary readings are accepted; this is a word-level construction, not a
+     * blanket preference for 了 followed by rare homophones.
+     */
+    private fun infixLeSentence(buffer: String, bounds: IntArray): String? {
+        val syllables = bounds.size - 1
+        if (syllables < 3) return null
+        for (le in 1 until syllables - 1) {
+            if (buffer.substring(bounds[le], bounds[le + 1]) != "le") continue
+            for (start in 0 until le) {
+                for (end in le + 1..syllables) {
+                    val reading = buffer.substring(bounds[start], bounds[le]) +
+                        buffer.substring(bounds[le + 1], bounds[end])
+                    val position = le - start
+                    val word = dictionary.wordsFor(reading, WORDS_PER_STEP)
+                        .firstOrNull {
+                            it.word in SEPARABLE_VERBS && position in 1 until it.word.length
+                        }
+                        ?.word
+                        ?: continue
+                    val prefix = decodeRange(buffer.substring(0, bounds[start])) ?: continue
+                    val suffix = decodeRange(buffer.substring(bounds[end])) ?: continue
+                    val infixed = word.substring(0, position) + "了" + word.substring(position)
+                    return prefix + infixed + suffix
+                }
+            }
+        }
+        return null
+    }
+
+    private fun decodeRange(raw: String): String? {
+        if (raw.isEmpty()) return ""
+        val split = syllableSplit(raw) ?: return null
+        if (split.fragment.isNotEmpty()) return null
+        return decode(raw, split.bounds)
+    }
 
     private fun sentence(text: String, reading: String, unmatchedFrom: Int) = Candidate(
         text = text,
@@ -1874,6 +1921,16 @@ class PinyinEngine(
          * 句子开头的左侧上下文，与 `tools/dictgen/build_bigram.py` 的 `BOUNDARY` 同一个键。
          */
         private const val SENTENCE_START = "^"
+        /**
+         * Dictionary words that naturally take 了 inside the word. Keeping this finite prevents
+         * unrelated compounds such as 号码 / 贝伊 / 曲背 from being promoted when their readings
+         * happen to contain an `le` syllable.
+         */
+        private val SEPARABLE_VERBS: Set<String> = setOf(
+            "考试", "洗澡", "睡觉", "吃饭", "帮忙", "请假", "加班", "上课", "下课", "开会",
+            "看病", "见面", "生气", "担心", "注意", "毕业", "排队", "跑步", "游泳", "唱歌",
+            "跳舞", "打球",
+        )
         private val SENTENCE_VOWEL_SYLLABLES = setOf("a", "e", "o")
         private val SENTENCE_RARE_NASALS = setOf("ng", "hm", "hng")
         private val SENTENCE_NASAL_FOLLOWERS = setOf('n', 'y')

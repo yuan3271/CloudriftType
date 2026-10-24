@@ -182215,6 +182215,7 @@ yuejutuan	粤剧团	235
 yuejutuan	越剧团	251
 yuekaiping	岳凯平	272
 yuekan	月刊	487
+yuekao	月考	1400
 yuekangmei	越抗美	292
 yueke	约克	406
 yuekejiao	约克角	256

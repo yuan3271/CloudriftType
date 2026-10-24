@@ -146,6 +146,20 @@ class PinyinAttestationTest {
     }
 
     @Test
+    fun `long everyday sentences keep the answer in the first slot`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val cases = listOf(
+            "wojintiankaoleshi" to "我今天考了试",
+            "yuekaozaimingtian" to "月考在明天",
+        )
+        for ((code, expected) in cases) {
+            val texts = engine.evaluate(code).candidates.map { it.text }
+            println("$code -> ${texts.take(8)}")
+            assertEquals("$code 的第一名不是 $expected: ${texts.take(8)}", expected, texts.first())
+        }
+    }
+
+    @Test
     fun `a dictionary without an association model keeps every reading`() {
         // 没有搭配表时 bigramScore 对每一对都返回 0，那是"无从知道"，不是"语料里没连过"。把它
         // 当成没证据，整句候选会被清空——测试用的词典正是这一种。

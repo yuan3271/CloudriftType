@@ -55,6 +55,14 @@ class CompositionEditingTest {
     }
 
     @Test
+    fun `successive edits keep advancing from the edited position`() {
+        val first = insertReading(raw = "nhao", caret = 1, insert = "i")
+        val second = insertReading(raw = first.text, caret = first.caret, insert = "a")
+
+        assertEquals(EditedReading("niahao", 3), second)
+    }
+
+    @Test
     fun `backspace respects the edit point instead of always eating the last letter`() {
         assertEquals(EditedReading("nao", 1), backspaceReading("nhao", caret = 2))
         assertEquals(EditedReading("nha", 3), backspaceReading("nhao", caret = null))
