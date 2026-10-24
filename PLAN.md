@@ -2977,3 +2977,13 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   `cff2512467c3fec3059fef0a88b379f9f6c5ee00a4a4dbd8cfef007c848cbbf1`，版本
   `0.4.0 (57)`，`apksigner verify` 通过，签名 `CN=yuan3271`。
 - **未验**：本轮没有连接 Android 设备，面板点击序列由状态回归测试锁定，最终触感仍需真机复核。
+
+### 发布记录（0.4.0）
+
+- 发布提交 `46c5b9f`（`main`），tag `v0.4.0`。
+- Release：[云隙输入 0.4.0](https://github.com/yuan3271/CloudriftType/releases/tag/v0.4.0)
+  （id `422826733`）。
+- 资产 `cloudrift-type-0.4.0-release.apk`（id `672663855`，4,226,722 字节）：
+  [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v0.4.0/cloudrift-type-0.4.0-release.apk)；
+  GitHub 资产 API 的 digest 与下载后逐字节核对结果均为
+  `sha256:cff2512467c3fec3059fef0a88b379f9f6c5ee00a4a4dbd8cfef007c848cbbf1`。
