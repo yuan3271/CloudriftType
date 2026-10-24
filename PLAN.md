@@ -3063,3 +3063,20 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v1.1.0/cloudrift-type-1.1.0-release.apk)；
   GitHub 资产 API 的 digest 与回下载、本地逐字节比较均为
   `sha256:0e7b60a05477293d075a6419ae12b19e89c21e60d281c2dbe39b35acf2cbd5f7`。
+
+## 云隙输入 1.1.1：紧急禁用液态玻璃
+
+| 阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| 1 | 加保护开关，渲染层强制作废 Liquid Glass 并回退 Material 3 Expressive | 完成 |
+| 2 | 读取旧偏好时把 Liquid Glass 归一为 Material 3 Expressive | 完成 |
+| 3 | 隐藏完整设置和键盘快捷设置中的主题选择，暂停首次主题弹窗 | 完成 |
+| 4 | 测试、Lint、Release 构建与发布 | 完成 |
+
+### 验证
+
+- `./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleRelease`：通过。
+- 单元测试 **230 条、0 失败**；Lint **0 errors / 9 warnings**。
+- 本地产物 `dist/cloudrift-type-1.1.1-release.apk`：4,263,778 字节，sha256
+  `e7b8028c81c3b6caeb044996fd936adc3915c366c5cd14c7db305f57b252f05a`，
+  版本 `1.1.1 (60)`，签名证书 `CN=yuan3271`。

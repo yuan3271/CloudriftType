@@ -31,7 +31,7 @@ class SettingsRepository(context: Context) {
     private fun read(): AppSettings {
         val defaults = AppSettings()
         return AppSettings(
-            appTheme = AppTheme.fromKey(prefs.getString(KEY_APP_THEME, null)),
+            appTheme = AppTheme.effective(prefs.getString(KEY_APP_THEME, null)),
             appThemeChosen = prefs.getBoolean(KEY_APP_THEME_CHOSEN, false),
             themeMode = ThemeMode.fromKey(prefs.getString(KEY_THEME_MODE, null)),
             themeSource = ThemeSource.fromKey(prefs.getString(KEY_THEME_SOURCE, null)),

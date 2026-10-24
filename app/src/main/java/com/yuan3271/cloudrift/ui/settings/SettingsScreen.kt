@@ -185,17 +185,19 @@ fun SettingsScreen(
 
             SectionTitle("外观", CloudriftIcons.Palette)
             SettingsCard {
-                Text(
-                    text = "界面主题",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(Modifier.height(8.dp))
-                AppThemeSelector(
-                    current = settings.appTheme,
-                    onSelect = { theme -> onUpdate { it.copy(appTheme = theme) } },
-                )
-                Spacer(Modifier.height(14.dp))
+                if (AppTheme.THEME_CHOICE_ENABLED) {
+                    Text(
+                        text = "界面主题",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    AppThemeSelector(
+                        current = settings.appTheme,
+                        onSelect = { theme -> onUpdate { it.copy(appTheme = theme) } },
+                    )
+                    Spacer(Modifier.height(14.dp))
+                }
                 Text(
                     text = "明暗模式",
                     style = MaterialTheme.typography.bodyLarge,

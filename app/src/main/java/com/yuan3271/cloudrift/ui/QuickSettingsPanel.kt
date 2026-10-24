@@ -131,18 +131,20 @@ fun QuickSettingsPanel(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 // ---- theme ---------------------------------------------------------
-                LabeledRow("界面主题") {
-                    val themes = listOf(
-                        AppTheme.Material3Expressive to "M3 Expressive",
-                        AppTheme.LiquidGlass to "液态玻璃",
-                    )
-                    CloudriftSegmentedControl(
-                        options = themes.map { it.second },
-                        selectedIndex = themes.indexOfFirst { it.first == state.appTheme },
-                        onSelected = { index ->
-                            onUpdate { it.copy(appTheme = themes[index].first) }
-                        },
-                    )
+                if (AppTheme.THEME_CHOICE_ENABLED) {
+                    LabeledRow("界面主题") {
+                        val themes = listOf(
+                            AppTheme.Material3Expressive to "M3 Expressive",
+                            AppTheme.LiquidGlass to "液态玻璃",
+                        )
+                        CloudriftSegmentedControl(
+                            options = themes.map { it.second },
+                            selectedIndex = themes.indexOfFirst { it.first == state.appTheme },
+                            onSelected = { index ->
+                                onUpdate { it.copy(appTheme = themes[index].first) }
+                            },
+                        )
+                    }
                 }
 
                 LabeledRow("明暗模式") {

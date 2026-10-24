@@ -68,7 +68,7 @@ class SettingsActivity : ComponentActivity() {
                         finish = ::finish,
                     ),
                 )
-                if (!settings.appThemeChosen) {
+                if (AppTheme.THEME_CHOICE_ENABLED && !settings.appThemeChosen) {
                     AppThemeChoiceDialog { theme ->
                         AppGraph.settings.update { it.withAppThemeChoice(theme) }
                     }

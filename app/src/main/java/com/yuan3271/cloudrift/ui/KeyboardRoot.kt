@@ -63,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
+import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.ime.ImeController
 import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.ime.SymbolSheet
@@ -207,7 +208,7 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
                 )
             }
 
-            if (!state.appThemeChosen) {
+            if (AppTheme.THEME_CHOICE_ENABLED && !state.appThemeChosen) {
                 AppThemeChoiceOverlay(
                     onSelect = controller::chooseAppTheme,
                     modifier = Modifier.matchParentSize(),

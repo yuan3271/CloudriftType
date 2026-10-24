@@ -26,6 +26,16 @@ class AppThemeTest {
     }
 
     @Test
+    fun `disabled liquid glass cannot leak into production rendering`() {
+        assertFalse(AppTheme.LIQUID_GLASS_ENABLED)
+        assertFalse(AppTheme.THEME_CHOICE_ENABLED)
+        assertEquals(
+            AppTheme.Material3Expressive,
+            AppTheme.effective("liquidglass"),
+        )
+    }
+
+    @Test
     fun `making the required choice records it and preserves existing appearance`() {
         val before = AppSettings(
             themeMode = ThemeMode.Dark,

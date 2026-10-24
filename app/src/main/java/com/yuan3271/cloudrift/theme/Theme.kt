@@ -30,6 +30,13 @@ fun CloudriftTheme(
     darkThemeOverride: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
+    val effectiveAppTheme = if (
+        appTheme == AppTheme.LiquidGlass && !AppTheme.LIQUID_GLASS_ENABLED
+    ) {
+        AppTheme.Material3Expressive
+    } else {
+        appTheme
+    }
     val dark = darkThemeOverride ?: when (themeMode) {
         ThemeMode.System -> isSystemInDarkTheme()
         ThemeMode.Light -> false
@@ -45,7 +52,7 @@ fun CloudriftTheme(
             dark = dark,
         )
     }
-    val colorScheme = if (appTheme == AppTheme.LiquidGlass) {
+    val colorScheme = if (effectiveAppTheme == AppTheme.LiquidGlass) {
         glassColorScheme(baseColorScheme, dark)
     } else {
         baseColorScheme
@@ -53,9 +60,9 @@ fun CloudriftTheme(
 
     MaterialExpressiveTheme(colorScheme = colorScheme) {
         CompositionLocalProvider(
-            LocalAppTheme provides appTheme,
+            LocalAppTheme provides effectiveAppTheme,
         ) {
-            if (appTheme == AppTheme.LiquidGlass) {
+            if (effectiveAppTheme == AppTheme.LiquidGlass) {
                 LiquidGlassCanvas(dark = dark) { content() }
             } else {
                 content()

@@ -10,9 +10,25 @@ enum class AppTheme {
     ;
 
     companion object {
+        /**
+         * Temporary kill switch for 1.1.1. The enum and saved preference stay intact so the
+         * experiment can be resumed later, but no production entry point may select or render it.
+         */
+        const val LIQUID_GLASS_ENABLED = false
+        const val THEME_CHOICE_ENABLED = false
+
         fun fromKey(key: String?): AppTheme =
             entries.firstOrNull { it.name.equals(key, ignoreCase = true) }
                 ?: Material3Expressive
+
+        fun effective(key: String?): AppTheme {
+            val stored = fromKey(key)
+            return if (stored == LiquidGlass && !LIQUID_GLASS_ENABLED) {
+                Material3Expressive
+            } else {
+                stored
+            }
+        }
     }
 }
 
