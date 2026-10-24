@@ -55,7 +55,6 @@ import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.input.KeyStyle
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
-import kotlin.math.abs
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -70,7 +69,6 @@ data class KeyCallbacks(
     val onAlternate: (KeyDef, String) -> Unit,
     val onLongPress: (KeyDef) -> Unit,
     val onSwipeUp: (KeyDef) -> Unit,
-    val onSpaceCursorDrag: (Int) -> Unit,
     val onSpaceLongPress: () -> Unit,
     /**
      * The finger that started a hold-to-talk session has been lifted. [cancelled] is true when it
@@ -86,8 +84,8 @@ data class KeyCallbacks(
 )
 
 /**
- * Draws one keyboard page and owns all of its gestures: tap, repeat, long press, swipe up and
- * (on the space bar) horizontal cursor dragging.
+ * Draws one keyboard page and owns all of its gestures: tap, repeat, long press and swipe up.
+ * Horizontal cursor dragging lives in the keyboard's bottom edge.
  *
  * The long press menu is drawn inside this canvas rather than in a popup window, because an
  * IME window cannot reliably own extra windows.
@@ -240,7 +238,6 @@ private fun RowScope.KeyButton(
     val repeatScope = rememberCoroutineScope()
     val density = LocalDensity.current
     val swipeThreshold = with(density) { 20.dp.toPx() }
-    val cursorStep = with(density) { 24.dp.toPx() }
     val cancelDistance = with(density) { SPACE_CANCEL_DISTANCE.toPx() }
     val clearDistance = with(density) { CLEAR_ALL_DISTANCE.toPx() }
 
@@ -257,7 +254,6 @@ private fun RowScope.KeyButton(
                 keyGesture(
                     key = key,
                     swipeThreshold = swipeThreshold,
-                    cursorStep = cursorStep,
                     repeatScope = repeatScope,
                     onPressedChange = { pressed = it },
                     repeat = { callbacks.onKey(key) },
@@ -276,9 +272,6 @@ private fun RowScope.KeyButton(
                     clearAllArmedChanged = { armed -> callbacks.onClearAllArmedChanged(armed) },
                     clearAll = { callbacks.onClearAll() },
                     clearDistance = clearDistance,
-                    cursorDrag = { steps ->
-                        if (key.code == KeyCode.Space) callbacks.onSpaceCursorDrag(steps)
-                    },
                 )
             },
     ) { contentColor -> KeyContent(key = key, contentColor = contentColor) }
@@ -433,14 +426,13 @@ fun KeyPreviewRow(
 }
 
 /**
- * One gesture loop for every key. Compose's canned detectors cannot express "repeat while
- * held, but also swipe up, but also drag horizontally on the space bar", and mixing two
- * detectors on one modifier makes taps unreliable, so the loop is explicit.
+ * One gesture loop for every key. Compose's canned detectors cannot express "repeat while held,
+ * but also swipe up", and mixing two detectors on one modifier makes taps unreliable, so the
+ * loop is explicit.
  */
 private suspend fun PointerInputScope.keyGesture(
     key: KeyDef,
     swipeThreshold: Float,
-    cursorStep: Float,
     repeatScope: kotlinx.coroutines.CoroutineScope,
     onPressedChange: (Boolean) -> Unit,
     repeat: () -> Unit,
@@ -455,7 +447,6 @@ private suspend fun PointerInputScope.keyGesture(
     spaceCancelChanged: (Boolean) -> Unit,
     clearAllArmedChanged: (Boolean) -> Unit,
     clearAll: () -> Unit,
-    cursorDrag: (Int) -> Unit,
 ) {
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
@@ -470,8 +461,6 @@ private suspend fun PointerInputScope.keyGesture(
         var cancelArmed = false
         // Backspace: sliding up cancels the repeat and lights the clear-everything option.
         var clearArmed = false
-        var cursorAccumulator = 0f
-
         val repeater: Job? = if (key.repeatable) {
             claimed = true
             repeatScope.launch {
@@ -518,18 +507,10 @@ private suspend fun PointerInputScope.keyGesture(
                 break
             }
             val dy = change.position.y - down.position.y
-            val dx = change.position.x - down.position.x
 
             if (!claimed && key.swipeUp.isNotEmpty() && dy < -swipeThreshold) {
                 claimed = true
                 swipeUp()
-            }
-            if (!claimed && key.code == KeyCode.Space && abs(dx) > cursorStep) {
-                val steps = ((dx - cursorAccumulator) / cursorStep).toInt()
-                if (steps != 0) {
-                    cursorDrag(steps)
-                    cursorAccumulator += steps * cursorStep
-                }
             }
             if (!claimed && System.currentTimeMillis() - startedAt > LONG_PRESS_MS) {
                 claimed = true

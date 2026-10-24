@@ -26,31 +26,31 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
         if (text.isEmpty()) return
         val connection = connection ?: return
         val offset = cursorOffset.coerceIn(0, text.length)
-        var selectionEnd: Int? = null
-        var target: Int? = null
-        connection.beginBatchEdit()
-        try {
-            // Ask the host to put the caret at the end first. That makes the composing region's
-            // end unambiguous; the absolute selection below is the one that keeps the visible
-            // caret where the user is editing.
-            connection.setComposingText(text, text.length + 1)
-            selectionEnd = extractedSelectionEnd(connection)
-            target = composingSelectionTarget(
-                selectionEndAfterComposing = selectionEnd,
-                textLength = text.length,
-                cursorOffset = offset,
-            )
-        } finally {
-            connection.endBatchEdit()
-        }
-        if (selectionEnd == null) {
-            // The editor refused ExtractedText. Fall back to the relative composing position, which
-            // many editors honour even when they do not expose their full text.
-            connection.setComposingText(text, offset + 1)
+        if (offset == text.length) {
+            // The normal path is also the one every editor is required to support: cursor position
+            // 1 means immediately after the complete composing text. Do not ask for ExtractedText
+            // or issue a second setSelection here. Some browser, WebView and custom editors return
+            // an incomplete selection snapshot while a composition is being updated; interpreting
+            // it as an absolute editor offset moved the caret to the beginning of the field.
+            connection.setComposingText(text, 1)
         } else {
-            // Apply the absolute selection after ending the batch: some editors defer selection
-            // updates until the batch closes, and otherwise snap back to the composition end.
-            target?.let { connection.setSelection(it, it) }
+            // InputConnection cannot place the caret inside brand-new composing text, so an absolute
+            // selection is unavoidable when the user is editing in the middle. Keep both writes in
+            // one batch so compliant editors deliver one final selection update rather than one from
+            // the composing replacement and another from setSelection.
+            connection.beginBatchEdit()
+            try {
+                connection.setComposingText(text, 1)
+                val selectionEnd = extractedSelectionEnd(connection)
+                val target = composingSelectionTarget(
+                    selectionEndAfterComposing = selectionEnd,
+                    textLength = text.length,
+                    cursorOffset = offset,
+                )
+                target?.let { connection.setSelection(it, it) }
+            } finally {
+                connection.endBatchEdit()
+            }
         }
         isComposing = true
     }

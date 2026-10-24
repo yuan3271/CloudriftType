@@ -100,7 +100,7 @@ data class ImeUiState(
     val japaneseEnabled: Boolean = false,
     val showNumberRow: Boolean = false,
     val swipeUpSymbols: Boolean = true,
-    val spaceCursorControl: Boolean = true,
+    val bottomCursorControl: Boolean = true,
     val hapticFeedback: Boolean = true,
     /** 语音结果是否再过一遍文本修正 API；关掉就完全不发这个请求。快速设置里有开关。 */
     val voiceCorrection: Boolean = true,

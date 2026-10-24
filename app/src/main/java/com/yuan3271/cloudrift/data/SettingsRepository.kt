@@ -48,7 +48,10 @@ class SettingsRepository(context: Context) {
             floatingKeyHeightDp = prefs.getInt(KEY_FLOATING_KEY_HEIGHT, defaults.floatingKeyHeightDp),
             showNumberRow = prefs.getBoolean(KEY_NUMBER_ROW, defaults.showNumberRow),
             swipeUpSymbols = prefs.getBoolean(KEY_SWIPE_SYMBOLS, defaults.swipeUpSymbols),
-            spaceCursorControl = prefs.getBoolean(KEY_SPACE_CURSOR, defaults.spaceCursorControl),
+            bottomCursorControl = prefs.getBoolean(
+                KEY_BOTTOM_CURSOR,
+                defaults.bottomCursorControl,
+            ),
             learningEnabled = prefs.getBoolean(KEY_LEARNING, defaults.learningEnabled),
             japaneseEnabled = prefs.getBoolean(KEY_JAPANESE, defaults.japaneseEnabled),
             externalInputMode = ExternalInputMode.fromKey(
@@ -107,7 +110,7 @@ class SettingsRepository(context: Context) {
             putInt(KEY_FLOATING_KEY_HEIGHT, settings.floatingKeyHeightDp)
             putBoolean(KEY_NUMBER_ROW, settings.showNumberRow)
             putBoolean(KEY_SWIPE_SYMBOLS, settings.swipeUpSymbols)
-            putBoolean(KEY_SPACE_CURSOR, settings.spaceCursorControl)
+            putBoolean(KEY_BOTTOM_CURSOR, settings.bottomCursorControl)
             putBoolean(KEY_LEARNING, settings.learningEnabled)
             putBoolean(KEY_JAPANESE, settings.japaneseEnabled)
             putString(KEY_EXTERNAL_INPUT_MODE, settings.externalInputMode.name)
@@ -181,7 +184,9 @@ class SettingsRepository(context: Context) {
         private const val KEY_FLOATING_KEY_HEIGHT = "floating_key_height"
         private const val KEY_NUMBER_ROW = "number_row"
         private const val KEY_SWIPE_SYMBOLS = "swipe_up_symbols"
-        private const val KEY_SPACE_CURSOR = "space_cursor_control"
+        // Keep the original preference name so users who switched cursor control off do not
+        // silently get it enabled again when the gesture moves from the space bar to the edge.
+        private const val KEY_BOTTOM_CURSOR = "space_cursor_control"
         private const val KEY_LEARNING = "learning_enabled"
         private const val KEY_JAPANESE = "japanese_enabled"
         private const val KEY_EXTERNAL_INPUT_MODE = "external_input_mode"

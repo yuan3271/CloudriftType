@@ -122,6 +122,7 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
     LaunchedEffect(
         state.keyHeightDp,
         state.bottomGapDp,
+        state.bottomCursorControl,
         state.keyCornerRadiusDp,
         state.showsCompatPanel,
         state.compatWindowsReady,
@@ -243,6 +244,13 @@ private fun KeyboardSurface(
         (if (state.keyHeightDp > 0) state.keyHeightDp.toFloat() else autoHeight).dp
     }
     val bottomGap = if (floating) 0.dp else state.bottomGapDp.dp
+    // The bottom edge is an interaction surface now, not just adjustable whitespace. Keep it
+    // reachable even when the visible gap is set to zero; the setting enlarges the same area.
+    val bottomControlHeight = if (state.bottomCursorControl) {
+        if (bottomGap < 28.dp) 28.dp else bottomGap
+    } else {
+        if (bottomGap < 6.dp) 6.dp else bottomGap
+    }
     val density = LocalDensity.current
     val labelScale = state.keyLabelScalePercent / 100f
     // 按键区的实际高度，用来把「手指位移」换算成「按键高度变化量」（见 FloatingResize.kt）。
@@ -258,7 +266,6 @@ private fun KeyboardSurface(
             if (key.code == KeyCode.Backspace) controller.onBackspaceLongPress()
         },
         onSwipeUp = controller::onSwipeUp,
-        onSpaceCursorDrag = controller::onSpaceCursorDrag,
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,
         onSpaceCancelChanged = controller::onSpaceCancelChanged,
@@ -311,8 +318,7 @@ private fun KeyboardSurface(
                     WindowInsets.systemBars.only(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
                     ),
-                )
-                .padding(bottom = bottomGap),
+                ),
         ) {
             if (floating) {
                 FloatingGripStrip(
@@ -457,7 +463,13 @@ private fun KeyboardSurface(
                 }
             }
 
-            Spacer(Modifier.height(6.dp))
+            BottomCursorGesture(
+                enabled = state.bottomCursorControl,
+                onCursorDrag = controller::onCursorDrag,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(bottomControlHeight),
+            )
         }
     }
 }

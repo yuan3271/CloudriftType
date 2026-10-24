@@ -55,6 +55,16 @@ class CompositionEditingTest {
     }
 
     @Test
+    fun `successive keys stay in typing order at the end of the reading`() {
+        // 用户打 `g` 再打 `u`：第二次必须接在 `g` 后得到 `gu`。若光标回调把编辑点误记到 0，
+        // 这里会变成 `ug`，引擎自然也就拿不到「鼓」。
+        val first = insertReading(raw = "", caret = null, insert = "g")
+        val second = insertReading(raw = first.text, caret = first.caret, insert = "u")
+
+        assertEquals(EditedReading("gu", 2), second)
+    }
+
+    @Test
     fun `successive edits keep advancing from the edited position`() {
         val first = insertReading(raw = "nhao", caret = 1, insert = "i")
         val second = insertReading(raw = first.text, caret = first.caret, insert = "a")

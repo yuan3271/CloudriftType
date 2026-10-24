@@ -1880,7 +1880,12 @@ class PinyinEngine(
          * Single characters get a fixed score because the asset ranks them but does not score them.
          */
         private const val UNIT_PENALTY = 1200f
-        private const val CHARACTER_SCORE = 905f
+        /**
+         * 单个字的固定基础分。905 时两字链的基础分略高于“听力”(546) 这样的中频词，长句里
+         * 即使词义完整也会被 `听|里` 抢先；850 让一个常见双字词稳定压过没有搭配证据的
+         * 两条单字路径，同时仍给真实单字搭配留出足够的搭配分。
+         */
+        private const val CHARACTER_SCORE = 850f
         /** How much a seen word pair (score 1..1000) is worth next to word frequencies. */
         private const val BIGRAM_WEIGHT = 2f
         /**

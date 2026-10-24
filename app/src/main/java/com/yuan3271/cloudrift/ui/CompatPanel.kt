@@ -323,7 +323,6 @@ private fun CompatExpandedPanel(state: ImeUiState, controller: ImeController) {
             if (key.code == KeyCode.Backspace) controller.onBackspaceLongPress()
         },
         onSwipeUp = controller::onSwipeUp,
-        onSpaceCursorDrag = controller::onSpaceCursorDrag,
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,
         onSpaceCancelChanged = controller::onSpaceCancelChanged,

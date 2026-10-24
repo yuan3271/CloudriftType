@@ -237,9 +237,9 @@ fun QuickSettingsPanel(
                     onCheckedChange = { value -> onUpdate { it.copy(swipeUpSymbols = value) } },
                 )
                 SwitchRow(
-                    title = "空格滑动移动光标",
-                    checked = state.spaceCursorControl,
-                    onCheckedChange = { value -> onUpdate { it.copy(spaceCursorControl = value) } },
+                    title = "底部滑动移动光标",
+                    checked = state.bottomCursorControl,
+                    onCheckedChange = { value -> onUpdate { it.copy(bottomCursorControl = value) } },
                 )
                 SwitchRow(
                     title = "按键震动",

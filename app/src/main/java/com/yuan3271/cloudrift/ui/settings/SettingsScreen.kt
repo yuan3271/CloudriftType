@@ -338,10 +338,10 @@ fun SettingsScreen(
                     onCheckedChange = { value -> onUpdate { it.copy(swipeUpSymbols = value) } },
                 )
                 SwitchRow(
-                    title = "空格滑动移动光标",
-                    subtitle = "按住空格左右拖动可以移动光标",
-                    checked = settings.spaceCursorControl,
-                    onCheckedChange = { value -> onUpdate { it.copy(spaceCursorControl = value) } },
+                    title = "底部滑动移动光标",
+                    subtitle = "在键盘最下方左右滑动可以移动光标；「距屏幕底部」决定滑动区高度",
+                    checked = settings.bottomCursorControl,
+                    onCheckedChange = { value -> onUpdate { it.copy(bottomCursorControl = value) } },
                 )
                 SwitchRow(
                     title = "长按空格语音输入",

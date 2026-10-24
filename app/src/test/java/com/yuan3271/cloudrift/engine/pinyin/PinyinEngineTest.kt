@@ -183,6 +183,25 @@ class PinyinEngineTest {
     }
 
     @Test
+    fun `a school sentence keeps the word listening together`() {
+        // The normal fixture omits associations; load the shipped table here because the sentence
+        // context (作文→不用→写 / 但是→听力) is exactly what distinguishes this case in the app.
+        val contextualDictionary = PinyinDictionary.fromReaders(
+            charTable = { reader("pinyin_chars.txt") },
+            wordTable = { reader("pinyin_words.txt") },
+            bigramTable = { reader("pinyin_bigrams.txt") },
+        ).apply { load() }
+        val output = PinyinEngine(contextualDictionary, nineKey = false)
+            .evaluate("yingyuzuoyedezuowenbuyongxiedanshitingliyaoxie")
+
+        assertEquals(
+            output.candidates.take(12).map { it.text }.toString(),
+            "英语作业的作文不用写但是听力要写",
+            output.candidates.first().text,
+        )
+    }
+
+    @Test
     fun `a sentence final particle is not buried by the word that shares its sound`() {
         // 毫巴 is a real word (the news corpus knows it), 好吗 is not a word at all - and the two
         // consume exactly the same input, so no frequency can separate them. What separates them

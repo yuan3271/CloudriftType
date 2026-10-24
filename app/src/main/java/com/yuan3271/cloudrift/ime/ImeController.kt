@@ -420,9 +420,9 @@ class ImeController(
         commitLiteral(key.swipeUp)
     }
 
-    /** Horizontal drag on the space bar moves the caret. */
-    fun onSpaceCursorDrag(steps: Int) {
-        if (!settings.current.spaceCursorControl) return
+    /** Horizontal drag on the keyboard's bottom edge moves the caret. */
+    fun onCursorDrag(steps: Int) {
+        if (!settings.current.bottomCursorControl) return
         selfEditCounter++
         editor.moveCursor(steps)
     }
@@ -1581,7 +1581,7 @@ class ImeController(
             showUpdateDot = snapshot.showUpdateDot,
             showNumberRow = snapshot.showNumberRow,
             swipeUpSymbols = snapshot.swipeUpSymbols,
-            spaceCursorControl = snapshot.spaceCursorControl,
+            bottomCursorControl = snapshot.bottomCursorControl,
             hapticFeedback = snapshot.hapticFeedback,
             voiceCorrection = snapshot.voiceCorrection,
             voiceAutoApplyDelayMs = snapshot.voiceAutoApplyDelayMs,

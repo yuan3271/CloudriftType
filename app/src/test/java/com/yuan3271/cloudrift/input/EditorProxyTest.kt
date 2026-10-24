@@ -42,29 +42,49 @@ class EditorProxyTest {
     }
 
     @Test
-    fun `setting a composition can keep the caret at the edited position`() {
+    fun `appending a composition uses only the standard relative caret update`() {
         val host = RecordingConnection()
         val editor = EditorProxy { host.proxy }
 
-        // 插在 n|hao 的 i 之后：编辑器内的相对位置是 3（前两个字之后）。
+        editor.setComposing("g")
+
+        assertEquals(listOf("setComposingText"), host.calls.map { it.name })
+        assertEquals(listOf<Any?>("g", 1), host.calls.single().args)
+    }
+
+    @Test
+    fun `an edit in the middle uses one batched absolute selection`() {
+        val host = RecordingConnection(selectionEndAfterComposition = 15)
+        val editor = EditorProxy { host.proxy }
+
+        // Existing text ends at 15. Replacing `nhao` with `nihao` puts its start at 10; offset 2
+        // is the caret after `ni`, independent of any surrounding text in the field.
         editor.setComposing("nihao", cursorOffset = 2)
 
-        val calls = host.calls.filter { it.name == "setComposingText" }
-        assertEquals("nihao", calls.first().args[0])
-        // The recording editor exposes no ExtractedText, so use the relative-position fallback.
-        assertEquals(6, calls.first().args[1])
-        assertEquals(3, calls.last().args[1])
+        assertEquals(
+            listOf("beginBatchEdit", "setComposingText", "getExtractedText", "setSelection", "endBatchEdit"),
+            host.calls.map { it.name },
+        )
+        assertEquals(listOf<Any?>("nihao", 1), host.calls[1].args)
+        assertEquals(listOf<Any?>(12, 12), host.calls[3].args)
         assertEquals(11, composingSelectionTarget(14, textLength = 5, cursorOffset = 2))
     }
 
     /** A recording stand-in for [InputConnection]; uninteresting methods answer with a default. */
-    private class RecordingConnection {
+    private class RecordingConnection(
+        private val selectionEndAfterComposition: Int? = null,
+    ) {
         val calls = mutableListOf<Call>()
         val proxy: InputConnection = Proxy.newProxyInstance(
             InputConnection::class.java.classLoader,
             arrayOf(InputConnection::class.java),
         ) { _, method, args ->
             calls += Call(method.name, args?.toList().orEmpty())
+            if (method.name == "getExtractedText") {
+                return@newProxyInstance android.view.inputmethod.ExtractedText().apply {
+                    selectionEndAfterComposition?.let { selectionEnd = it }
+                }
+            }
             when (method.returnType) {
                 java.lang.Boolean.TYPE -> false
                 java.lang.Integer.TYPE -> 0

@@ -248,8 +248,8 @@ data class AppSettings(
     val showNumberRow: Boolean = false,
     /** Swiping up on a letter key types the symbol printed above it. */
     val swipeUpSymbols: Boolean = true,
-    /** Dragging on the space bar moves the cursor. */
-    val spaceCursorControl: Boolean = true,
+    /** Dragging along the keyboard's bottom edge moves the cursor. */
+    val bottomCursorControl: Boolean = true,
     /**
      * Let the keyboard learn from what gets committed: which candidate is picked for a code, and
      * words assembled character by character. Everything stays on the device and can be wiped
