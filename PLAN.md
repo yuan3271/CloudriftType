@@ -2911,4 +2911,14 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   `82bbf936c77594b77524fdb0a53d033a5214c87e707d990cb92ae19584fd04f6`，版本
   `0.3.9 (56)`，`apksigner verify` 通过，签名 `CN=yuan3271`。
 - **未验**：`adb devices` 为空，尚不能在真机上复核底部手势长条的触感、跟随手感和第三方输入框
-  的最终光标表现。APK 仅本地构建，未上传 Release。
+  的最终光标表现。
+
+### 发布记录（0.3.9）
+
+- 发布提交 `b9e416f`（`main`），tag `v0.3.9`。
+- Release：[云隙输入 0.3.9](https://github.com/yuan3271/CloudriftType/releases/tag/v0.3.9)
+  （id `422813443`）。
+- 资产 `cloudrift-type-0.3.9-release.apk`（id `672608549`，4,219,772 字节）：
+  [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v0.3.9/cloudrift-type-0.3.9-release.apk)；
+  GitHub 资产 API 的 digest 与下载后逐字节核对结果均为
+  `sha256:82bbf936c77594b77524fdb0a53d033a5214c87e707d990cb92ae19584fd04f6`。
