@@ -3053,3 +3053,13 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   版本 `1.1.0 (59)`，签名证书 `CN=yuan3271`。
 - **未验**：当前仍无连接设备或 AVD；玻璃折射的最终观感、连续按键帧率、系统返回拦截和
   Android 26–32 的退化路径需要真机复核。
+
+### 发布记录（1.1.0）
+
+- 发布提交 `07d57f9`（`main`），tag `v1.1.0`。
+- Release：[云隙输入 1.1.0](https://github.com/yuan3271/CloudriftType/releases/tag/v1.1.0)
+  （id `422850501`）。
+- 资产 `cloudrift-type-1.1.0-release.apk`（id `672765650`，4,280,234 字节）：
+  [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v1.1.0/cloudrift-type-1.1.0-release.apk)；
+  GitHub 资产 API 的 digest 与回下载、本地逐字节比较均为
+  `sha256:0e7b60a05477293d075a6419ae12b19e89c21e60d281c2dbe39b35acf2cbd5f7`。
