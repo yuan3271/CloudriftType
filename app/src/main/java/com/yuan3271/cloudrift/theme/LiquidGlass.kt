@@ -90,7 +90,7 @@ internal object LiquidGlassConfig {
     const val LANGUAGE_THEME_CONTROL_WIDTH_DP = 62f
     const val HIDE_CONTROL_WIDTH_DP = 56f
     const val HIDE_CONTROL_RADIUS_INSET_DP = 4f
-    const val BASE_LIGHT_ALPHA = 0.06f
+    const val BASE_LIGHT_ALPHA = 0.12f
     const val BASE_LIGHT_RADIUS_FRACTION = 1.2f
     val CENTER_LIGHT_STOPS = floatArrayOf(0.24f, 0.5f, 0.76f)
     const val EDGE_LIGHT_RADIUS_DP = 96f
@@ -384,6 +384,7 @@ internal fun Modifier.liquidControlGlass(
     val backdrop = LocalLiquidGlassBackdrop.current ?: return this
     val surfaceFill = color ?: internalSurfaceColor(InternalSurfaceTone.Medium)
     val lightMode = LocalLiquidGlassLightMode.current
+    val accentColored = active && color != null
     var edgePosition by remember { mutableStateOf<Offset?>(null) }
     val base = if (active) {
         drawBackdrop(
@@ -421,9 +422,13 @@ internal fun Modifier.liquidControlGlass(
         internalSurface(shape = shape, color = surfaceFill)
     }
     return base
-        .glassStaticEdge(shape)
+        .glassStaticEdge(shape, enabled = !lightMode || accentColored)
         .trackFingerLight { edgePosition = it }
-        .glassEdgeLight(shape = shape, position = edgePosition)
+        .glassEdgeLight(
+            shape = shape,
+            position = edgePosition,
+            enabled = !lightMode || accentColored,
+        )
 }
 
 @Composable
@@ -476,8 +481,12 @@ private fun Modifier.trackFingerLight(onPosition: (Offset?) -> Unit): Modifier =
     }
 
 @Composable
-private fun Modifier.glassEdgeLight(shape: Shape, position: Offset?): Modifier {
-    if (position == null) return this
+private fun Modifier.glassEdgeLight(
+    shape: Shape,
+    position: Offset?,
+    enabled: Boolean = true,
+): Modifier {
+    if (!enabled || position == null) return this
     return drawWithContent {
         drawContent()
         val outline = shape.createOutline(size, layoutDirection, this)
@@ -505,7 +514,8 @@ private fun Modifier.glassEdgeLight(shape: Shape, position: Offset?): Modifier {
 }
 
 @Composable
-private fun Modifier.glassStaticEdge(shape: Shape): Modifier {
+private fun Modifier.glassStaticEdge(shape: Shape, enabled: Boolean = true): Modifier {
+    if (!enabled) return this
     val lightMode = LocalLiquidGlassLightMode.current
     return drawWithContent {
         drawContent()

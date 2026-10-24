@@ -73,4 +73,12 @@ class UpdateIntervalTest {
             UpdateInterval.fromKey("everykeyboardopen"),
         )
     }
+
+    @Test
+    fun `release tags compare numerically and ignore prerelease suffixes`() {
+        assertTrue(UpdateChecker.compareVersions("1.1.4", "1.1.3") > 0)
+        assertTrue(UpdateChecker.compareVersions("1.1.4-preR15", "1.1.3") > 0)
+        assertEquals(0, UpdateChecker.compareVersions("1.1.4", "1.1.4"))
+        assertTrue(UpdateChecker.compareVersions("1.1.10", "1.1.9") > 0)
+    }
 }

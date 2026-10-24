@@ -3280,3 +3280,18 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   v2 签名验证通过，版本 `1.1.3 (83)`。
 - 发布资产：`dist/cloudrift-type-1.1.3-release.apk`，4,295,726 字节；
   sha256 `362ec721fafd5bfbd3cb568e7941f39ea45872e9cef298997e1d0bd808e4b329`。
+
+### 正式版 1.1.4（versionCode 84）
+
+- 默认底光强度 `BASE_LIGHT_ALPHA` 从 6% 提高到 12%，浅色模式仍按既有规则使用深色底光的一半。
+- 浅色模式下，按钮静态与跟手边缘光只用于同时处于激活状态并带强调色填充的按钮；中性按钮不再
+  绘制按钮边缘光。深色模式保持既有边缘响应。
+- 自动更新检测增加 `Checking / UpToDate / Failed` 状态，设置页明确区分检测中、已是最新和失败；
+  失败不推进 `KEY_LAST_CHECK`，下次自动检测会立即重试。
+- GitHub 请求补充 `User-Agent`；`/releases/latest` 请求失败时回退到正式 Release 列表，并继续
+  忽略 draft / prerelease。
+- 版本比较测试补充 1.1.4 正式号与预发布号、同版本和多位段版本用例。
+- 验证：单元测试 243 条全绿；Lint 0 error / 13 warning；R8 Release 构建成功；
+  APK v2 签名验证通过，版本 `1.1.4 (84)`。
+- 发布资产：`dist/cloudrift-type-1.1.4-release.apk`，4,295,726 字节；
+  sha256 `6fd8e8a70b77e908d821704ec7d4bc9c2301f8fbac37a633595625ad1fb2347f`。

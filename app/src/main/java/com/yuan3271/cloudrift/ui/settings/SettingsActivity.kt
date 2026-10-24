@@ -49,6 +49,7 @@ class SettingsActivity : ComponentActivity() {
             val settings by AppGraph.settings.state.collectAsStateWithLifecycle()
             val userStats by AppGraph.profile.stats.collectAsStateWithLifecycle()
             val update by AppGraph.updates.available.collectAsStateWithLifecycle()
+            val updateStatus by AppGraph.updates.status.collectAsStateWithLifecycle()
             LaunchedEffect(Unit) { AppGraph.updates.checkIfDue() }
             CloudriftTheme(
                 appTheme = settings.appTheme,
@@ -67,6 +68,7 @@ class SettingsActivity : ComponentActivity() {
                         imeEnabled = rememberImeEnabled(),
                         userStats = userStats,
                         update = update,
+                        updateStatus = updateStatus,
                         actions = SettingsActions(
                             requestMicrophoneOnStart = requestMicrophone,
                             openSystemKeyboardSettings = ::openSystemKeyboardSettings,

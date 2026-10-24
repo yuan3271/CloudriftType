@@ -43,7 +43,7 @@ class LiquidGlassConfigTest {
         assertTrue(LiquidGlassConfig.HIGHLIGHT_WIDTH_DP > 0f)
         assertEquals(3, LiquidGlassConfig.CENTER_LIGHT_STOPS.size)
         assertTrue(LiquidGlassConfig.CENTER_LIGHT_STOPS.all { it in 0.2f..0.8f })
-        assertTrue(LiquidGlassConfig.BASE_LIGHT_ALPHA in 0.01f..0.1f)
+        assertEquals(0.12f, LiquidGlassConfig.BASE_LIGHT_ALPHA)
     }
 
     @Test

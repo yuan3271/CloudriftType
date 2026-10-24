@@ -82,6 +82,7 @@ import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.data.UserStats
 import com.yuan3271.cloudrift.data.UpdateInfo
 import com.yuan3271.cloudrift.data.UpdateInterval
+import com.yuan3271.cloudrift.data.UpdateCheckStatus
 import com.yuan3271.cloudrift.data.VoiceMediaBehavior
 import com.yuan3271.cloudrift.input.ExternalInputMonitor
 import com.yuan3271.cloudrift.input.ExternalInputSnapshot
@@ -117,6 +118,7 @@ fun SettingsScreen(
     imeEnabled: Boolean = false,
     userStats: UserStats = UserStats(),
     update: UpdateInfo? = null,
+    updateStatus: UpdateCheckStatus = UpdateCheckStatus.Idle,
     actions: SettingsActions,
 ) {
     val grantState = rememberMicrophoneGranted()
@@ -188,6 +190,7 @@ fun SettingsScreen(
             item {
                 UpdateCard(
                     update = update,
+                    status = updateStatus,
                     interval = settings.updateCheckInterval,
                     showDot = settings.showUpdateDot,
                     onInterval = { value -> onUpdate { it.copy(updateCheckInterval = value) } },
@@ -799,6 +802,7 @@ private fun KeyboardPreviewCard() {
 @Composable
 private fun UpdateCard(
     update: UpdateInfo?,
+    status: UpdateCheckStatus,
     interval: UpdateInterval,
     showDot: Boolean,
     onInterval: (UpdateInterval) -> Unit,
@@ -822,19 +826,20 @@ private fun UpdateCard(
                 Icon(
                     imageVector = CloudriftIcons.Refresh,
                     contentDescription = null,
-                    tint = if (update != null) {
-                        MaterialTheme.colorScheme.onTertiaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.primary
+                    tint = when {
+                        update != null -> MaterialTheme.colorScheme.onTertiaryContainer
+                        status == UpdateCheckStatus.Failed -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.primary
                     },
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = if (update != null) {
-                        "检测到新版本 ${update.versionName}"
-                    } else {
-                        "已是最新版本"
+                    text = when {
+                        update != null -> "检测到新版本 ${update.versionName}"
+                        status == UpdateCheckStatus.Checking -> "正在检测更新…"
+                        status == UpdateCheckStatus.Failed -> "更新检测失败，请重试"
+                        else -> "已是最新版本"
                     },
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
