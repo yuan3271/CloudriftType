@@ -28,6 +28,7 @@ class PinyinEngineTest {
         dictionary = PinyinDictionary.fromReaders(
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         dictionary.load()
     }
@@ -47,6 +48,15 @@ class PinyinEngineTest {
 
         assertEquals("你", first.text)
         assertEquals(CandidateKind.Character, first.kind)
+    }
+
+    @Test
+    fun `candidates never offer traditional character forms`() {
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val texts = engine.evaluate("hou").candidates.map { it.text }
+
+        assertTrue("简体候选 后 应保留: $texts", "后" in texts)
+        assertTrue("候选里不应出现繁体 後: $texts", texts.none { dictionary.containsTraditional(it) })
     }
 
     @Test
@@ -190,6 +200,7 @@ class PinyinEngineTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         ).apply { load() }
         val output = PinyinEngine(contextualDictionary, nineKey = false)
             .evaluate("yingyuzuoyedezuowenbuyongxiedanshitingliyaoxie")
@@ -241,6 +252,7 @@ class PinyinEngineTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         paired.load()
         val engine = PinyinEngine(paired, nineKey = false)
@@ -280,6 +292,7 @@ class PinyinEngineTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         paired.load()
         val engine = PinyinEngine(paired, nineKey = false)
@@ -584,6 +597,7 @@ class PinyinEngineTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         paired.load()
         val engine = PinyinEngine(paired, nineKey = false)
@@ -602,6 +616,7 @@ class PinyinEngineTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         paired.load()
         val engine = PinyinEngine(paired, nineKey = false)
@@ -641,8 +656,8 @@ class PinyinEngineTest {
     }
 
     /**
-     * 一个音节的单字**一颗都不许省**。字表里 `ji` 排满 100 个字，而候选条数原来卡在 48：
-     * 后一半（`髻` 就在里面）打不出来，用户点的就是这件事。
+     * 一个音节的简体单字**一颗都不许省**。字表里 `ji` 排满 100 个字，而候选条数原来卡在 48：
+     * 后一半（`髻` 就在里面）打不出来，用户点的就是这件事。繁体形另由全局过滤器去掉。
      */
     @Test
     fun `every character of a syllable is offered, not just the first screenful`() {
@@ -651,7 +666,9 @@ class PinyinEngineTest {
         assertTrue("字表里的 ji 太短，这条测试失去意义: ${all.length}", all.length >= 60)
 
         val offered = engine.evaluate("ji", engine.candidateLimit).candidates.map { it.text }.toSet()
-        val missing = all.filterNot { offered.contains(it.toString()) }
+        val missing = all
+            .filterNot { dictionary.containsTraditional(it.toString()) }
+            .filterNot { offered.contains(it.toString()) }
 
         assertTrue("这些 ji 的单字被省略了: $missing", missing.isEmpty())
     }

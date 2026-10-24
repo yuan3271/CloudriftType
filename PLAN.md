@@ -2922,3 +2922,58 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v0.3.9/cloudrift-type-0.3.9-release.apk)；
   GitHub 资产 API 的 digest 与下载后逐字节核对结果均为
   `sha256:82bbf936c77594b77524fdb0a53d033a5214c87e707d990cb92ae19584fd04f6`。
+
+## 云隙输入 0.4.0：面板互斥、可调光标、数学页与简体候选
+
+| 阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| 1 | 修剪贴板 → 设置 → 剪贴板后界面下收的问题 | 完成 |
+| 2 | 底部光标轨道改为空格键同宽，并增加慢 / 中 / 快三档持久化设置 | 完成 |
+| 3 | 数字页滑条补等号，互换左下 ABC 与右下符号入口 | 完成 |
+| 4 | 符号页新增数学分类 | 完成 |
+| 5 | 全局过滤候选中的繁体字 | 完成 |
+| 6 | 检查并升级依赖，完成全量测试与 release 构建 | 完成 |
+
+### 剪贴板与设置面板
+
+- 根因：打开剪贴板后再打开设置，只把 `quickSettingsVisible` 设成 true，剪贴板仍为 true；
+  再点剪贴板时点击逻辑看到旧的 true，误判成关闭，于是两个面板一起收起。
+- 状态收成 `withQuickSettingsVisible` / `withClipboardVisible` 与对应的 toggle：打开任一面板会
+  关闭另一面板和展开候选。复现路径现在是 剪贴板 → 设置 → 剪贴板 = **剪贴板重新出现**。
+
+### 底部光标
+
+- 可见轨道不再铺满键盘，而是按当前布局的空格键权重算实际键面宽度：QWERTY 为行宽 51%，
+  九键为 60%，再减去键缝；数字页和符号页沿用当前字母布局的空格键宽度。触摸命中区仍保留整个
+  下边距，不要求点准细条。
+- 灵敏度新增 `CursorSpeed`：慢 `24dp`、中 `16dp`、快 `10dp`，默认中档；设置页和键盘内快捷
+  设置都提供分段选择，选择持久化。每档都保持固定线性步长，没有边缘加速。
+
+### 数字、符号与候选
+
+- 数字页第一列滑动条加入 `=`；左下固定键改为 `ABC`，右下改为 `符`，两条跳转互换。
+- 符号页新增「数学」分类，包含关系、四则运算、根号、常量、集合、括号与箭头；LazyGrid key
+  仍按 output 去重。
+- 用 OpenCC `TSCharacters` 生成 `traditional_chars.txt`（3,206 个字符），并补入
+  `妳/牠/祂/祢` 等常见台湾变体。PinyinEngine 在排序前、个性化后和联想结果上统一过滤，
+  繁体字不会占掉简体候选名额；英日文候选不受影响。
+
+### 依赖
+
+- 当前稳定线未变的保留：AGP `9.4.1`、Compose BOM `2026.09.00`、Core `1.19.1`、
+  Activity `1.13.0`、Lifecycle `2.11.0`、SavedState `1.5.0`、Coroutines `1.11.0`。
+- 更新：Kotlin / Compose compiler `2.4.20 → 2.4.21`、Material 3 Expressive
+  `1.5.0-alpha29 → 1.5.0-beta02`、OkHttp `5.5.0 → 5.5.1`、
+  org.json `20250517 → 20260814`。升级后编译、单元测试和 R8 release 均通过。
+
+### 验证
+
+- `./gradlew testDebugUnitTest assembleRelease --no-daemon --rerun-tasks`：
+  **224 用例全绿，0 失败**，release 构建成功。
+- 广谱回归台 574 句：全拼 top1 `546/574`、top5 `562/574`；首字母 top1 `95/574`、
+  top5 `106/574`。输出中不再出现 `樓 / 妳 / 後 / 裡`；46 字母平均 0.9ms。
+- 手挑 31 句：全拼 top1 `28/31`、top5 `30/31`；首字母 top1 `11/31`。
+- 本地产物 `dist/cloudrift-type-0.4.0-release.apk`：4,226,722 字节，sha256
+  `cff2512467c3fec3059fef0a88b379f9f6c5ee00a4a4dbd8cfef007c848cbbf1`，版本
+  `0.4.0 (57)`，`apksigner verify` 通过，签名 `CN=yuan3271`。
+- **未验**：本轮没有连接 Android 设备，面板点击序列由状态回归测试锁定，最终触感仍需真机复核。

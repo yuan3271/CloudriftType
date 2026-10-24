@@ -38,7 +38,7 @@ import com.yuan3271.cloudrift.input.KeyDef
 private const val STRIP_ROWS = 4
 
 /**
- * 数字页：左边一条能滑的竖条 + 左下角固定的 `符` + 右边四列按键。总共四行，和 26 键一样高。
+ * 数字页：左边一条能滑的竖条 + 左下角固定的 `ABC` + 右边四列按键。总共四行，和 26 键一样高。
  *
  * 三件事是用户盯着要的，都落在这一张图里：
  *
@@ -53,7 +53,7 @@ private const val STRIP_ROWS = 4
 @Composable
 fun NumberPanel(
     strip: List<KeyDef>,
-    symbolKey: KeyDef,
+    cornerKey: KeyDef,
     rows: List<List<KeyDef>>,
     keyHeight: Dp,
     cornerRadius: Dp,
@@ -96,11 +96,11 @@ fun NumberPanel(
             }
             Spacer(Modifier.height(KEY_GAP))
             KeyTile(
-                key = symbolKey,
+                key = cornerKey,
                 height = keyHeight,
                 cornerRadius = cornerRadius,
                 keyBackground = keyBackground,
-                onClick = { callbacks.onKey(symbolKey) },
+                onClick = { callbacks.onKey(cornerKey) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = KEY_GAP / 2),

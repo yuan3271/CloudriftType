@@ -8,11 +8,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -29,16 +31,16 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.yuan3271.cloudrift.input.KeyCode
+import com.yuan3271.cloudrift.input.KeyDef
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
-/** One cursor character for every [CURSOR_DRAG_STEP]; there is intentionally no acceleration. */
-private val CURSOR_DRAG_STEP = 24.dp
 private val CURSOR_RAIL_HEIGHT = 24.dp
 private val CURSOR_DOT_SIZE = 14.dp
-private val CURSOR_RAIL_SIDE_PADDING = 12.dp
 
 /**
  * Converts absolute finger displacement into a cursor step count. The sign is symmetric, so a
@@ -51,25 +53,38 @@ internal fun cursorStepsFor(distancePx: Float, stepPx: Float): Int {
 }
 
 /**
+ * The visible rail uses the same face width as the active layout's space bar. Key faces inside a
+ * weighted row are shortened by one [KEY_GAP] because each key owns half a gap on both sides.
+ */
+internal fun spaceBarRailWidth(availableWidth: Dp, row: List<KeyDef>): Dp {
+    val space = row.firstOrNull { it.code == KeyCode.Space } ?: return availableWidth
+    val totalWeight = row.sumOf { it.weight.toDouble() }.toFloat()
+    if (totalWeight <= 0f) return availableWidth
+    val faceWidth = availableWidth * (space.weight / totalWeight) - KEY_GAP
+    return if (faceWidth < 1.dp) 1.dp else faceWidth
+}
+
+/**
  * The keyboard's bottom edge doubles as a cursor track. Nothing is painted at rest; once a finger
- * lands, a rail fades in and its dot follows the pointer. Movement is relative to the touch down
- * point and advances exactly one character per fixed distance.
+ * lands, a rail the width of the space bar fades in and its dot follows the pointer. Movement is
+ * relative to the touch down point and advances exactly one character per configured distance.
  */
 @Composable
 internal fun BottomCursorGesture(
     enabled: Boolean,
+    stepDp: Dp,
+    spaceBarRow: List<KeyDef>,
     onCursorDrag: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
-    val stepPx = with(density) { CURSOR_DRAG_STEP.toPx() }
+    val stepPx = with(density) { stepDp.toPx() }
     val dotPx = with(density) { CURSOR_DOT_SIZE.toPx() }
-    val sidePaddingPx = with(density) { CURSOR_RAIL_SIDE_PADDING.toPx() }
     var active by remember { mutableStateOf(false) }
     var pointerXPx by remember { mutableFloatStateOf(0f) }
     var railWidthPx by remember { mutableFloatStateOf(0f) }
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
             .pointerInput(enabled, stepPx) {
@@ -103,15 +118,17 @@ internal fun BottomCursorGesture(
             },
         contentAlignment = Alignment.Center,
     ) {
+        val railWidth = spaceBarRailWidth(maxWidth, spaceBarRow)
+        val railStartPx = with(density) { ((maxWidth - railWidth) / 2f).toPx() }
         AnimatedVisibility(
             visible = active && enabled,
             enter = fadeIn(tween(90)),
             exit = fadeOut(tween(120)),
+            modifier = Modifier.align(Alignment.Center),
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = CURSOR_RAIL_SIDE_PADDING)
+                    .width(railWidth)
                     .height(CURSOR_RAIL_HEIGHT)
                     .onSizeChanged { railWidthPx = it.width.toFloat() }
                     .clip(RoundedCornerShape(50))
@@ -126,7 +143,7 @@ internal fun BottomCursorGesture(
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.outlineVariant),
                 )
-                val dotX = (pointerXPx - sidePaddingPx - dotPx / 2f)
+                val dotX = (pointerXPx - railStartPx - dotPx / 2f)
                     .coerceIn(0f, (railWidthPx - dotPx).coerceAtLeast(0f))
                 Box(
                     modifier = Modifier

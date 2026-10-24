@@ -129,7 +129,7 @@ emoji 分组（表情 / 人物 / 动物 / 食物 / 出行 / 活动 / 物品 / �
 | `tools/dictgen/raw/corpus_*.txt` | **本项目原创** | 现代口语搭配统计；**语料本身只有几千字，但它是唯一反映"这个键盘希望怎么被用"的文本**，所以按等价规模加权，且它的词对永不因上限被淘汰 |
 | [Tatoeba](https://tatoeba.org) 中文句子（`cmn` 导出快照，89102 句） | CC BY 2.0 FR（仅署名，无传染、无非商业限制） | 现代口语搭配统计（**默认启用**）；只统计计入次数，**句子文本不入库、不随应用分发** |
 | [AISHELL-1](https://www.openslr.org/33/) 转写文本（经 [Alibaba-NLP/AISHELL-NER](https://github.com/Alibaba-NLP/AISHELL-NER) 以同一许可分发） | Apache-2.0 | 现代书面语/新闻搭配统计；**默认关闭**，见下 |
-| [OpenCC](https://github.com/BYVoid/OpenCC) `TSCharacters` / `TSPhrases` | Apache-2.0 | 把公版繁体语料归一为简体（表在 `tools/dictgen/opencc/`，许可证随附） |
+| [OpenCC](https://github.com/BYVoid/OpenCC) `TSCharacters` / `TSPhrases` | Apache-2.0 | 把公版繁体语料归一为简体，并生成候选层的繁体字符过滤集（表在 `tools/dictgen/opencc/`，许可证随附） |
 | Project Gutenberg 公版小说（红楼梦 / 三国演义 / 豆棚闲话） | Public Domain | 词、字搭配统计；**默认关闭**，文本不入库，只发布由它统计出的计数 |
 
 Tatoeba 的句子由志愿者撰写/翻译，导出文件里逐句记录了作者与许可；本仓库只发布由它统计出的

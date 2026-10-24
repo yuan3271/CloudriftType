@@ -3,6 +3,7 @@ package com.yuan3271.cloudrift.ime
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.data.ClipEntry
+import com.yuan3271.cloudrift.data.CursorSpeed
 import com.yuan3271.cloudrift.data.ExternalInputMode
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
@@ -16,13 +17,14 @@ import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.voice.VoiceState
 
 /**
- * 符号页的左栏：标点（可切全角/半角）还是表情。
+ * 符号页的左栏：标点（可切全角/半角）、数学符号还是表情。
  *
  * 不做成第三种 [SymbolWidth]：全角/半角是"这个符号打成哪种形式"，要跨会话记住；表情是"这一页
  * 看哪张表"，是浏览状态，两件事不该挤进同一个枚举。
  */
 enum class SymbolSheet {
     Punctuation,
+    Math,
     Emoji,
 }
 
@@ -101,6 +103,7 @@ data class ImeUiState(
     val showNumberRow: Boolean = false,
     val swipeUpSymbols: Boolean = true,
     val bottomCursorControl: Boolean = true,
+    val cursorSpeed: CursorSpeed = CursorSpeed.Medium,
     val hapticFeedback: Boolean = true,
     /** 语音结果是否再过一遍文本修正 API；关掉就完全不发这个请求。快速设置里有开关。 */
     val voiceCorrection: Boolean = true,
@@ -159,6 +162,31 @@ data class ImeUiState(
      */
     fun clearedBuffer(): ImeUiState =
         copy(raw = "", preview = "", candidates = emptyList(), candidatesExpanded = false)
+
+    /**
+     * The quick settings sheet and the clipboard panel occupy the same key area. Opening either
+     * one must close the other, otherwise the toolbar's active state and the panel shown by the
+     * first-match `when` disagree with what the next tap does.
+     */
+    fun withQuickSettingsVisible(visible: Boolean): ImeUiState = copy(
+        quickSettingsVisible = visible,
+        clipboardVisible = if (visible) false else clipboardVisible,
+        candidatesExpanded = if (visible) false else candidatesExpanded,
+    )
+
+    fun withClipboardVisible(visible: Boolean): ImeUiState = copy(
+        clipboardVisible = visible,
+        quickSettingsVisible = if (visible) false else quickSettingsVisible,
+        candidatesExpanded = if (visible) false else candidatesExpanded,
+    )
+
+    fun toggledQuickSettings(): ImeUiState =
+        withQuickSettingsVisible(!quickSettingsVisible)
+
+    fun toggledClipboard(): ImeUiState =
+        // A clipboard hidden behind settings is not "currently open": tapping its toolbar button
+        // should bring it back, not turn its stale true flag off.
+        withClipboardVisible(!(clipboardVisible && !quickSettingsVisible))
 
     /**
      * 键盘窗口里画"键鼠兼容面板"（候选词栏 + 工具栏）而不是整块按键。

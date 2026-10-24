@@ -127,19 +127,19 @@ class KeyboardLayoutTest {
     }
 
     @Test
-    fun `the right column puts delete on top and letters at the bottom`() {
+    fun `the right column puts delete on top and symbols at the bottom`() {
         val right = numberRows().map { it[3] }
 
         assertEquals(KeyCode.Backspace, right[0].code)
         assertEquals("=", right[1].output)
         assertEquals(KeyCode.Enter, right[2].code)
-        assertEquals(KeyCode.Letters, right[3].code)
+        assertEquals(KeyCode.Symbols, right[3].code)
         // 等号只输入一个等号：数字页不做计算。
         assertEquals(KeyCode.Text, right[1].code)
     }
 
     /**
-     * 左边那条竖条：`+ − × ÷` 在最上面，往下滑是根号、百分号这些地方；左下角固定一颗 `符`。
+     * 左边那条竖条：`+ − × ÷` 在最上面，往下滑是等号、根号、百分号这些地方；左下角固定一颗 `ABC`。
      * 竖条 + `符` = 四行，和 26 键一样高——键盘高度不能长，这条测试就是钉住这件事。
      */
     @Test
@@ -147,12 +147,12 @@ class KeyboardLayoutTest {
         val strip = KeyboardLayouts.mathStrip()
 
         assertEquals(listOf("+", "-", "×", "÷"), strip.take(4).map { it.output })
-        assertEquals(listOf("√", "%", "^", "(", ")"), strip.drop(4).map { it.output })
-        assertEquals(KeyCode.Symbols, KeyboardLayouts.numberSymbolKey().code)
+        assertEquals(listOf("=", "√", "%", "^", "(", ")"), strip.drop(4).map { it.output })
+        assertEquals(KeyCode.Letters, KeyboardLayouts.numberLettersKey().code)
     }
 
     /**
-     * 数字页画出来就该长这样。左边那条竖条只画出最上面三个（其余要滑），左下角是 `符`；
+     * 数字页画出来就该长这样。左边那条竖条只画出最上面三个（其余要滑），左下角是 `ABC`；
      * 右边四行四列。
      *
      * 这条同时钉住用户点名的两件事：**四行**（和 26 键一样高，换页不长高）与**五列**
@@ -161,7 +161,7 @@ class KeyboardLayoutTest {
     @Test
     fun `the number page reads as four rows of five columns`() {
         val strip = KeyboardLayouts.mathStrip().take(3).map { keyLabel(it) } +
-            keyLabel(KeyboardLayouts.numberSymbolKey())
+            keyLabel(KeyboardLayouts.numberLettersKey())
         val picture = numberRows().mapIndexed { index, row ->
             (listOf(strip[index]) + row.map { keyLabel(it) })
                 .joinToString(" ") { it.padStart(5) }
@@ -173,7 +173,7 @@ class KeyboardLayoutTest {
             |    +     1     2     3     ⌫
             |    -     4     5     6     =
             |    ×     7     8     9    换行
-            |    符    00     0     .   ABC
+            |  ABC    00     0     .     符
             """.trimMargin().trimEnd(),
             picture,
         )
@@ -239,6 +239,16 @@ class KeyboardLayoutTest {
             .filter { it.code in 0xff00..0xffef }
         assertTrue("全角成对键里出现了半角字符: ${asciiInFullPairs.map { it.toString() }}", asciiInFullPairs.isEmpty())
         assertTrue("半角成对键里出现了全角字符: ${wideInHalfPairs.map { it.toString() }}", wideInHalfPairs.isEmpty())
+    }
+
+    @Test
+    fun `the maths page includes relations and has unique lazy grid keys`() {
+        val math = KeyboardLayouts.mathSymbolBar().map { it.output }
+
+        assertTrue("数学页应能直接输入等号", "=" in math)
+        assertTrue("数学页应包含常用关系符", listOf("≠", "≈", "≤", "≥").all { it in math })
+        assertTrue("数学页应包含求和、积分与无穷", listOf("∑", "∫", "∞").all { it in math })
+        assertEquals("重复符号会破坏 LazyGrid key", math.size, math.distinct().size)
     }
 
     /**

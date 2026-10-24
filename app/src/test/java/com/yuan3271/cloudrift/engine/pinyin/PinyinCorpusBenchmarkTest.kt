@@ -37,6 +37,7 @@ class PinyinCorpusBenchmarkTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         dictionary.load()
         full = PinyinEngine(dictionary, nineKey = false)

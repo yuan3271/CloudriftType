@@ -119,6 +119,21 @@ class ImeUiStateTest {
     }
 
     @Test
+    fun `settings and clipboard replace each other instead of stacking`() {
+        var state = ImeUiState().toggledClipboard()
+        assertTrue(state.clipboardVisible)
+        assertFalse(state.quickSettingsVisible)
+
+        state = state.toggledQuickSettings()
+        assertTrue(state.quickSettingsVisible)
+        assertFalse("打开设置时必须收起剪贴板", state.clipboardVisible)
+
+        state = state.toggledClipboard()
+        assertTrue("设置之后再点剪贴板，应重新打开剪贴板", state.clipboardVisible)
+        assertFalse("剪贴板出现时设置必须收起", state.quickSettingsVisible)
+    }
+
+    @Test
     fun `the expanded candidate list stays with the caret`() {
         val expanded = composing.copy(candidatesExpanded = true, raw = "", preview = "")
 

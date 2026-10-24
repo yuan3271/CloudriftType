@@ -24,6 +24,8 @@ class PinyinDictionary(
     private val wordTableSource: () -> BufferedReader,
     /** Optional: word-to-word scores; absent means the decoder falls back to word frequencies. */
     private val bigramSource: (() -> BufferedReader)? = null,
+    /** Optional: traditional-only characters generated from OpenCC's TSCharacters table. */
+    private val traditionalSource: (() -> BufferedReader)? = null,
 ) {
 
     private val charTable = HashMap<String, String>(1024)
@@ -87,6 +89,7 @@ class PinyinDictionary(
     private val t9Syllables = HashMap<String, MutableList<String>>(1024)
     private val t9WordTable = HashMap<String, MutableList<WordEntry>>(32768)
     private var sortedT9Readings: Array<String> = emptyArray()
+    private val traditionalChars = HashSet<Char>(4096)
 
     @Volatile
     var isReady: Boolean = false
@@ -95,10 +98,21 @@ class PinyinDictionary(
     @WorkerThread
     fun load() {
         if (isReady) return
+        loadTraditionalChars()
         loadChars()
         loadWords()
         isReady = true
     }
+
+    private fun loadTraditionalChars() {
+        traditionalSource?.invoke()?.use { reader ->
+            reader.forEachLine { line -> line.forEach(traditionalChars::add) }
+        }
+    }
+
+    /** True when any character in [text] is a traditional form with a simplified counterpart. */
+    fun containsTraditional(text: String): Boolean =
+        traditionalChars.isNotEmpty() && text.any(traditionalChars::contains)
 
     private fun loadChars() {
         charTableSource().use { reader ->
@@ -515,6 +529,7 @@ class PinyinDictionary(
         private const val ASSET_CHARS = "pinyin_chars.txt"
         private const val ASSET_WORDS = "pinyin_words.txt"
         private const val ASSET_BIGRAMS = "pinyin_bigrams.txt"
+        private const val ASSET_TRADITIONAL = "traditional_chars.txt"
         private const val BUFFER_SIZE = 1 shl 16
 
         /**
@@ -576,6 +591,12 @@ class PinyinDictionary(
                         BufferedReader(InputStreamReader(stream, Charsets.UTF_8), BUFFER_SIZE)
                     } ?: BufferedReader(java.io.StringReader(""))
                 },
+                traditionalSource = {
+                    BufferedReader(
+                        InputStreamReader(assets.open(ASSET_TRADITIONAL), Charsets.UTF_8),
+                        BUFFER_SIZE,
+                    )
+                },
             )
 
         /** Test wiring: read the same files from disk. */
@@ -583,7 +604,8 @@ class PinyinDictionary(
             charTable: () -> BufferedReader,
             wordTable: () -> BufferedReader,
             bigramTable: (() -> BufferedReader)? = null,
+            traditionalChars: (() -> BufferedReader)? = null,
         ): PinyinDictionary =
-            PinyinDictionary(charTable, wordTable, bigramTable)
+            PinyinDictionary(charTable, wordTable, bigramTable, traditionalChars)
     }
 }

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.ime.ImeController
 import com.yuan3271.cloudrift.ime.ImeUiState
+import com.yuan3271.cloudrift.ime.SymbolSheet
 import com.yuan3271.cloudrift.input.CompatPanelKind
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyboardLayouts
@@ -366,7 +367,11 @@ private fun CompatExpandedPanel(state: ImeUiState, controller: ImeController) {
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 SymbolPanel(
-                    symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
+                    symbols = if (state.symbolSheet == SymbolSheet.Math) {
+                        KeyboardLayouts.mathSymbolBar()
+                    } else {
+                        KeyboardLayouts.symbolBar(state.symbolWidth)
+                    },
                     emojiGroups = controller.emojiGroups,
                     sheet = state.symbolSheet,
                     emojiGroup = state.emojiGroup,
@@ -388,7 +393,7 @@ private fun CompatExpandedPanel(state: ImeUiState, controller: ImeController) {
             // 键盘可打——面板里留着这条数字页，两条路都不落空。
             else -> NumberPanel(
                 strip = KeyboardLayouts.mathStrip(),
-                symbolKey = KeyboardLayouts.numberSymbolKey(),
+                cornerKey = KeyboardLayouts.numberLettersKey(),
                 rows = KeyboardLayouts.numberRows(state.enterLabel),
                 keyHeight = keyHeight,
                 cornerRadius = cornerRadius,

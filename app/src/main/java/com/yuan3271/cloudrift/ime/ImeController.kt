@@ -756,8 +756,7 @@ class ImeController(
     }
 
     fun setQuickSettingsVisible(visible: Boolean) {
-        if (_state.value.quickSettingsVisible == visible) return
-        _state.value = _state.value.copy(quickSettingsVisible = visible)
+        _state.value = _state.value.withQuickSettingsVisible(visible)
     }
 
     /** 全角 / 半角, remembered across sessions like any other keyboard preference. */
@@ -944,22 +943,17 @@ class ImeController(
      * a list needs the whole key area to be readable.
      */
     fun toggleClipboard() {
-        val next = !_state.value.clipboardVisible
-        setQuickSettingsVisible(false)
+        val next = !(_state.value.clipboardVisible && !_state.value.quickSettingsVisible)
+        _state.value = _state.value.withClipboardVisible(next)
         // 打开剪贴板历史本身就是"这段内容我已经看见了"：那条一次性的"要不要粘贴"提示就此收掉，
         // 免得切回虚拟键盘时它又冒出来提一段早就贴过的内容（键鼠模式下这条提示不露脸，用户只会
         // 从工具栏的 📋 进来，拿一条走的是 commitText，那边同样会记账）。
         if (next) clipboard.acknowledgePending()
-        _state.value = _state.value.copy(
-            clipboardVisible = next,
-            candidatesExpanded = false,
-        )
     }
 
     fun setClipboardVisible(visible: Boolean) {
         if (_state.value.clipboardVisible == visible) return
-        if (visible) setQuickSettingsVisible(false)
-        _state.value = _state.value.copy(clipboardVisible = visible)
+        _state.value = _state.value.withClipboardVisible(visible)
     }
 
     /** Inserting a clipboard entry closes the panel, like any other one-shot pick. */
@@ -990,14 +984,15 @@ class ImeController(
 
     /** Tapping the toolbar gear again is the fastest way out of the sheet. */
     fun toggleQuickSettings() {
-        setQuickSettingsVisible(!_state.value.quickSettingsVisible)
+        _state.value = _state.value.toggledQuickSettings()
     }
 
     fun openFullSettings() {
         // Leaving for the full settings screen also drops any overlay that was on top, so the
         // keyboard is back to its normal state when the user returns.
-        setQuickSettingsVisible(false)
-        _state.value = _state.value.copy(candidatesExpanded = false)
+        _state.value = _state.value
+            .withQuickSettingsVisible(false)
+            .withClipboardVisible(false)
         openSettings()
     }
 
@@ -1582,6 +1577,7 @@ class ImeController(
             showNumberRow = snapshot.showNumberRow,
             swipeUpSymbols = snapshot.swipeUpSymbols,
             bottomCursorControl = snapshot.bottomCursorControl,
+            cursorSpeed = snapshot.cursorSpeed,
             hapticFeedback = snapshot.hapticFeedback,
             voiceCorrection = snapshot.voiceCorrection,
             voiceAutoApplyDelayMs = snapshot.voiceAutoApplyDelayMs,

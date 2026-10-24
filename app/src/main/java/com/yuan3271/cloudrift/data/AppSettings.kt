@@ -164,6 +164,22 @@ enum class KeyBackground {
 }
 
 /**
+ * How far the finger travels before the bottom cursor control moves by one character.
+ * 3.9's fixed 24dp feel is now the Slow option; the default moves faster.
+ */
+enum class CursorSpeed(val stepDp: Int) {
+    Slow(24),
+    Medium(16),
+    Fast(10),
+    ;
+
+    companion object {
+        fun fromKey(key: String?): CursorSpeed =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: Medium
+    }
+}
+
+/**
  * Which wire protocol an endpoint speaks.
  *
  * Aliyun's OpenAI compatible endpoint only implements chat completions - probing
@@ -250,6 +266,8 @@ data class AppSettings(
     val swipeUpSymbols: Boolean = true,
     /** Dragging along the keyboard's bottom edge moves the cursor. */
     val bottomCursorControl: Boolean = true,
+    /** Distance per cursor character while dragging along the bottom edge. */
+    val cursorSpeed: CursorSpeed = CursorSpeed.Medium,
     /**
      * Let the keyboard learn from what gets committed: which candidate is picked for a code, and
      * words assembled character by character. Everything stays on the device and can be wiped

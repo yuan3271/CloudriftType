@@ -52,6 +52,7 @@ class SettingsRepository(context: Context) {
                 KEY_BOTTOM_CURSOR,
                 defaults.bottomCursorControl,
             ),
+            cursorSpeed = CursorSpeed.fromKey(prefs.getString(KEY_CURSOR_SPEED, null)),
             learningEnabled = prefs.getBoolean(KEY_LEARNING, defaults.learningEnabled),
             japaneseEnabled = prefs.getBoolean(KEY_JAPANESE, defaults.japaneseEnabled),
             externalInputMode = ExternalInputMode.fromKey(
@@ -111,6 +112,7 @@ class SettingsRepository(context: Context) {
             putBoolean(KEY_NUMBER_ROW, settings.showNumberRow)
             putBoolean(KEY_SWIPE_SYMBOLS, settings.swipeUpSymbols)
             putBoolean(KEY_BOTTOM_CURSOR, settings.bottomCursorControl)
+            putString(KEY_CURSOR_SPEED, settings.cursorSpeed.name)
             putBoolean(KEY_LEARNING, settings.learningEnabled)
             putBoolean(KEY_JAPANESE, settings.japaneseEnabled)
             putString(KEY_EXTERNAL_INPUT_MODE, settings.externalInputMode.name)
@@ -187,6 +189,7 @@ class SettingsRepository(context: Context) {
         // Keep the original preference name so users who switched cursor control off do not
         // silently get it enabled again when the gesture moves from the space bar to the edge.
         private const val KEY_BOTTOM_CURSOR = "space_cursor_control"
+        private const val KEY_CURSOR_SPEED = "cursor_speed"
         private const val KEY_LEARNING = "learning_enabled"
         private const val KEY_JAPANESE = "japanese_enabled"
         private const val KEY_EXTERNAL_INPUT_MODE = "external_input_mode"

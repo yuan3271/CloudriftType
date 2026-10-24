@@ -241,6 +241,12 @@ fun QuickSettingsPanel(
                     checked = state.bottomCursorControl,
                     onCheckedChange = { value -> onUpdate { it.copy(bottomCursorControl = value) } },
                 )
+                LabeledRow("滑动灵敏度") {
+                    CursorSpeedSelector(
+                        current = state.cursorSpeed,
+                        onSelect = { speed -> onUpdate { it.copy(cursorSpeed = speed) } },
+                    )
+                }
                 SwitchRow(
                     title = "按键震动",
                     checked = state.hapticFeedback,

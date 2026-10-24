@@ -39,10 +39,8 @@ import com.yuan3271.cloudrift.ime.SymbolSheet
  * inventory is available and the user flicks through it the same way they flick through the
  * candidate strip.
  *
- * The left rail is the page's table of contents: 全角 / 半角 punctuation, which is the one decision
- * a Chinese typist makes constantly and previously had to be guessed by the keyboard, and 表情,
- * whose nine entries are the Unicode emoji groups (in the rail rather than in a strip across the
- * top, because the page may not grow taller than the letter page).
+ * The left rail is the page's table of contents: 全角 / 半角 punctuation, a dedicated maths
+ * collection, and 表情 whose nine entries are the Unicode emoji groups.
  *
  * The function row keeps using [KeyCanvas] so backspace repeat, space and enter behave exactly
  * like they do on the letter page.
@@ -146,7 +144,7 @@ fun SymbolPanel(
 }
 
 /**
- * 左栏：标点页时是「全角 / 半角 / 表情」三颗，表情页时是「标点」加九个标准分类。
+ * 左栏：标点页时是「全角 / 半角 / 数学 / 表情」，表情页时是「标点 / 数学」加九个标准分类。
  *
  * 它是一条 [LazyColumn]，不是固定三格的 Column：九分类塞进三格高必须能滚——和数字页那条滑动
  * 竖条是同一套做法（三颗可见，往下滑出其余的）。
@@ -179,6 +177,14 @@ private fun SymbolRail(
                     height = chipHeight,
                 ) { onSheetChange(SymbolSheet.Punctuation) }
             }
+            item(key = "math") {
+                RailChip(
+                    icon = "∑",
+                    label = "数学",
+                    selected = false,
+                    height = chipHeight,
+                ) { onSheetChange(SymbolSheet.Math) }
+            }
             items(emojiGroups, key = { it.key }) { group ->
                 RailChip(
                     icon = group.icon,
@@ -191,16 +197,24 @@ private fun SymbolRail(
             item(key = "full") {
                 RailChip(
                     label = "全角",
-                    selected = width == SymbolWidth.Full,
+                    selected = sheet == SymbolSheet.Punctuation && width == SymbolWidth.Full,
                     height = chipHeight,
                 ) { onWidthChange(SymbolWidth.Full) }
             }
             item(key = "half") {
                 RailChip(
                     label = "半角",
-                    selected = width == SymbolWidth.Half,
+                    selected = sheet == SymbolSheet.Punctuation && width == SymbolWidth.Half,
                     height = chipHeight,
                 ) { onWidthChange(SymbolWidth.Half) }
+            }
+            item(key = "math") {
+                RailChip(
+                    icon = "∑",
+                    label = "数学",
+                    selected = sheet == SymbolSheet.Math,
+                    height = chipHeight,
+                ) { onSheetChange(SymbolSheet.Math) }
             }
             if (emojiGroups.isNotEmpty()) {
                 item(key = "emoji") {

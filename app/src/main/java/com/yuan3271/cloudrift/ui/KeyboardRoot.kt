@@ -65,6 +65,7 @@ import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.ime.ImeController
 import com.yuan3271.cloudrift.ime.ImeUiState
+import com.yuan3271.cloudrift.ime.SymbolSheet
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.KeyboardLayouts
@@ -251,6 +252,12 @@ private fun KeyboardSurface(
     } else {
         if (bottomGap < 6.dp) 6.dp else bottomGap
     }
+    val bottomCursorSpaceRow = KeyboardLayouts.rows(
+        layout = state.layout,
+        page = KeyboardPage.Letters,
+        shifted = false,
+        enterLabel = state.enterLabel,
+    ).firstOrNull { row -> row.any { it.code == KeyCode.Space } }.orEmpty()
     val density = LocalDensity.current
     val labelScale = state.keyLabelScalePercent / 100f
     // 按键区的实际高度，用来把「手指位移」换算成「按键高度变化量」（见 FloatingResize.kt）。
@@ -417,7 +424,11 @@ private fun KeyboardSurface(
                     )
 
                     state.page == KeyboardPage.Symbols -> SymbolPanel(
-                        symbols = KeyboardLayouts.symbolBar(state.symbolWidth),
+                        symbols = if (state.symbolSheet == SymbolSheet.Math) {
+                            KeyboardLayouts.mathSymbolBar()
+                        } else {
+                            KeyboardLayouts.symbolBar(state.symbolWidth)
+                        },
                         emojiGroups = controller.emojiGroups,
                         sheet = state.symbolSheet,
                         emojiGroup = state.emojiGroup,
@@ -436,7 +447,7 @@ private fun KeyboardSurface(
                     // 数字页有自己的排法：左边一条能滑的竖条，右边四列。
                     state.page == KeyboardPage.Numbers -> NumberPanel(
                         strip = KeyboardLayouts.mathStrip(),
-                        symbolKey = KeyboardLayouts.numberSymbolKey(),
+                        cornerKey = KeyboardLayouts.numberLettersKey(),
                         rows = KeyboardLayouts.numberRows(state.enterLabel),
                         keyHeight = keyHeight,
                         cornerRadius = cornerRadius,
@@ -465,6 +476,8 @@ private fun KeyboardSurface(
 
             BottomCursorGesture(
                 enabled = state.bottomCursorControl,
+                stepDp = state.cursorSpeed.stepDp.dp,
+                spaceBarRow = bottomCursorSpaceRow,
                 onCursorDrag = controller::onCursorDrag,
                 modifier = Modifier
                     .fillMaxWidth()

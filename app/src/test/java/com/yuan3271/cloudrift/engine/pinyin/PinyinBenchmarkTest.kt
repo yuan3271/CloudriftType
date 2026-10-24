@@ -114,6 +114,7 @@ class PinyinBenchmarkTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = bigram,
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         dictionary.load()
         return PinyinEngine(dictionary, nineKey = false)

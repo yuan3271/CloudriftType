@@ -236,6 +236,17 @@ object KeyboardLayouts {
             groups.joinToString("").toList().distinct().map { KeyDef.immediate(it.toString()) }
     }
 
+    /** Dedicated maths page: operators and relations first, then constants and set symbols. */
+    fun mathSymbolBar(): List<KeyDef> = listOf(
+        "=≠≈±∓<>≤≥",
+        "+−×÷√∛%‰",
+        "^∞π°′″",
+        "∑∏∫∂∆∇",
+        "∠⊥∥∈∉∩∪",
+        "()[]{}",
+        "→↔⇒⇔∴∵",
+    ).joinToString("").toList().distinct().map { KeyDef.immediate(it.toString()) }
+
     /**
      * 成对键：一个键给出「开+闭」两个符号，光标落在中间（见 ImeController.PAIR_KEYS）。
      * 全角与半角各一份；单个的左右括号仍旧各按各的。
@@ -292,9 +303,9 @@ object KeyboardLayouts {
      *
      * ```
      * ⎡滑⎤  1   2   3   ⌫     第一列是一条**可以滑动的竖条**（[mathStrip]），左下角
-     * ⎢动⎥  4   5   6   =     固定一颗 `符`（[numberSymbolKey]）。
+     * ⎢动⎥  4   5   6   =     固定一颗 `ABC`（[numberLettersKey]）。
      * ⎢栏⎥  7   8   9   ⏎
-     * ⎣符⎦  00  0   .   ABC
+     * ⎣ABC⎦ 00  0   .   符
      * ```
      *
      * 退格在最顶上（用户要求：它用得最多，别贴在角落），等号与回车各往下让一格。
@@ -304,11 +315,11 @@ object KeyboardLayouts {
         listOf(digit("4"), digit("5"), digit("6"), math("=")),
         listOf(digit("7"), digit("8"), digit("9"), KeyDef.enter.copy(label = enterLabel, weight = COLUMN)),
         // `00` 在 `0` 左边（用户点名换位）。
-        listOf(digit("00"), digit("0"), digit("."), KeyDef.modifier(KeyCode.Letters, "ABC", weight = COLUMN)),
+        listOf(digit("00"), digit("0"), digit("."), KeyDef.modifier(KeyCode.Symbols, "符", weight = COLUMN)),
     )
 
     /**
-     * 第一列那条竖条里的算术符号，从上到下。一次看得见三个（竖条占三行，第四行留给 `符`），
+     * 第一列那条竖条里的算术符号，从上到下。一次看得见三个（竖条占三行，第四行留给 `ABC`），
      * 手指往下滑就把根号、百分号这些滑出来——用户要的是"滑动"，不是"划一下换一组"。
      */
     fun mathStrip(): List<KeyDef> = listOf(
@@ -316,6 +327,7 @@ object KeyboardLayouts {
         math("-"),
         math("×"),
         math("÷"),
+        math("="),
         math("√"),
         math("%"),
         math("^"),
@@ -323,8 +335,8 @@ object KeyboardLayouts {
         math(")"),
     )
 
-    /** 数字页左下角固定的 `符`：滑条占三行，它占第四行，所以整页还是四行。 */
-    fun numberSymbolKey(): KeyDef = KeyDef.modifier(KeyCode.Symbols, "符", weight = COLUMN)
+    /** 数字页左下角固定的 `ABC`：滑条占三行，它占第四行，所以整页还是四行。 */
+    fun numberLettersKey(): KeyDef = KeyDef.modifier(KeyCode.Letters, "ABC", weight = COLUMN)
 
     /**
      * 数字键。有意做得和 26 键的字母键**一模一样**：同样的圆角（由设置决定）、同样的字号

@@ -31,6 +31,7 @@ class PinyinAttestationTest {
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         dictionary.load()
     }
@@ -166,6 +167,7 @@ class PinyinAttestationTest {
         val plain = PinyinDictionary.fromReaders(
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
+            traditionalChars = { reader("traditional_chars.txt") },
         )
         plain.load()
 

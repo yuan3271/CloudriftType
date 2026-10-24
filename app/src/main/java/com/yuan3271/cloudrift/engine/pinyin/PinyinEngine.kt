@@ -101,14 +101,29 @@ class PinyinEngine(
         if (candidates.isEmpty()) {
             candidates.add(Candidate(buffer, buffer.length, CandidateKind.Raw))
         }
+        // Chinese candidates stay simplified. The character table mixes traditional forms in
+        // for coverage (後/裡/樓/妳), but offering them beside 后/里/楼/你 is noise for this
+        // keyboard. Filter before ranking so a discarded traditional reading does not consume a
+        // candidate slot; filter once more after personalisation because learned words can add
+        // entries that were not present in the dictionary.
+        val simplified = candidates.filterNot { dictionary.containsTraditional(it.text) }.toMutableList()
+        if (simplified.isEmpty()) {
+            simplified.add(Candidate(buffer, buffer.length, CandidateKind.Raw))
+        }
         val ordered = orderCandidates(
             buffer = buffer,
             syllables = syllableSplit(buffer)?.bounds?.size?.minus(1) ?: 1,
-            candidates = dedupe(candidates, limit),
+            candidates = dedupe(simplified, limit),
         )
         // 英文词按权重插进中文候选里：谁排第一由权重说了算（见 [mergeEnglish]）。
         val merged = mergeEnglish(ordered, englishCandidates(raw, buffer), buffer.length)
-        return EngineOutput(candidates = personalize(buffer, dedupe(merged, limit), limit))
+        val personalized = personalize(buffer, dedupe(merged, limit), limit)
+        return EngineOutput(
+            candidates = dedupe(
+                personalized.filterNot { dictionary.containsTraditional(it.text) },
+                limit,
+            ),
+        )
     }
 
     // ---- 中文模式下的英文词 --------------------------------------------------------
@@ -412,7 +427,7 @@ class PinyinEngine(
                     kind = CandidateKind.Prediction,
                     score = entry.score,
                 )
-            }
+            }.filterNot { dictionary.containsTraditional(it.text) }
         }
         return emptyList()
     }

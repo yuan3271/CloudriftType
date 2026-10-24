@@ -80,6 +80,7 @@ import com.yuan3271.cloudrift.input.ExternalInputMonitor
 import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
+import com.yuan3271.cloudrift.ui.CursorSpeedSelector
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlin.math.roundToInt
@@ -342,6 +343,16 @@ fun SettingsScreen(
                     subtitle = "在键盘最下方左右滑动可以移动光标；「距屏幕底部」决定滑动区高度",
                     checked = settings.bottomCursorControl,
                     onCheckedChange = { value -> onUpdate { it.copy(bottomCursorControl = value) } },
+                )
+                Text(
+                    text = "滑动灵敏度",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                )
+                CursorSpeedSelector(
+                    current = settings.cursorSpeed,
+                    onSelect = { speed -> onUpdate { it.copy(cursorSpeed = speed) } },
                 )
                 SwitchRow(
                     title = "长按空格语音输入",
