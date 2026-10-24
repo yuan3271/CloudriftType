@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -160,42 +162,46 @@ fun SettingsScreen(
             }
         },
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(padding),
+            contentPadding = PaddingValues(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SetupCard(
-                imeEnabled = imeEnabled,
-                hasMicrophone = hasMicrophone,
-                onEnableKeyboard = actions.openSystemKeyboardSettings,
-                onPickKeyboard = actions.showKeyboardPicker,
-                onGrantMicrophone = {
-                    permissionLauncher.launch(SettingsActivity.MICROPHONE_PERMISSION)
-                },
-            )
+            item {
+                SetupCard(
+                    imeEnabled = imeEnabled,
+                    hasMicrophone = hasMicrophone,
+                    onEnableKeyboard = actions.openSystemKeyboardSettings,
+                    onPickKeyboard = actions.showKeyboardPicker,
+                    onGrantMicrophone = {
+                        permissionLauncher.launch(SettingsActivity.MICROPHONE_PERMISSION)
+                    },
+                )
+            }
 
             // 键盘预览：一个真的输入框，点一下系统就会把当前输入法叫出来——不必先切到某个应用
             // 里试打字。试出来的候选、联想、符号页都和在别处打字时是同一套。
-            KeyboardPreviewCard()
+            item { KeyboardPreviewCard() }
 
-            UpdateCard(
-                update = update,
-                interval = settings.updateCheckInterval,
-                showDot = settings.showUpdateDot,
-                onInterval = { value -> onUpdate { it.copy(updateCheckInterval = value) } },
-                onShowDot = { value -> onUpdate { it.copy(showUpdateDot = value) } },
-                onCheckNow = actions.checkForUpdate,
-                onDownload = actions.downloadUpdate,
-                onDownloadMirror = actions.downloadUpdateViaMirror,
-                onOpenRelease = actions.openRelease,
-            )
+            item {
+                UpdateCard(
+                    update = update,
+                    interval = settings.updateCheckInterval,
+                    showDot = settings.showUpdateDot,
+                    onInterval = { value -> onUpdate { it.copy(updateCheckInterval = value) } },
+                    onShowDot = { value -> onUpdate { it.copy(showUpdateDot = value) } },
+                    onCheckNow = actions.checkForUpdate,
+                    onDownload = actions.downloadUpdate,
+                    onDownloadMirror = actions.downloadUpdateViaMirror,
+                    onOpenRelease = actions.openRelease,
+                )
+            }
 
-            SectionTitle("外观", CloudriftIcons.Palette)
-            SettingsCard {
+            item {
+                SectionTitle("外观", CloudriftIcons.Palette)
+                SettingsCard {
                 if (AppTheme.THEME_CHOICE_ENABLED) {
                     Text(
                         text = "界面主题",
@@ -246,10 +252,12 @@ fun SettingsScreen(
                         onSaturation = { value -> onUpdate { it.copy(accentSaturation = value) } },
                     )
                 }
+                }
             }
 
-            SectionTitle("键盘外观", CloudriftIcons.Settings)
-            SettingsCard {
+            item {
+                SectionTitle("键盘外观", CloudriftIcons.Settings)
+                SettingsCard {
                 // Same preview as the in-keyboard sheet, so a height or radius change is
                 // visible here without having to switch to the keyboard to look at it.
                 val screenHeight = LocalConfiguration.current.screenHeightDp
@@ -303,12 +311,12 @@ fun SettingsScreen(
                     ValueSlider(
                         title = "玻璃强度",
                         value = settings.glassIntensityPercent,
-                        range = 0..100,
+                        range = 0..AppSettings.GLASS_INTENSITY_MAX,
                         unit = "%",
                         onChange = { value -> onUpdate { it.copy(glassIntensityPercent = value) } },
                     )
                     Text(
-                        text = "0% 接近磨砂不透明，100% 完全通透；默认 35% 优先保证可读性。",
+                        text = "0% 接近磨砂不透明，50% 完全通透；默认 18% 优先保证可读性。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -383,10 +391,12 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                }
             }
 
-            SectionTitle("键盘行为", CloudriftIcons.Keyboard)
-            SettingsCard {
+            item {
+                SectionTitle("键盘行为", CloudriftIcons.Keyboard)
+                SettingsCard {
                 SwitchRow(
                     title = "顶部数字行",
                     subtitle = "在字母行上方常驻一行数字",
@@ -428,10 +438,12 @@ fun SettingsScreen(
                     checked = settings.japaneseEnabled,
                     onCheckedChange = { value -> onUpdate { it.copy(japaneseEnabled = value) } },
                 )
+                }
             }
 
-            SectionTitle("外接键鼠", CloudriftIcons.Keyboard)
-            SettingsCard {
+            item {
+                SectionTitle("外接键鼠", CloudriftIcons.Keyboard)
+                SettingsCard {
                 Text(
                     text = "接上蓝牙键盘、平板的键盘壳或鼠标时，屏上的虚拟按键通常用不上，却还是把" +
                         "应用顶掉小半屏。选「键鼠兼容面板」就只留两行：候选词栏，以及语音 / 剪贴板 / " +
@@ -520,10 +532,12 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+                }
             }
 
-            SectionTitle("候选词顺序", CloudriftIcons.Spellcheck)
-            SettingsCard {
+            item {
+                SectionTitle("候选词顺序", CloudriftIcons.Spellcheck)
+                SettingsCard {
                 Text(
                     text = "一句话里有多个词时，候选怎么排。",
                     style = MaterialTheme.typography.bodySmall,
@@ -551,10 +565,12 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                }
             }
 
-            SectionTitle("自学习", CloudriftIcons.Spellcheck)
-            SettingsCard {
+            item {
+                SectionTitle("自学习", CloudriftIcons.Spellcheck)
+                SettingsCard {
                 Text(
                     text = "键盘只观察你实际选了哪些候选：同一个码选过两次以上，下次它就排在前面；" +
                         "逐字拼出的新词（比如张 + 伟）会被记住。全部在手机本地计算，不联网。",
@@ -587,10 +603,12 @@ fun SettingsScreen(
                     exportLearning = actions.exportLearning,
                     importLearning = actions.importLearning,
                 )
+                }
             }
 
-            SectionTitle("输入体验", CloudriftIcons.Keyboard)
-            SettingsCard {
+            item {
+                SectionTitle("输入体验", CloudriftIcons.Keyboard)
+                SettingsCard {
                 SwitchRow(
                     title = "按键震动",
                     subtitle = "每次按键给出轻微触感反馈",
@@ -603,10 +621,12 @@ fun SettingsScreen(
                     checked = settings.soundFeedback,
                     onCheckedChange = { value -> onUpdate { it.copy(soundFeedback = value) } },
                 )
+                }
             }
 
-            SectionTitle("语音输入", CloudriftIcons.Mic)
-            SettingsCard {
+            item {
+                SectionTitle("语音输入", CloudriftIcons.Mic)
+                SettingsCard {
                 Text(
                     text = "录音会先发送到语音 API 转成文字，再交给聊天 API 做纠错。" +
                         "聊天 API 被要求不得改写、润色或翻译，返回结果超出纠错范围时会被丢弃。",
@@ -677,22 +697,28 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                }
             }
 
-            SpeechEndpointCard(
-                endpoint = settings.speech,
-                hotWords = settings.hotWords,
-                onHotWords = { value -> onUpdate { it.copy(hotWords = value) } },
-                onChange = { endpoint -> onUpdate { it.copy(speech = endpoint) } },
-            )
+            item {
+                SpeechEndpointCard(
+                    endpoint = settings.speech,
+                    hotWords = settings.hotWords,
+                    onHotWords = { value -> onUpdate { it.copy(hotWords = value) } },
+                    onChange = { endpoint -> onUpdate { it.copy(speech = endpoint) } },
+                )
+            }
 
-            ChatEndpointCard(
-                endpoint = settings.chat,
-                onChange = { endpoint -> onUpdate { it.copy(chat = endpoint) } },
-            )
+            item {
+                ChatEndpointCard(
+                    endpoint = settings.chat,
+                    onChange = { endpoint -> onUpdate { it.copy(chat = endpoint) } },
+                )
+            }
 
-            SectionTitle("关于", CloudriftIcons.Info)
-            SettingsCard {
+            item {
+                SectionTitle("关于", CloudriftIcons.Info)
+                SettingsCard {
                 LabelValue("版本", BuildConfig.VERSION_NAME)
                 LabelValue("图标", "云隙图标集（自绘）")
                 LabelValue("中文词库", "jieba 词频 + THUOCL 领域词 + pinyin-data 读音 + pypinyin 词条读音（均 MIT）")
@@ -702,9 +728,10 @@ fun SettingsScreen(
                     if (liquidGlass) "Liquid Glass" else "Material 3 Expressive",
                 )
                 ThirdPartyNoticeRow()
+                }
             }
 
-            Spacer(Modifier.height(24.dp))
+            item { Spacer(Modifier.height(24.dp)) }
         }
     }
 

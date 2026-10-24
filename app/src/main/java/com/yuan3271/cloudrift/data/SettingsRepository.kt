@@ -48,7 +48,7 @@ class SettingsRepository(context: Context) {
             glassIntensityPercent = prefs.getInt(
                 KEY_GLASS_INTENSITY,
                 defaults.glassIntensityPercent,
-            ).coerceIn(0, 100),
+            ).coerceIn(0, AppSettings.GLASS_INTENSITY_MAX),
             keyHeightDp = prefs.getInt(KEY_KEY_HEIGHT, defaults.keyHeightDp),
             bottomGapDp = prefs.getInt(KEY_BOTTOM_GAP, defaults.bottomGapDp),
             symbolWidth = SymbolWidth.fromKey(prefs.getString(KEY_SYMBOL_WIDTH, null)),
@@ -115,7 +115,10 @@ class SettingsRepository(context: Context) {
             putInt(KEY_KEY_LABEL_SCALE, settings.keyLabelScalePercent)
             putString(KEY_KEY_BACKGROUND, settings.keyBackground.name)
             putString(KEY_LIQUID_GLASS_KEY_DENSITY, settings.liquidGlassKeyDensity.name)
-            putInt(KEY_GLASS_INTENSITY, settings.glassIntensityPercent.coerceIn(0, 100))
+            putInt(
+                KEY_GLASS_INTENSITY,
+                settings.glassIntensityPercent.coerceIn(0, AppSettings.GLASS_INTENSITY_MAX),
+            )
             putInt(KEY_KEY_HEIGHT, settings.keyHeightDp)
             putInt(KEY_BOTTOM_GAP, settings.bottomGapDp)
             putString(KEY_SYMBOL_WIDTH, settings.symbolWidth.name)

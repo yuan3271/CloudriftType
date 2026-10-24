@@ -86,4 +86,13 @@ class LiquidGlassConfigTest {
         assertEquals(LiquidGlassConfig.BASE_LIGHT_ALPHA * 0.5f, bottomLightAlpha(dark = false))
     }
 
+    @Test
+    fun `visible glass strength maps zero to fifty into zero to one hundred`() {
+        assertEquals(0f, glassIntensityFraction(0))
+        assertEquals(0.5f, glassIntensityFraction(25))
+        assertEquals(1f, glassIntensityFraction(50))
+        assertEquals(1f, glassIntensityFraction(80))
+        assertEquals(100, effectiveGlassIntensityPercent(50))
+    }
+
 }

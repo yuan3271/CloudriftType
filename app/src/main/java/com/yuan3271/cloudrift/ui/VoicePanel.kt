@@ -401,7 +401,7 @@ private fun FailedContent(
     val liquid = isLiquidGlassTheme()
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .then(
                 if (liquid) {
                     Modifier.liquidInteractiveGlass(
@@ -424,8 +424,14 @@ private fun FailedContent(
                 MaterialTheme.colorScheme.error
             },
             textAlign = TextAlign.Start,
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             if (state.needsMicrophonePermission) {
                 CloudriftFilledButton(onClick = onOpenPermission) { Text("去授权") }
             } else {

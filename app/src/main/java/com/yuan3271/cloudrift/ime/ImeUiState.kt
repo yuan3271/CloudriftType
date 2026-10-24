@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.ime
 
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
+import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.data.CursorSpeed
@@ -85,8 +86,8 @@ data class ImeUiState(
     val keyLabelScalePercent: Int = 100,
     val keyBackground: KeyBackground = KeyBackground.Filled,
     val liquidGlassKeyDensity: LiquidGlassKeyDensity = LiquidGlassKeyDensity.Medium,
-    /** Liquid Glass strength: 0 is frosted, 100 is fully transparent. */
-    val glassIntensityPercent: Int = 35,
+    /** Liquid Glass strength: 0 is frosted, 50 is fully transparent. */
+    val glassIntensityPercent: Int = AppSettings.DEFAULT_GLASS_INTENSITY,
     /** 0 means "derive from the screen size". */
     val keyHeightDp: Int = 0,
     val bottomGapDp: Int = 0,

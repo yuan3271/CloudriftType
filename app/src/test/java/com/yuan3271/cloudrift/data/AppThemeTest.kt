@@ -62,6 +62,6 @@ class AppThemeTest {
             LiquidGlassKeyDensity.High,
             LiquidGlassKeyDensity.fromKey("high"),
         )
-        assertEquals(35, AppSettings().glassIntensityPercent)
+        assertEquals(18, AppSettings().glassIntensityPercent)
     }
 }

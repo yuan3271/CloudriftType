@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,6 +53,7 @@ import com.yuan3271.cloudrift.theme.liquidControlGlass
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -242,42 +244,48 @@ private fun SwipeActionsRow(
     }
 
     Box(modifier = Modifier.fillMaxWidth()) {
-        // Hints the row covers while it rests; the moving row reveals them.
-        Box(
-            modifier = Modifier
-                // matchParentSize, not fillMaxSize: inside a LazyColumn item the height constraint
-                // is unbounded, and fillMaxSize would collapse the hint layer to nothing.
-                .matchParentSize()
-                .then(
-                    if (isLiquidGlassTheme()) {
-                        Modifier.internalSurface(
-                            shape = RoundedCornerShape(16.dp),
-                            tone = InternalSurfaceTone.High,
-                        )
-                    } else {
-                        Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                    },
-                )
-                .padding(horizontal = 16.dp),
-        ) {
-            Icon(
-                imageVector = CloudriftIcons.Clipboard,
-                contentDescription = "复制",
-                tint = MaterialTheme.colorScheme.primary,
+        if (offsetX != 0f) {
+            val reveal = (abs(offsetX) / trigger).coerceIn(0f, 1f)
+            Box(
                 modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .size(20.dp),
-            )
-            Icon(
-                imageVector = CloudriftIcons.Close,
-                contentDescription = "删除",
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .size(20.dp),
-            )
+                    // matchParentSize, not fillMaxSize: inside a LazyColumn item the height
+                    // constraint is unbounded, and fillMaxSize would collapse the hint layer.
+                    .matchParentSize()
+                    .graphicsLayer { alpha = reveal }
+                    .then(
+                        if (isLiquidGlassTheme()) {
+                            Modifier.internalSurface(
+                                shape = RoundedCornerShape(16.dp),
+                                tone = InternalSurfaceTone.High,
+                            )
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        },
+                    )
+                    .padding(horizontal = 16.dp),
+            ) {
+                if (offsetX > 0f) {
+                    Icon(
+                        imageVector = CloudriftIcons.Clipboard,
+                        contentDescription = "复制",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .size(20.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = CloudriftIcons.Close,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.CenterEnd)
+                            .size(20.dp),
+                    )
+                }
+            }
         }
         Box(
             modifier = Modifier

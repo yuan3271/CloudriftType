@@ -59,7 +59,7 @@ fun CloudriftTheme(
         CloudriftLightScheme.withAccentRolesFrom(darkSource)
     }
     val colorScheme = if (effectiveAppTheme == AppTheme.LiquidGlass) {
-        glassColorScheme(darkSource.withSaturatedAccents(1.38f), dark = true)
+        glassColorScheme(darkSource.withSaturatedAccents(1.38f), dark)
     } else {
         materialScheme
     }

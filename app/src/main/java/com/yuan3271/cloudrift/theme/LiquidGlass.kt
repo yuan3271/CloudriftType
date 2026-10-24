@@ -42,6 +42,7 @@ import com.kyant.backdrop.highlight.Highlight
 import com.kyant.backdrop.shadow.InnerShadow
 import com.kyant.backdrop.shadow.Shadow
 import com.yuan3271.cloudrift.data.AppTheme
+import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.LiquidGlassKeyDensity
 import kotlin.math.roundToInt
 import kotlin.math.pow
@@ -54,7 +55,9 @@ internal val LocalLiquidGlassBackdrop = staticCompositionLocalOf<LayerBackdrop?>
 internal val LocalLiquidGlassKeyDensity = staticCompositionLocalOf {
     LiquidGlassKeyDensity.Medium
 }
-internal val LocalLiquidGlassIntensity = staticCompositionLocalOf { 0.35f }
+internal val LocalLiquidGlassIntensity = staticCompositionLocalOf {
+    glassIntensityFraction(AppSettings.DEFAULT_GLASS_INTENSITY)
+}
 internal val LocalKeyboardOuterRadius = staticCompositionLocalOf { 26.dp }
 internal val LocalLiquidGlassBottomLightAlpha = staticCompositionLocalOf {
     LiquidGlassConfig.BASE_LIGHT_ALPHA
@@ -157,6 +160,13 @@ internal fun outerGlassMaterial(intensityPercent: Int, dark: Boolean): OuterGlas
         ),
     )
 }
+
+internal fun glassIntensityFraction(displayPercent: Int): Float =
+    displayPercent.coerceIn(0, AppSettings.GLASS_INTENSITY_MAX).toFloat() /
+        AppSettings.GLASS_INTENSITY_MAX
+
+internal fun effectiveGlassIntensityPercent(displayPercent: Int): Int =
+    (glassIntensityFraction(displayPercent) * 100f).roundToInt()
 
 internal fun bottomLightAlpha(dark: Boolean): Float =
     if (dark) LiquidGlassConfig.BASE_LIGHT_ALPHA else LiquidGlassConfig.BASE_LIGHT_ALPHA * 0.5f
@@ -373,6 +383,7 @@ internal fun Modifier.liquidControlGlass(
     if (!isLiquidGlassTheme()) return this
     val backdrop = LocalLiquidGlassBackdrop.current ?: return this
     val surfaceFill = color ?: internalSurfaceColor(InternalSurfaceTone.Medium)
+    val lightMode = LocalLiquidGlassLightMode.current
     var edgePosition by remember { mutableStateOf<Offset?>(null) }
     val base = if (active) {
         drawBackdrop(
@@ -390,7 +401,7 @@ internal fun Modifier.liquidControlGlass(
             },
             highlight = {
                 if (active) {
-                    Highlight.Default.copy(alpha = 0.44f)
+                    Highlight.Default.copy(alpha = if (lightMode) 0.68f else 0.44f)
                 } else {
                     Highlight.Ambient.copy(alpha = 0.26f)
                 }
@@ -521,13 +532,13 @@ private fun Modifier.glassStaticEdge(shape: Shape): Modifier {
             path = path,
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = if (lightMode) 0.64f else 0.28f),
+                    Color.White.copy(alpha = if (lightMode) 0.76f else 0.28f),
                     Color.Transparent,
                 ),
                 start = Offset.Zero,
                 end = end,
             ),
-            style = Stroke(0.85.dp.toPx()),
+            style = Stroke((if (lightMode) 0.95f else 0.85f).dp.toPx()),
         )
     }
 }

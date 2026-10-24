@@ -234,7 +234,7 @@ fun QuickSettingsPanel(
                     SliderRow(
                         title = "玻璃强度",
                         value = state.glassIntensityPercent.toFloat(),
-                        range = 0f..100f,
+                        range = 0f..AppSettings.GLASS_INTENSITY_MAX.toFloat(),
                         steps = 0,
                         suffix = "%",
                         onChange = { value ->

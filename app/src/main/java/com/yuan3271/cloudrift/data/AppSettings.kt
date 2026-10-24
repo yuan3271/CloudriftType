@@ -298,8 +298,8 @@ data class AppSettings(
     val keyBackground: KeyBackground = KeyBackground.Filled,
     /** Plane-fill concentration for keys in the Liquid Glass theme. */
     val liquidGlassKeyDensity: LiquidGlassKeyDensity = LiquidGlassKeyDensity.Medium,
-    /** 0 = frosted and readable, 100 = fully transparent Liquid Glass. */
-    val glassIntensityPercent: Int = 35,
+    /** 0 = frosted and readable, 50 = fully transparent Liquid Glass. */
+    val glassIntensityPercent: Int = DEFAULT_GLASS_INTENSITY,
     /** Key height in dp; 0 means "derive from screen size". */
     val keyHeightDp: Int = 0,
     /** Gap between the keyboard and the bottom of the screen, in dp. */
@@ -420,6 +420,8 @@ data class AppSettings(
 
         /** "工具面板还没被拖过"的哨兵值：0..100 都是合法位置，所以只能用负数表示"没设过"。 */
         const val UNSET_POSITION = -1
+        const val GLASS_INTENSITY_MAX = 50
+        const val DEFAULT_GLASS_INTENSITY = 18
 
         fun openAiSpeechPreset() = ApiEndpoint(
             baseUrl = DEFAULT_SPEECH_BASE_URL,

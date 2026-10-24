@@ -53,6 +53,7 @@ import com.yuan3271.cloudrift.theme.bestContentColor
 import com.yuan3271.cloudrift.theme.LocalLiquidGlassKeyDensity
 import com.yuan3271.cloudrift.theme.LocalLiquidGlassIntensity
 import com.yuan3271.cloudrift.theme.LocalKeyboardOuterRadius
+import com.yuan3271.cloudrift.theme.glassIntensityFraction
 import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
@@ -235,7 +236,7 @@ private fun CompatWindowTheme(state: ImeUiState, content: @Composable () -> Unit
     ) {
         CompositionLocalProvider(
             LocalLiquidGlassKeyDensity provides state.liquidGlassKeyDensity,
-            LocalLiquidGlassIntensity provides state.glassIntensityPercent / 100f,
+            LocalLiquidGlassIntensity provides glassIntensityFraction(state.glassIntensityPercent),
             LocalKeyboardOuterRadius provides PANEL_CORNER,
         ) {
             Box(
