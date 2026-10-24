@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidTrackGlass
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -126,13 +128,22 @@ internal fun BottomCursorGesture(
             exit = fadeOut(tween(120)),
             modifier = Modifier.align(Alignment.Center),
         ) {
+            val railShape = RoundedCornerShape(50)
+            val liquid = isLiquidGlassTheme()
             Box(
                 modifier = Modifier
                     .width(railWidth)
                     .height(CURSOR_RAIL_HEIGHT)
                     .onSizeChanged { railWidthPx = it.width.toFloat() }
-                    .clip(RoundedCornerShape(50))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    .then(
+                        if (liquid) {
+                            Modifier.liquidTrackGlass(railShape)
+                        } else {
+                            Modifier
+                                .clip(railShape)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        },
+                    ),
             ) {
                 Box(
                     modifier = Modifier

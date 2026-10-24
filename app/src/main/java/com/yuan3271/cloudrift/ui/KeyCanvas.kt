@@ -2,6 +2,7 @@ package com.yuan3271.cloudrift.ui
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,10 +39,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
@@ -58,10 +58,13 @@ import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.input.KeyStyle
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.LiquidGlassConfig
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.glassKeySurfaceColor
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
-import androidx.compose.ui.draw.drawWithContent
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -189,8 +192,18 @@ private fun AlternateMenu(
     Row(
         modifier = Modifier
             .padding(start = offsetX, top = offsetY)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .then(
+                if (isLiquidGlassTheme()) {
+                    Modifier.internalSurface(
+                        shape = RoundedCornerShape(16.dp),
+                        tone = InternalSurfaceTone.High,
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                },
+            )
             .padding(6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -198,8 +211,18 @@ private fun AlternateMenu(
             Box(
                 modifier = Modifier
                     .size(itemSize)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .then(
+                        if (isLiquidGlassTheme()) {
+                            Modifier.internalSurface(
+                                shape = RoundedCornerShape(12.dp),
+                                tone = InternalSurfaceTone.Low,
+                            )
+                        } else {
+                            Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                        },
+                    )
                     .pointerInput(alternate) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
@@ -317,11 +340,15 @@ private fun KeyFace(
     // spec from the Material 3 Expressive motion scheme rather than a default spring.
     val scale by animateFloatAsState(
         targetValue = when {
-            glass && pressed -> 1.035f
+            glass && pressed -> 1f + LiquidGlassConfig.KEY_PRESS_SCALE
             pressed -> 0.9f
             else -> 1f
         },
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        animationSpec = if (glass) {
+            spring(dampingRatio = 0.56f, stiffness = 720f)
+        } else {
+            MaterialTheme.motionScheme.fastSpatialSpec()
+        },
         label = "key-scale",
     )
     val horizontalStretch by animateFloatAsState(
@@ -330,7 +357,11 @@ private fun KeyFace(
         } else {
             1f
         },
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        animationSpec = if (glass) {
+            spring(dampingRatio = 0.58f, stiffness = 680f)
+        } else {
+            MaterialTheme.motionScheme.fastSpatialSpec()
+        },
         label = "key-stretch-x",
     )
     val verticalStretch by animateFloatAsState(
@@ -339,40 +370,58 @@ private fun KeyFace(
         } else {
             1f
         },
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        animationSpec = if (glass) {
+            spring(dampingRatio = 0.58f, stiffness = 680f)
+        } else {
+            MaterialTheme.motionScheme.fastSpatialSpec()
+        },
         label = "key-stretch-y",
     )
+    val glassCornerRadius = minOf(
+        cornerRadius + LiquidGlassConfig.KEY_RADIUS_LIFT_DP.dp,
+        height * LiquidGlassConfig.KEY_MAX_RADIUS_FRACTION,
+    )
     val corner by animateDpAsState(
-        targetValue = if (pressed) cornerRadius + 6.dp else cornerRadius,
-        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
+        targetValue = if (glass) {
+            glassCornerRadius
+        } else if (pressed) {
+            cornerRadius + 6.dp
+        } else {
+            cornerRadius
+        },
+        animationSpec = if (glass) {
+            spring(dampingRatio = 0.62f, stiffness = 620f)
+        } else {
+            MaterialTheme.motionScheme.fastSpatialSpec()
+        },
         label = "key-corner",
     )
 
     val isAccent = active || key.style == KeyStyle.Accent
-    val container = when {
+    val containerColor = when {
         isAccent -> MaterialTheme.colorScheme.primary
-        glass && key.style == KeyStyle.Space ->
-            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.62f)
-        glass && keyBackground == KeyBackground.Filled ->
-            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.58f)
-        key.style == KeyStyle.Space -> MaterialTheme.colorScheme.surfaceContainerHigh
-        keyBackground == KeyBackground.Filled -> MaterialTheme.colorScheme.surfaceContainerHighest
-        else -> Color.Transparent
+        glass -> glassKeySurfaceColor()
+        !glass && key.style == KeyStyle.Space -> MaterialTheme.colorScheme.surfaceContainerHigh
+        !glass && keyBackground == KeyBackground.Filled ->
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        else -> null
     }
-    val pressedContainer = when {
-        glass && key.style == KeyStyle.Accent ->
-            MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.90f)
+    val pressedColor = when {
+        glass -> lerp(
+            MaterialTheme.colorScheme.primary,
+            Color.White,
+            LiquidGlassConfig.KEY_PRESS_BRIGHTEN,
+        )
         key.style == KeyStyle.Accent -> MaterialTheme.colorScheme.tertiaryContainer
-        glass -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.76f)
         else -> MaterialTheme.colorScheme.primaryContainer
     }
     val contentColor = when {
-        isAccent -> MaterialTheme.colorScheme.onPrimary
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+        glass && pressed -> pressedColor.bestContentColor()
+        isAccent -> MaterialTheme.colorScheme.primary.bestContentColor()
+        else -> MaterialTheme.colorScheme.onSurface
     }
-    val background = if (pressed) pressedContainer else container
-    val outline = !isAccent &&
-        (glass || keyBackground == KeyBackground.Outlined && key.style != KeyStyle.Space)
+    val outline = !glass && !isAccent &&
+        keyBackground == KeyBackground.Outlined && key.style != KeyStyle.Space
 
     Box(
         modifier = modifier
@@ -381,51 +430,32 @@ private fun KeyFace(
                 scaleX = scale * horizontalStretch
                 scaleY = scale * verticalStretch
             }
-            .clip(RoundedCornerShape(corner))
             .then(
                 if (glass) {
-                    Modifier
-                        .liquidGlassPanel(
+                    if (pressed) {
+                        Modifier.liquidControlGlass(
                             shape = RoundedCornerShape(corner),
-                            tint = if (isAccent) {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.54f)
-                            } else {
-                                glassSurfaceTint()
-                            },
-                            interactive = if (pressed) 1f else 0f,
+                            color = pressedColor,
+                            active = true,
                         )
-                        .drawWithContent {
-                            if (pressed && touchPosition != null) {
-                                drawCircle(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(
-                                            Color.White.copy(alpha = 0.28f),
-                                            Color.White.copy(alpha = 0.04f),
-                                            Color.Transparent,
-                                        ),
-                                        center = touchPosition,
-                                        radius = size.minDimension * 1.1f,
-                                    ),
-                                    radius = size.minDimension * 1.1f,
-                                    center = touchPosition,
-                                    blendMode = BlendMode.Plus,
-                                )
-                            }
-                            drawContent()
-                        }
+                    } else {
+                        Modifier.liquidControlGlass(
+                            shape = RoundedCornerShape(corner),
+                            color = containerColor,
+                            active = isAccent,
+                        )
+                    }
                 } else {
-                    Modifier.background(background)
+                    Modifier
+                        .clip(RoundedCornerShape(corner))
+                        .background(if (pressed) pressedColor else containerColor ?: Color.Transparent)
                 },
             )
             .then(
                 if (outline) {
                     Modifier.border(
                         width = 1.dp,
-                        color = if (glass) {
-                            Color.White.copy(alpha = 0.24f)
-                        } else {
-                            MaterialTheme.colorScheme.outlineVariant
-                        },
+                        color = MaterialTheme.colorScheme.outlineVariant,
                         shape = RoundedCornerShape(corner),
                     )
                 } else {

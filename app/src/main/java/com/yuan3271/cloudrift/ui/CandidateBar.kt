@@ -50,10 +50,12 @@ import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
-import com.yuan3271.cloudrift.theme.CloudriftSurface
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.internalSurface
+import com.yuan3271.cloudrift.theme.internalSurfaceColor
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 
 /**
  * A fixed height strip so the keyboard never changes size while typing. When there is
@@ -74,13 +76,11 @@ fun CandidateBar(
     idle: @Composable () -> Unit = { IdleStrip(state = state) },
 ) {
     if (isLiquidGlassTheme()) {
-        CloudriftSurface(
+        Box(
             modifier = modifier
                 .fillMaxWidth()
                 .height(CANDIDATE_BAR_HEIGHT + 8.dp)
                 .padding(horizontal = 4.dp, vertical = 4.dp),
-            shape = RoundedCornerShape(18.dp),
-            color = Color.Transparent,
         ) {
             Box(
                 modifier = Modifier
@@ -190,15 +190,21 @@ internal fun CandidateStrip(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .background(
+                        if (isLiquidGlassTheme()) {
+                            internalSurfaceColor()
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        },
+                    )
                     .padding(start = 4.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                IconButton(onClick = onExpand, modifier = Modifier.size(34.dp)) {
+                CloudriftIconButton(onClick = onExpand, modifier = Modifier.size(34.dp)) { tint ->
                     Icon(
                         imageVector = CloudriftIcons.ExpandMore,
                         contentDescription = "展开候选",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = tint,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -308,9 +314,18 @@ private fun ClipboardOfferStrip(
     ) {
         Row(
             modifier = (if (wrapContent) Modifier.widthIn(max = 380.dp) else Modifier.weight(1f))
-                .clip(RoundedCornerShape(14.dp))
                 .clickable(onClick = onPaste)
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .then(
+                    if (isLiquidGlassTheme()) {
+                        Modifier.liquidControlGlass(
+                            shape = RoundedCornerShape(14.dp),
+                        )
+                    } else {
+                        Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    },
+                )
                 .padding(horizontal = 10.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -329,11 +344,11 @@ private fun ClipboardOfferStrip(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButton(onClick = onDismiss, modifier = Modifier.size(34.dp)) {
+        CloudriftIconButton(onClick = onDismiss, modifier = Modifier.size(34.dp)) { tint ->
             Icon(
                 imageVector = CloudriftIcons.Close,
                 contentDescription = "关闭剪贴板提示",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = tint,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -358,9 +373,8 @@ private fun IdleStrip(state: ImeUiState) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         if (!state.dictionaryReady && state.layout.isChinese && state.page == KeyboardPage.Letters) {
-            LoadingIndicator(
-                modifier = Modifier.size(14.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            CloudriftLoadingIndicator(
+                modifier = Modifier.size(24.dp),
             )
             Text(
                 text = "词库加载中",
@@ -392,7 +406,10 @@ private fun CandidatePill(
         targetValue = if (pressed) 1f else 0f,
         label = "candidate-pressure",
     )
-    val content = if (emphasised) {
+    val selected = pressed || emphasised
+    val content = if (liquidGlass && selected) {
+        MaterialTheme.colorScheme.primary.bestContentColor()
+    } else if (emphasised) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
         MaterialTheme.colorScheme.onSurface
@@ -408,14 +425,14 @@ private fun CandidatePill(
             .then(
                 if (liquidGlass) {
                     Modifier
-                        .liquidGlassPanel(
+                        .liquidControlGlass(
                             shape = RoundedCornerShape(16.dp),
-                            tint = if (emphasised) {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
+                            active = selected,
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.primary
                             } else {
-                                glassSurfaceTint()
+                                null
                             },
-                            interactive = pressure,
                         )
                         .clickable(
                             interactionSource = interaction,

@@ -8,6 +8,7 @@ import com.yuan3271.cloudrift.data.CursorSpeed
 import com.yuan3271.cloudrift.data.ExternalInputMode
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
+import com.yuan3271.cloudrift.data.LiquidGlassKeyDensity
 import com.yuan3271.cloudrift.data.SymbolWidth
 import com.yuan3271.cloudrift.data.UpdateInfo
 import com.yuan3271.cloudrift.data.UserStats
@@ -83,6 +84,9 @@ data class ImeUiState(
     /** Key label size as a percentage of the designed size. */
     val keyLabelScalePercent: Int = 100,
     val keyBackground: KeyBackground = KeyBackground.Filled,
+    val liquidGlassKeyDensity: LiquidGlassKeyDensity = LiquidGlassKeyDensity.Medium,
+    /** Liquid Glass strength: 0 is frosted, 100 is fully transparent. */
+    val glassIntensityPercent: Int = 35,
     /** 0 means "derive from the screen size". */
     val keyHeightDp: Int = 0,
     val bottomGapDp: Int = 0,

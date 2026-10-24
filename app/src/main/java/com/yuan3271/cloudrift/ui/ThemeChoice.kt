@@ -32,7 +32,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.yuan3271.cloudrift.data.AppTheme
-import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.KeyboardContentSurface
+import com.yuan3271.cloudrift.theme.KeyboardGlassSurface
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 
 /**
@@ -109,11 +112,7 @@ private fun AppThemeChoiceCard(
     onSelect: (AppTheme) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    CloudriftSurface(
-        modifier = modifier.heightIn(max = 520.dp),
-        shape = RoundedCornerShape(30.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-    ) {
+    val cardContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier
                 .verticalScroll(rememberScrollState())
@@ -145,6 +144,21 @@ private fun AppThemeChoiceCard(
             )
         }
     }
+    val shape = RoundedCornerShape(30.dp)
+    if (isLiquidGlassTheme()) {
+        KeyboardGlassSurface(
+            modifier = modifier.heightIn(max = 520.dp),
+            shape = shape,
+            content = cardContent,
+        )
+    } else {
+        KeyboardContentSurface(
+            modifier = modifier.heightIn(max = 520.dp),
+            shape = shape,
+            materialColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+            content = cardContent,
+        )
+    }
 }
 
 @Composable
@@ -157,15 +171,31 @@ private fun ThemeChoiceOption(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .background(
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.56f),
+            .then(
+                if (isLiquidGlassTheme()) {
+                    Modifier.liquidControlGlass(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f),
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.56f),
+                        )
+                },
             )
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.34f),
-                shape = RoundedCornerShape(20.dp),
+            .clickable(role = Role.Button, onClick = onClick)
+            .then(
+                if (isLiquidGlassTheme()) {
+                    Modifier
+                } else {
+                    Modifier.border(
+                        width = 1.dp,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.34f),
+                        shape = RoundedCornerShape(20.dp),
+                    )
+                },
             )
             .padding(horizontal = 14.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,

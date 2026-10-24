@@ -8,11 +8,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.data.ImportOutcome
+import com.yuan3271.cloudrift.ui.CloudriftAlertDialog
+import com.yuan3271.cloudrift.ui.CloudriftOutlinedButton
+import com.yuan3271.cloudrift.ui.CloudriftTextButton
 
 /**
  * 自学习记录的导出与导入.
@@ -86,13 +86,13 @@ fun LearningTransferRows(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(
+            CloudriftOutlinedButton(
                 onClick = { launchSafely { exportFile.launch(EXPORT_FILE_NAME) } },
                 modifier = Modifier.weight(1f),
             ) {
                 Text("导出到文件", style = MaterialTheme.typography.labelLarge)
             }
-            OutlinedButton(
+            CloudriftOutlinedButton(
                 onClick = {
                     launchSafely {
                         importFile.launch(arrayOf("text/plain", "application/json", "*/*"))
@@ -106,18 +106,22 @@ fun LearningTransferRows(
     }
 
     outcome?.let { result ->
-        AlertDialog(
+        CloudriftAlertDialog(
             onDismissRequest = { outcome = null },
-            confirmButton = { TextButton(onClick = { outcome = null }) { Text("知道了") } },
+            confirmButton = {
+                CloudriftTextButton(onClick = { outcome = null }) { Text("知道了") }
+            },
             title = { Text(if (result.ok) "完成" else "导入失败") },
             text = { Text(result.message) },
         )
     }
 
     problem?.let { message ->
-        AlertDialog(
+        CloudriftAlertDialog(
             onDismissRequest = { problem = null },
-            confirmButton = { TextButton(onClick = { problem = null }) { Text("知道了") } },
+            confirmButton = {
+                CloudriftTextButton(onClick = { problem = null }) { Text("知道了") }
+            },
             title = { Text("没有完成") },
             text = { Text(message) },
         )

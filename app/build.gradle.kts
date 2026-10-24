@@ -20,8 +20,8 @@ android {
         applicationId = "com.yuan3271.cloudrift"
         minSdk = 26
         targetSdk = 36
-        versionCode = 60
-        versionName = "1.1.1"
+        versionCode = 77
+        versionName = "1.1.2"
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -36,6 +36,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Keep the preview installable alongside a normal release / sideload build, and make
+            // its launcher and IME picker entries unmistakably temporary.
+            applicationIdSuffix = ".debug"
+            // This host's ~/.android/debug.keystore is outside the writable sandbox. Reuse the
+            // project signing config when present; the .debug application id still keeps installs
+            // independent from the normal build.
+            if (keystoreProperties.getProperty("storeFile") != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
         release {
             // 侧载包，体积就是用户要下载的东西：不压缩时 dex 里躺着整套未用到的 androidx /
             // Compose，解压后 26 MB，压完 12.4 MB；R8 之后只剩用到的那部分（见 PLAN 0.2.38）。

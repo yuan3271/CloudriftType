@@ -10,12 +10,9 @@ enum class AppTheme {
     ;
 
     companion object {
-        /**
-         * Temporary kill switch for 1.1.1. The enum and saved preference stay intact so the
-         * experiment can be resumed later, but no production entry point may select or render it.
-         */
-        const val LIQUID_GLASS_ENABLED = false
-        const val THEME_CHOICE_ENABLED = false
+        /** 1.1.2 re-enables the rebuilt one-outer-layer Liquid Glass theme. */
+        const val LIQUID_GLASS_ENABLED = true
+        const val THEME_CHOICE_ENABLED = true
 
         fun fromKey(key: String?): AppTheme =
             entries.firstOrNull { it.name.equals(key, ignoreCase = true) }
@@ -196,6 +193,25 @@ enum class KeyBackground {
 }
 
 /**
+ * How much plane fill a key carries in the Liquid Glass theme.
+ *
+ * This is deliberately separate from [KeyBackground]: switching themes must not overwrite the
+ * user's Material 3 key treatment. "Higher" means more transparent, matching the wording in the
+ * settings UI.
+ */
+enum class LiquidGlassKeyDensity {
+    Low,
+    Medium,
+    High,
+    ;
+
+    companion object {
+        fun fromKey(key: String?): LiquidGlassKeyDensity =
+            entries.firstOrNull { it.name.equals(key, ignoreCase = true) } ?: Medium
+    }
+}
+
+/**
  * How far the finger travels before the bottom cursor control moves by one character.
  * 3.9's fixed 24dp feel is now the Slow option; the default moves faster.
  */
@@ -280,6 +296,10 @@ data class AppSettings(
     /** Label size on the keys, as a percentage; 100 is the designed size. */
     val keyLabelScalePercent: Int = 100,
     val keyBackground: KeyBackground = KeyBackground.Filled,
+    /** Plane-fill concentration for keys in the Liquid Glass theme. */
+    val liquidGlassKeyDensity: LiquidGlassKeyDensity = LiquidGlassKeyDensity.Medium,
+    /** 0 = frosted and readable, 100 = fully transparent Liquid Glass. */
+    val glassIntensityPercent: Int = 35,
     /** Key height in dp; 0 means "derive from screen size". */
     val keyHeightDp: Int = 0,
     /** Gap between the keyboard and the bottom of the screen, in dp. */

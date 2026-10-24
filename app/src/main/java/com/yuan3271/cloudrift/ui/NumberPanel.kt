@@ -33,8 +33,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.input.KeyDef
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
 
 /** 数字页的行数：滑条三行 + 底下那颗 `符`。 */
 private const val STRIP_ROWS = 4
@@ -78,8 +79,9 @@ fun NumberPanel(
                     .padding(horizontal = KEY_GAP / 2)
                     .then(
                         if (isLiquidGlassTheme()) {
-                            Modifier.liquidGlassPanel(
+                            Modifier.internalSurface(
                                 shape = RoundedCornerShape(cornerRadius),
+                                tone = InternalSurfaceTone.Medium,
                             )
                         } else {
                             Modifier

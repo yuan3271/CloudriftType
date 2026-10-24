@@ -26,11 +26,11 @@ class AppThemeTest {
     }
 
     @Test
-    fun `disabled liquid glass cannot leak into production rendering`() {
-        assertFalse(AppTheme.LIQUID_GLASS_ENABLED)
-        assertFalse(AppTheme.THEME_CHOICE_ENABLED)
+    fun `1_1_2 rebuild enables liquid glass and its required choice`() {
+        assertTrue(AppTheme.LIQUID_GLASS_ENABLED)
+        assertTrue(AppTheme.THEME_CHOICE_ENABLED)
         assertEquals(
-            AppTheme.Material3Expressive,
+            AppTheme.LiquidGlass,
             AppTheme.effective("liquidglass"),
         )
     }
@@ -50,5 +50,18 @@ class AppThemeTest {
         assertEquals(ThemeMode.Dark, after.themeMode)
         assertEquals(ThemeSource.Custom, after.themeSource)
         assertEquals(315, after.accentHue)
+    }
+
+    @Test
+    fun `liquid glass key concentration defaults to medium and persists by name`() {
+        assertEquals(
+            LiquidGlassKeyDensity.Medium,
+            AppSettings().liquidGlassKeyDensity,
+        )
+        assertEquals(
+            LiquidGlassKeyDensity.High,
+            LiquidGlassKeyDensity.fromKey("high"),
+        )
+        assertEquals(35, AppSettings().glassIntensityPercent)
     }
 }

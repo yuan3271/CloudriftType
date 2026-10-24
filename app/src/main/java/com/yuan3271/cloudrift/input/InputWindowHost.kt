@@ -34,6 +34,12 @@ interface InputWindowHost {
     fun moveInputWindowBy(dx: Float, dy: Float)
 
     /**
+     * Applies or clears the platform's behind-window blur. This is an optical enhancement only:
+     * unsupported devices keep the translucent fill fallback.
+     */
+    fun applyGlassBackdropBlur(radiusDp: Int)
+
+    /**
      * 键鼠兼容面板的一块该不该出现、在哪儿。两块面板各是一个窗口，所以这里按 [kind] 分别调用。
      *
      * 候选词面板的位置由服务自己算（跟着光标，见 [setCaretFollowing]），此处的 xPercent /

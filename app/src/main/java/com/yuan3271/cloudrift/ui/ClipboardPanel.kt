@@ -45,9 +45,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.data.ClipEntry
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -106,9 +107,9 @@ fun ClipboardPanel(
             )
             Spacer(Modifier.weight(1f))
             if (entries.isNotEmpty()) {
-                TextButton(onClick = onClear) { Text("清空") }
+                CloudriftTextButton(onClick = onClear) { Text("清空") }
             }
-            TextButton(onClick = onClose) {
+            CloudriftTextButton(onClick = onClose) {
                 Icon(CloudriftIcons.ExpandMore, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("收起")
@@ -172,9 +173,10 @@ private fun ClipRow(entry: ClipEntry, onPick: () -> Unit, armedColor: Color?) {
             .fillMaxWidth()
             .then(
                 if (liquidGlass) {
-                    Modifier.liquidGlassPanel(
+                    Modifier.liquidControlGlass(
                         shape = RoundedCornerShape(18.dp),
-                        tint = armedColor?.copy(alpha = 0.66f) ?: glassSurfaceTint(),
+                        color = armedColor,
+                        active = armedColor != null,
                     )
                 } else {
                     Modifier
@@ -246,8 +248,18 @@ private fun SwipeActionsRow(
                 // matchParentSize, not fillMaxSize: inside a LazyColumn item the height constraint
                 // is unbounded, and fillMaxSize would collapse the hint layer to nothing.
                 .matchParentSize()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .then(
+                    if (isLiquidGlassTheme()) {
+                        Modifier.internalSurface(
+                            shape = RoundedCornerShape(16.dp),
+                            tone = InternalSurfaceTone.High,
+                        )
+                    } else {
+                        Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                    },
+                )
                 .padding(horizontal = 16.dp),
         ) {
             Icon(

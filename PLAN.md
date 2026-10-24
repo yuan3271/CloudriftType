@@ -3090,3 +3090,179 @@ Windows 档的 Ctrl/Win 组合一律原样交回系统，所以不抢系统快�
   [下载地址](https://github.com/yuan3271/CloudriftType/releases/download/v1.1.1/cloudrift-type-1.1.1-release.apk)；
   GitHub 资产 API 的 digest 与回下载、本地逐字节比较均为
   `sha256:e7b8028c81c3b6caeb044996fd936adc3915c366c5cd14c7db305f57b252f05a`。
+
+## 云隙输入 1.1.2：按 iOS 27 Liquid Glass 原则重做（仅 debug 预览）
+
+| 阶段 | 内容 | 状态 |
+| --- | --- | --- |
+| 1 | 层级：键盘根面板保留唯一持久玻璃，内部全部改为 6%–12% 平面填充；选中 / 按下用实心主题色；恢复主题选择 | 完成，待用户确认 |
+| 2 | 材质：双层渐变边缘、适度模糊与饱和度、轻微折射、柔和投影、浅深同结构 | 完成，待用户确认 |
+| 3 | 控件与联动：玻璃强度连续滑块、同心圆角、按键按压回弹 | 完成，待用户确认 |
+| 4 | 最终验证：单元测试、Lint、debug APK、视觉检查；不发布 tag / Release | 待三步确认后执行 |
+
+### 交付约束
+
+- 最终版本 `1.1.2 (77)`。
+- 只改键盘，不改主应用其他界面。
+- debug 包名 `com.yuan3271.cloudrift.debug`，应用名与输入法选择器名称均为
+  `DEBUG云隙输入`，可与正式版并存。
+- Liquid Glass 开关和主题选择在 1.1.2 预览中启用。
+- 不发布，不创建 tag，不上传 Release；只交付可侧载的 debug APK。
+
+### 第一步验证（1.1.2 / versionCode 61）
+
+- `testDebugUnitTest`：233 条，0 失败；新增层级预算与内部填充范围测试。
+- `lintDebug`：0 error / 9 warning；`assembleDebug` 成功。
+- APK：`dist/DEBUG-cloudrift-type-1.1.2-step1-debug.apk`，17,112,604 字节。
+- 包名 `com.yuan3271.cloudrift.debug`，应用与 IME 名称均为 `DEBUG云隙输入`，v2 签名验证通过。
+- 当前无连接设备或 AVD，未生成真机截图；真实模糊、折射与不同 OEM 的输入法窗口表现需安装后复核。
+
+### 第一步反馈修正（1.1.2-preR1 / versionCode 62）
+
+- Liquid Glass 下的按键外观改为独立的 `LiquidGlassKeyDensity`，分为低 / 中 / 高；填充透明度
+  分别为 12% / 9% / 6%，越高越透，且不会覆盖 Material 主题的按键背景偏好。
+- 候选词栏移除外层底板，候选胶囊仍保留自身的平面层级。
+- 浅色液态玻璃底板不再叠加白色蒙层，改为从壁纸动态主色生成的极淡冷灰 / 主题色渐变。
+- 全宽液态玻璃键盘取消左右与底部外边距，底部曲率读取 Android 12+ 系统屏幕圆角；
+  读不到时回退 30dp。悬浮键盘继续使用独立 30dp 圆角。
+- 本版 debug 包不使用 R8 / minify / shrink；`testDebugUnitTest` 235 条通过，debug 构建成功。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR1-debug.apk`，17,112,620 字节。
+
+### 第二步验证（1.1.2-preR2 / versionCode 63）
+
+- 回退 `preR1` 的壁纸动态冷灰底，恢复中性白 / 暖灰光学校准底板；浅色模式只加极淡压暗，
+  不叠加白色蒙层。
+- 外层背景模糊 11dp，饱和度提升 8%，边缘折射高度 17dp、位移 15dp，关闭明显色散。
+- 边缘由 1.15dp 渐变暗边与 2.35dp 左上亮内侧高光组成，另加 0.72dp 细高光收口；
+  所有边缘颜色均向右下渐隐，不使用等高实线。
+- 外侧投影半径 34dp、Y 轴偏移 12dp；浅色 9% / 深色 26% 黑色透明度。
+- 浅色与深色共用同一结构，仅调整透明度与光强参数。
+- `testDebugUnitTest`：237 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR2-debug.apk`，17,112,620 字节。
+
+### 第二步参考项目校准（1.1.2-preR3 / versionCode 64）
+
+- 以 `Kyant0/AndroidLiquidGlass` 当前 `kmp` 分支的 catalog 组件为准，移除自行绘制的轮廓描边。
+- 外层材质改为该项目的组合：`vibrancy()` → `blur(8dp)` → `lens(24dp, 24dp)`，
+  `Highlight.Default` 45° 高光着色器、`InnerShadow` 内暗边、`Shadow` 柔影。
+- 表面填充使用参考组件的浅色 `#FAFAFA` 40%、深色 `#121212` 40%；浅色底板保持中性白 / 暖灰。
+- 候选栏无背景、按键三档浓度、全宽键盘系统圆角适配保持不变。
+- `testDebugUnitTest`：237 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR3-debug.apk`，17,112,620 字节。
+
+### 第三步验证（1.1.2-preR4 / versionCode 65）
+
+- 键盘快捷设置与完整设置新增“玻璃强度”连续滑块，范围 0%–100%，默认 35%。
+- 强度同时控制外层模糊、40% 基准的中性填充、`Highlight.Default` 高光、`InnerShadow` 暗边与折射：
+  - 0%：14dp 模糊、86% 中性填充、高光与暗边最强，接近磨砂不透明。
+  - 100%：填充、模糊、高光、暗边、柔影与折射全部归零。
+- Liquid Glass 背景改为纯色，删除全部灰色大圆和渐变噪点。
+- 新增同心圆角函数，内层圆角＝外层圆角−间距；布局面板与设置预览使用该规则。
+- 液态玻璃按键圆角向胶囊形靠拢，按下放大并通过亮化主题色反馈，松手使用弹簧回弹。
+- `testDebugUnitTest`：238 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR4-debug.apk`，17,678,066 字节；
+  sha256 `12c6d30a9ad8c9483fc9aa696eb0c2ff2ce956cca3d006d8132a3cca2d26ef6d`。
+
+### 液态玻璃设计语言收口（1.1.2-preR5 / versionCode 66）
+
+- 高光只保留 AndroidLiquidGlass 的 `Highlight.Default` 着色器；没有自绘白边、径向光斑或额外加色层。
+- 键盘 Liquid Glass 分支不再直接使用 Material 的 `TextButton / Button / OutlinedButton /
+  IconButton / LoadingIndicator`；统一改为平面胶囊按钮、自绘加载点和液态玻璃图标按钮。
+- 完整设置页在 Liquid Glass 下也不再使用 Material `Card / FilterChip / OutlinedTextField /
+  AlertDialog / TopAppBar`；改走同一套液态玻璃平面卡片、胶囊筛选片、输入框、确认框和顶栏。
+- Material 3 Expressive 分支保持原组件与原外观，没有改回退主题的设计语言。
+- `testDebugUnitTest`：238 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR5-debug.apk`，17,145,384 字节；
+  sha256 `a8c3dbb8ab9a37023bf0556f7da8f55985cddb6377892b70cc1dc0330f581ba8`。
+
+### 玻璃不生效与主题选中态修复（1.1.2-preR6 / versionCode 67）
+
+- 根因：IME 窗口内先铺满纯色，`LayerBackdrop` 只能采样这块均匀颜色；模糊与折射没有可采样的
+  内容，因此视觉上只剩填充灰底。Backdrop 不会自动读取其他应用的跨窗口像素。
+- 删除 IME 内部不透明采样板；窗口改为真正透出后方应用。
+- Android 12+ 调用 `Window.setBackgroundBlurRadius`，由玻璃强度实时控制系统跨窗口模糊；
+  `isCrossWindowBlurEnabled` 不支持时安静回退到半透明填充。
+- 高光仍只来自 backdrops 的 `Highlight.Default`，未增加自绘白色高光。
+- 界面主题的液态玻璃卡片新增实心主题色选中底、反色文字和勾选标记。
+- `testDebugUnitTest`：238 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR6-debug.apk`，17,145,388 字节；
+  sha256 `fbb1f4bdbb066f4a1463548cf6a971ab43c423d997ba3edd7bca9eb5090880f4`。
+
+### HIG、取色、工具栏、光标与交互高光（1.1.2-preR8 / versionCode 69）
+
+- HIG 层级：Liquid Glass 保持为唯一的持久功能层，内部内容使用平面材质；触摸期间的光标轨和
+  “松手清空全部”作为临时交互玻璃，最大同时两层。
+- 触控尺寸：中英切换与明暗切换统一为 62×44dp；普通工具栏图标可点击高度 44dp。收起键为
+  56×44dp，圆角由外框圆角减去 4dp 推导。
+- 取色：Liquid Glass 的 primary / container / secondary / tertiary 饱和度统一提高 38%；
+  M3P 在深色表面也沿用浅色模式提取的强调色角色。
+- 光标轨：液态玻璃模式下激活时使用 backdrops 临时玻璃层，光标拇指保持实心主题色。
+- “松手清空全部”：改为红色调的临时液态玻璃胶囊。
+- 高光：仍只使用 `Highlight.Default`；线宽 1.05dp、模糊 0.65dp，默认强度采用非线性曲线保证
+  35% 时清晰可见。按住时使用参考库的弱光源 shader，光点跟随手指，抬手消失。
+- `testDebugUnitTest`：240 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR8-debug.apk`，17,161,772 字节；
+  sha256 `68d2525e8179d63352f7dca94cd5c8b34f0f95c1eb62b2194db175c29e3579ee`。
+
+### 全局玻璃、弹窗与光源体系（1.1.2-preR10 / versionCode 71）
+
+- 应用主界面 Liquid Glass 根层增加纯色标准背景，主界面打开前同步设置窗口底色，消除透明窗口
+  导致的打开/关闭闪白或黑框。
+- 主界面顶栏、设置卡片与所有确认弹窗恢复为真实 glass 层；所有按钮统一使用轻量
+  `vibrancy + blur + lens + Highlight + InnerShadow` 玻璃控件栈。
+- 按钮玻璃边缘只使用降低后的静态光，不响应动态手指光；只有整块键盘外框响应手指光。
+- 默认底光使用上一版手指光的强度与范围，位于玻璃垂直中轴的 24% / 50% / 76% 三点，
+  与上下边缘保持距离。
+- 手指光改为 16dp 亮核心 + 28dp 微弱光圈，取 16% / 6% 强度；触摸结束即消失。
+- 外框边缘使用 96dp 径向响应，仅当手指靠近边缘时点亮；键盘内部按钮不参与。
+- `testDebugUnitTest`：241 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR10-debug.apk`，17,178,372 字节；
+  sha256 `947ef48c80ccf11e4ba9019ba723e4e8ad969ec11fe17aa36a909e4d300dd77e`。
+
+### 全局按钮玻璃与最终光源规则（1.1.2-preR13 / versionCode 74）
+
+- 主界面使用纯色根 backdrop；顶栏、设置卡片、全部确认弹窗和主题选择卡均为真实 glass。
+- Liquid Glass 下所有按钮、开关、分段选择、滑杆、按键、候选词和行操作切换为轻量 Glass 控件；
+  输入框与说明文字保留内容层材质。
+- 按钮玻璃使用低强度静态边缘光，并在按住时让边缘径向光跟随触点，不增加按钮中心额外光斑。
+- M3P 深色表面沿用浅色模式提取的强调色；Liquid Glass 强调色饱和度提高 38%。
+- 默认底光由垂直中轴 24% / 50% / 76% 三个光源组成，使用上一版手指光的强度与范围并扩展覆盖
+  整块玻璃；中英与明暗切换均为 62×44dp，语音键与普通图标键均为 44×44dp，收起键 56×44dp。
+- 手指光分为 16dp 核心与 28dp 微光；只有整块键盘外框响应并显示跟手边缘光。
+- 主界面启动窗口底色与 Compose 根背景同步，避免透明窗口打开/关闭时闪白和裸底。
+- `testDebugUnitTest`：241 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR13-debug.apk`，17,178,372 字节；
+  sha256 `bbf5d10b66d763cc6e33f5c810c97393b72f832a3ab182ae72d7ca0d2a091813`。
+
+### 主界面底光、性能与自适应对比度（1.1.2-preR15 / versionCode 76）
+
+- 主界面取消额外顶部圆角 Glass 外框；顶栏标题恢复无玻璃背景。
+- 主界面纯色根背景新增底部径向底光；底光强度与键盘底光共用 `BASE_LIGHT_ALPHA`。
+- 按钮在按下时由边缘径向光跟手；按钮静止时复用外层玻璃视觉，只有选中/按下才创建
+  设备级 Glass 效果，减少数十个按键同时创建 RenderEffect 的压力。
+- 7–24dp 薄滑轨取消 lens 折射，改为无折射轻量玻璃，修复拖动高亮轨时的撕裂/拖影。
+- 实心主题色和选中态的前景自动按背景亮度选择黑色或白色；深色按钮优先白字，浅色按钮优先黑字。
+- 主题设置页主界面、全部按钮、开关、分段控件、键盘按键和候选词均为 Glass；
+  文本输入框和说明文字保留内容层材质。
+- 语音键与普通图标键统一为 44×44dp；中英与明暗键 62×44dp；收起键 56×44dp。
+- Liquid Glass 强调色饱和度 +38%；M3P 深色表面沿用浅色模式取色。
+- `testDebugUnitTest`：240 条通过，0 失败；debug 构建成功，未启用 R8 / minify / shrink。
+- 预览包：`dist/DEBUG-cloudrift-type-1.1.2-preR15-debug.apk`，17,178,372 字节；
+  sha256 `313f679bada28425f06cf26b41ddca102e3c62b2267d1e743994cf4c5e7e5477`。
+
+### 正式版 1.1.2（versionCode 77）
+
+- Liquid Glass 浅色模式采用深色模式的 Glass 材质与主题色，但页面底色仍保持浅色；
+  浅色模式默认底光为深色模式的一半。
+- 主界面使用与所选明暗模式一致的纯色根背景和底部光源；内容卡片使用标准材质降低常驻开销，
+  按钮、开关、分段控件、按键和弹窗使用 Liquid Glass。
+- 取消跟手圆形光斑；按钮和整个键盘外框保留跟手边缘响应。按钮静态边缘光已降低。
+- 主界面卡片和弹窗使用真实 Glass；标题所在的顶栏没有背景框。
+- 薄滑轨不使用 lens 折射，修复拖动渲染错误并降低 GPU 开销。
+- 实心背景上的文字/图标按 WCAG 相对亮度自动选择黑或白。
+- 语音失败态使用红色调的临时 Liquid Glass 面板。
+- 面板打开/关闭窗口底色与 Compose 背景同步，减少闪白和透明裸底。
+- 验证：单元测试 241 条全绿；`lintDebug` 0 error / 13 warning；R8 Release 构建成功；
+  APK v2 签名校验通过，版本 `1.1.2 (77)`。
+- 发布资产：`dist/cloudrift-type-1.1.2-release.apk`，4,295,726 字节；
+  sha256 `81fe996a457e31e65109de97a211983238bfbbe6d3569e1e92a093cc34310f3f`。

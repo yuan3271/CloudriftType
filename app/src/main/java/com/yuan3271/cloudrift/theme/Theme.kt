@@ -28,6 +28,7 @@ fun CloudriftTheme(
     accentHue: Int = 222,
     accentSaturation: Int = 42,
     darkThemeOverride: Boolean? = null,
+    appWindow: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val effectiveAppTheme = if (
@@ -42,28 +43,42 @@ fun CloudriftTheme(
         ThemeMode.Light -> false
         ThemeMode.Dark -> true
     }
-    val base = if (dark) CloudriftDarkScheme else CloudriftLightScheme
-    val baseColorScheme = when (themeSource) {
-        ThemeSource.Dynamic -> dynamicScheme(dark) ?: base
-        ThemeSource.Cloudrift -> base
+    val darkSource = when (themeSource) {
+        ThemeSource.Dynamic -> dynamicScheme(dark = true) ?: CloudriftDarkScheme
+        ThemeSource.Cloudrift -> CloudriftDarkScheme
         ThemeSource.Custom -> accentColorScheme(
             hue = accentHue.toFloat(),
             saturation = accentSaturation / 100f,
-            dark = dark,
+            dark = true,
         )
     }
-    val colorScheme = if (effectiveAppTheme == AppTheme.LiquidGlass) {
-        glassColorScheme(baseColorScheme, dark)
+    // Accent roles are shared across modes and always use the dark-mode palette as the standard.
+    val materialScheme = if (dark) {
+        CloudriftDarkScheme.withAccentRolesFrom(darkSource)
     } else {
-        baseColorScheme
+        CloudriftLightScheme.withAccentRolesFrom(darkSource)
+    }
+    val colorScheme = if (effectiveAppTheme == AppTheme.LiquidGlass) {
+        glassColorScheme(darkSource.withSaturatedAccents(1.38f), dark = true)
+    } else {
+        materialScheme
+    }
+    val windowBackground = if (dark) {
+        CloudriftDarkScheme.surface
+    } else {
+        CloudriftLightScheme.surface
     }
 
     MaterialExpressiveTheme(colorScheme = colorScheme) {
         CompositionLocalProvider(
             LocalAppTheme provides effectiveAppTheme,
+            LocalLiquidGlassBottomLightAlpha provides bottomLightAlpha(dark),
+            LocalLiquidGlassLightMode provides !dark,
         ) {
             if (effectiveAppTheme == AppTheme.LiquidGlass) {
-                LiquidGlassCanvas(dark = dark) { content() }
+                LiquidGlassCanvas(
+                    baseColor = if (appWindow) windowBackground else null,
+                ) { content() }
             } else {
                 content()
             }

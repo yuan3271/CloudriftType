@@ -809,6 +809,10 @@ class ImeController(
         windowHost?.applyInputFrame(floating, widthPercent)
     }
 
+    fun applyGlassBackdropBlur(radiusDp: Int) {
+        windowHost?.applyGlassBackdropBlur(radiusDp.coerceAtLeast(0))
+    }
+
     /**
      * Live resize from the floating keyboard's corner handle. The values live in the UI state while
      * the finger is down - writing settings on every frame would mean a preferences write per
@@ -1571,6 +1575,8 @@ class ImeController(
             keyCornerRadiusDp = snapshot.keyCornerRadiusDp,
             keyLabelScalePercent = snapshot.keyLabelScalePercent,
             keyBackground = snapshot.keyBackground,
+            liquidGlassKeyDensity = snapshot.liquidGlassKeyDensity,
+            glassIntensityPercent = snapshot.glassIntensityPercent,
             keyHeightDp = snapshot.keyHeightDp,
             bottomGapDp = snapshot.bottomGapDp,
             symbolWidth = snapshot.symbolWidth,

@@ -3,6 +3,8 @@ package com.yuan3271.cloudrift.ui.settings
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.provider.Settings
 import android.view.inputmethod.InputMethodInfo
@@ -10,6 +12,7 @@ import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
@@ -20,6 +23,7 @@ import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ImportOutcome
 import com.yuan3271.cloudrift.theme.CloudriftTheme
+import com.yuan3271.cloudrift.theme.LocalLiquidGlassKeyDensity
 import com.yuan3271.cloudrift.ui.AppThemeChoiceDialog
 
 class SettingsActivity : ComponentActivity() {
@@ -27,6 +31,18 @@ class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppGraph.init(this)
+        val launchSettings = AppGraph.settings.current
+        val darkLaunch = when (launchSettings.themeMode) {
+            com.yuan3271.cloudrift.data.ThemeMode.System ->
+                resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK ==
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES
+            com.yuan3271.cloudrift.data.ThemeMode.Light -> false
+            com.yuan3271.cloudrift.data.ThemeMode.Dark -> true
+            }
+        window.setBackgroundDrawable(
+            ColorDrawable(if (darkLaunch) 0xFF111318.toInt() else 0xFFFAF8FF.toInt()),
+        )
         val requestMicrophone = intent?.getBooleanExtra(EXTRA_REQUEST_MICROPHONE, false) == true
 
         setContent {
@@ -40,37 +56,42 @@ class SettingsActivity : ComponentActivity() {
                 themeSource = settings.themeSource,
                 accentHue = settings.accentHue,
                 accentSaturation = settings.accentSaturation,
+                appWindow = true,
             ) {
-                SettingsScreen(
-                    settings = settings,
-                    onUpdate = AppGraph.settings::update,
-                    imeEnabled = rememberImeEnabled(),
-                    userStats = userStats,
-                    update = update,
-                    actions = SettingsActions(
-                        requestMicrophoneOnStart = requestMicrophone,
-                        openSystemKeyboardSettings = ::openSystemKeyboardSettings,
-                        showKeyboardPicker = ::showKeyboardPicker,
-                        clearLearning = AppGraph.profile::clear,
-                        exportLearning = AppGraph.profile::exportPayload,
-                        importLearning = AppGraph.profile::importPayload,
-                        checkForUpdate = { AppGraph.updates.checkIfDue(force = true) },
-                        downloadUpdate = { update?.let(AppGraph.updates::download) },
-                        downloadUpdateViaMirror = {
-                            update?.let { AppGraph.updates.download(it, viaMirror = true) }
-                        },
-                        openRelease = {
-                            val url = update?.releaseUrl ?: RELEASES_URL
-                            runCatching {
-                                startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-                            }
-                        },
-                        finish = ::finish,
-                    ),
-                )
-                if (AppTheme.THEME_CHOICE_ENABLED && !settings.appThemeChosen) {
-                    AppThemeChoiceDialog { theme ->
-                        AppGraph.settings.update { it.withAppThemeChoice(theme) }
+                CompositionLocalProvider(
+                    LocalLiquidGlassKeyDensity provides settings.liquidGlassKeyDensity,
+                ) {
+                    SettingsScreen(
+                        settings = settings,
+                        onUpdate = AppGraph.settings::update,
+                        imeEnabled = rememberImeEnabled(),
+                        userStats = userStats,
+                        update = update,
+                        actions = SettingsActions(
+                            requestMicrophoneOnStart = requestMicrophone,
+                            openSystemKeyboardSettings = ::openSystemKeyboardSettings,
+                            showKeyboardPicker = ::showKeyboardPicker,
+                            clearLearning = AppGraph.profile::clear,
+                            exportLearning = AppGraph.profile::exportPayload,
+                            importLearning = AppGraph.profile::importPayload,
+                            checkForUpdate = { AppGraph.updates.checkIfDue(force = true) },
+                            downloadUpdate = { update?.let(AppGraph.updates::download) },
+                            downloadUpdateViaMirror = {
+                                update?.let { AppGraph.updates.download(it, viaMirror = true) }
+                            },
+                            openRelease = {
+                                val url = update?.releaseUrl ?: RELEASES_URL
+                                runCatching {
+                                    startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+                                }
+                            },
+                            finish = ::finish,
+                        ),
+                    )
+                    if (AppTheme.THEME_CHOICE_ENABLED && !settings.appThemeChosen) {
+                        AppThemeChoiceDialog { theme ->
+                            AppGraph.settings.update { it.withAppThemeChoice(theme) }
+                        }
                     }
                 }
             }

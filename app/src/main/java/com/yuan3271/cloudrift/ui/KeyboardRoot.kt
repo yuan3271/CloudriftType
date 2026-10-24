@@ -1,5 +1,7 @@
 package com.yuan3271.cloudrift.ui
 
+import android.os.Build
+import android.view.RoundedCorner
 import android.view.View
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -40,6 +42,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -60,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.data.KeyBackground
 import com.yuan3271.cloudrift.data.KeyboardFrame
@@ -72,11 +76,20 @@ import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.LayoutId
 import com.yuan3271.cloudrift.theme.CloudriftTheme
-import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.KeyboardOuterSurface
+import com.yuan3271.cloudrift.theme.LocalLiquidGlassKeyDensity
+import com.yuan3271.cloudrift.theme.LocalLiquidGlassIntensity
+import com.yuan3271.cloudrift.theme.LocalKeyboardOuterRadius
+import com.yuan3271.cloudrift.theme.outerGlassMaterial
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidControlGlass
+import com.yuan3271.cloudrift.theme.liquidInteractiveGlass
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Root of the keyboard window. Everything the input view shows is composed from here.
@@ -101,6 +114,18 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
 
     LaunchedEffect(floating, state.floatingWidthPercent) {
         controller.applyInputFrame(floating = floating, widthPercent = state.floatingWidthPercent)
+    }
+
+    LaunchedEffect(state.appTheme, state.glassIntensityPercent) {
+        val blurDp = if (state.appTheme == AppTheme.LiquidGlass) {
+            outerGlassMaterial(
+                intensityPercent = state.glassIntensityPercent,
+                dark = false,
+            ).blurDp.roundToInt()
+        } else {
+            0
+        }
+        controller.applyGlassBackdropBlur(blurDp)
     }
 
     // 工具面板是**另一个窗口**（见 CloudriftImeService.applyToolbarWindow）：它该不该出现、在哪儿，
@@ -142,20 +167,24 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
         accentHue = state.accentHue,
         accentSaturation = state.accentSaturation,
     ) {
-        var layoutPickerVisible by remember { mutableStateOf(false) }
+        CompositionLocalProvider(
+            LocalLiquidGlassKeyDensity provides state.liquidGlassKeyDensity,
+            LocalLiquidGlassIntensity provides state.glassIntensityPercent / 100f,
+        ) {
+            var layoutPickerVisible by remember { mutableStateOf(false) }
 
         // 过渡动画：键盘整块出现时淡入并轻轻上移。窗口本身是系统弹出来的（改不了它的动画），
         // 但内容可以是"落下来"的；只在第一次合成时跑一次，打字过程里不会反复播。
         val appear = remember { Animatable(0f) }
         LaunchedEffect(Unit) { appear.animateTo(1f, tween(150)) }
-        Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    alpha = appear.value
-                    translationY = (1f - appear.value) * 28.dp.toPx()
-                },
-        ) {
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = appear.value
+                        translationY = (1f - appear.value) * 28.dp.toPx()
+                    },
+            ) {
             // 外接键鼠在场且设置选了兼容面板时，窗口里只有候选词栏 + 工具栏；否则就是原来那
             // 整块键盘。两条路读的是同一份状态、同一套引擎，插上键鼠不会打断正在打的东西。
             if (state.showsCompatPanel) {
@@ -214,6 +243,7 @@ fun KeyboardRoot(controller: ImeController, modifier: Modifier = Modifier) {
                     modifier = Modifier.matchParentSize(),
                 )
             }
+            }
         }
     }
 }
@@ -247,6 +277,16 @@ private fun KeyboardSurface(
     // 屏幕宽度一律用 dp 参与缩放换算：拖动量也是 dp，两边单位一致，横拖与纵拖的手感才对得上。
     val screenWidth = LocalConfiguration.current.screenWidthDp.toFloat()
     val liquidGlass = isLiquidGlassTheme()
+    val liquidGlassEdgeRadius = if (liquidGlass && !floating) {
+        systemBottomCornerRadiusDp()
+    } else {
+        30.dp
+    }
+    val liquidGlassContentRadius = when {
+        !liquidGlass -> 22.dp
+        floating -> 30.dp
+        else -> minOf(26.dp, liquidGlassEdgeRadius)
+    }
     val autoHeight = KeyboardLayouts.autoKeyHeight(screenHeight)
     // The floating card is sized by its own values: 键盘高度 and 距屏幕底部 are the upright
     // keyboard's business, and shrinking the upright one must not shrink the floating one.
@@ -312,26 +352,40 @@ private fun KeyboardSurface(
         controller.resizeFloatingKeyboard(widthPercent, keyHeightDeltaDp)
     }
 
-    CloudriftSurface(
-        modifier = if (floating || liquidGlass) {
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = if (liquidGlass) 8.dp else 10.dp,
-                    vertical = 6.dp,
-                )
-        } else {
-            Modifier.fillMaxWidth()
-        },
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = if (floating || liquidGlass) {
-            RoundedCornerShape(if (liquidGlass) 30.dp else 24.dp)
-        } else {
-            RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
-        },
+    CompositionLocalProvider(
+        LocalKeyboardOuterRadius provides liquidGlassContentRadius,
     ) {
-        Column(
-            modifier = Modifier
+        KeyboardOuterSurface(
+            modifier = if (floating || liquidGlass) {
+                Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = when {
+                            liquidGlass && !floating -> 0.dp
+                            liquidGlass -> 8.dp
+                            else -> 10.dp
+                        },
+                        vertical = if (liquidGlass && !floating) 0.dp else 6.dp,
+                    )
+            } else {
+                Modifier.fillMaxWidth()
+            },
+            materialColor = MaterialTheme.colorScheme.surfaceContainer,
+            shape = if (liquidGlass && !floating) {
+                RoundedCornerShape(
+                    topStart = 26.dp,
+                    topEnd = 26.dp,
+                    bottomStart = liquidGlassEdgeRadius,
+                    bottomEnd = liquidGlassEdgeRadius,
+                )
+            } else if (floating || liquidGlass) {
+                RoundedCornerShape(if (liquidGlass) 30.dp else 24.dp)
+            } else {
+                RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+            },
+        ) {
+            Column(
+                modifier = Modifier
                 .fillMaxWidth()
                 // The keyboard owns the bottom of the screen, so it has to respect the
                 // navigation bar itself once decorFitsSystemWindows is switched off.
@@ -340,7 +394,7 @@ private fun KeyboardSurface(
                         WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
                     ),
                 ),
-        ) {
+            ) {
             if (floating) {
                 FloatingGripStrip(
                     onMove = controller::moveFloatingKeyboard,
@@ -500,6 +554,25 @@ private fun KeyboardSurface(
         }
     }
 }
+}
+
+/**
+ * Match the full-width glass shell to the display's own physical corner curve where Android
+ * exposes it. Floating cards keep their independent 30dp radius.
+ */
+@Composable
+private fun systemBottomCornerRadiusDp(): Dp {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return 30.dp
+    val view = LocalView.current
+    val insets = view.rootWindowInsets ?: return 30.dp
+    val left = insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT)?.radius ?: 0
+    val right = insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT)?.radius ?: 0
+    val radiusPx = maxOf(left, right)
+    if (radiusPx <= 0) return 30.dp
+    return with(LocalDensity.current) {
+        (radiusPx / density).dp.coerceIn(22.dp, 48.dp)
+    }
+}
 
 /**
  * Shown in place of the candidate strip while backspace is held and slid up: the option is lit, and
@@ -508,6 +581,12 @@ private fun KeyboardSurface(
  */
 @Composable
 private fun ClearAllStrip() {
+    val liquid = isLiquidGlassTheme()
+    val contentColor = if (liquid) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.onErrorContainer
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -516,9 +595,19 @@ private fun ClearAllStrip() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Surface(
-            color = MaterialTheme.colorScheme.errorContainer,
-            shape = RoundedCornerShape(50),
+        Box(
+            modifier = Modifier.then(
+                if (liquid) {
+                    Modifier.liquidInteractiveGlass(
+                        shape = RoundedCornerShape(50),
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.88f),
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                },
+            ),
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -528,14 +617,14 @@ private fun ClearAllStrip() {
                 Icon(
                     imageVector = CloudriftIcons.Close,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    tint = contentColor,
                     modifier = Modifier.size(16.dp),
                 )
                 Text(
                     text = "松手清空全部",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = contentColor,
                 )
             }
         }
@@ -562,7 +651,7 @@ internal fun ExpandedCandidates(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = onCollapse) {
+            CloudriftTextButton(onClick = onCollapse) {
                 Icon(CloudriftIcons.ExpandMore, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("收起")
@@ -585,9 +674,18 @@ internal fun ExpandedCandidates(
                 state.candidates.forEachIndexed { index, candidate ->
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(14.dp))
                             .clickable { onCandidate(index) }
-                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                            .then(
+                                if (isLiquidGlassTheme()) {
+                                    Modifier.liquidControlGlass(
+                                        shape = RoundedCornerShape(14.dp),
+                                    )
+                                } else {
+                                    Modifier
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                },
+                            )
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center,
                     ) {
@@ -617,8 +715,18 @@ internal fun NoticeStrip(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.errorContainer)
+            .then(
+                if (isLiquidGlassTheme()) {
+                    Modifier.internalSurface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                },
+            )
             .padding(start = 12.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -629,9 +737,9 @@ internal fun NoticeStrip(
             modifier = Modifier.weight(1f),
         )
         if (actionLabel != null) {
-            TextButton(onClick = onAction) { Text(actionLabel) }
+            CloudriftTextButton(onClick = onAction) { Text(actionLabel) }
         }
-        TextButton(onClick = onDismiss) {
+        CloudriftTextButton(onClick = onDismiss) {
             Icon(CloudriftIcons.Close, contentDescription = "关闭提示", modifier = Modifier.size(18.dp))
         }
     }

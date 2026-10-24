@@ -39,12 +39,16 @@ import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.KeyBackground
+import com.yuan3271.cloudrift.data.LiquidGlassKeyDensity
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
 import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardLayouts
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.LocalKeyboardOuterRadius
+import com.yuan3271.cloudrift.theme.concentricInnerRadius
 import com.yuan3271.cloudrift.theme.hsvToColor
-import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlin.math.roundToInt
@@ -67,11 +71,7 @@ fun QuickSettingsPanel(
     val autoHeight = KeyboardLayouts.autoKeyHeight(screenHeight)
     val keyHeight = (if (state.keyHeightDp > 0) state.keyHeightDp.toFloat() else autoHeight).dp
 
-    CloudriftSurface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = CloudriftIcons.Settings,
@@ -89,7 +89,7 @@ fun QuickSettingsPanel(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.weight(1f))
-                TextButton(
+                CloudriftTextButton(
                     onClick = onClose,
                     modifier = Modifier.padding(end = 6.dp),
                 ) {
@@ -104,12 +104,19 @@ fun QuickSettingsPanel(
             // even though the keyboard itself is behind the sheet.
             Column(modifier = Modifier.padding(horizontal = 14.dp)) {
                 LabeledRow("外观预览") {
-                    CloudriftSurface(
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        shape = RoundedCornerShape(18.dp),
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 6.dp),
+                            .padding(bottom = 6.dp)
+                            .internalSurface(
+                                shape = RoundedCornerShape(
+                                    concentricInnerRadius(
+                                        LocalKeyboardOuterRadius.current,
+                                        8.dp,
+                                    ),
+                                ),
+                                tone = InternalSurfaceTone.Low,
+                            ),
                     ) {
                         KeyPreviewRow(
                             rows = listOf(KeyboardLayouts.previewRow()),
@@ -187,17 +194,51 @@ fun QuickSettingsPanel(
                 }
 
                 // ---- key appearance -------------------------------------------------
-                LabeledRow("按键背景") {
-                    val styles = listOf(
-                        KeyBackground.Filled to "填充",
-                        KeyBackground.Outlined to "描边",
-                        KeyBackground.Ghost to "无底",
-                    )
-                    CloudriftSegmentedControl(
-                        options = styles.map { it.second },
-                        selectedIndex = styles.indexOfFirst { it.first == state.keyBackground },
-                        onSelected = { index ->
-                            onUpdate { it.copy(keyBackground = styles[index].first) }
+                if (isLiquidGlassTheme()) {
+                    LabeledRow("玻璃按键浓度") {
+                        val densities = listOf(
+                            LiquidGlassKeyDensity.Low to "低",
+                            LiquidGlassKeyDensity.Medium to "中",
+                            LiquidGlassKeyDensity.High to "高",
+                        )
+                        CloudriftSegmentedControl(
+                            options = densities.map { it.second },
+                            selectedIndex = densities.indexOfFirst {
+                                it.first == state.liquidGlassKeyDensity
+                            },
+                            onSelected = { index ->
+                                onUpdate {
+                                    it.copy(liquidGlassKeyDensity = densities[index].first)
+                                }
+                            },
+                        )
+                    }
+                } else {
+                    LabeledRow("按键背景") {
+                        val styles = listOf(
+                            KeyBackground.Filled to "填充",
+                            KeyBackground.Outlined to "描边",
+                            KeyBackground.Ghost to "无底",
+                        )
+                        CloudriftSegmentedControl(
+                            options = styles.map { it.second },
+                            selectedIndex = styles.indexOfFirst { it.first == state.keyBackground },
+                            onSelected = { index ->
+                                onUpdate { it.copy(keyBackground = styles[index].first) }
+                            },
+                        )
+                    }
+                }
+
+                if (isLiquidGlassTheme()) {
+                    SliderRow(
+                        title = "玻璃强度",
+                        value = state.glassIntensityPercent.toFloat(),
+                        range = 0f..100f,
+                        steps = 0,
+                        suffix = "%",
+                        onChange = { value ->
+                            onUpdate { it.copy(glassIntensityPercent = value.roundToInt()) }
                         },
                     )
                 }
@@ -308,7 +349,6 @@ fun QuickSettingsPanel(
             }
         }
     }
-}
 
 private val SCROLL_MAX_HEIGHT = 236.dp
 
@@ -425,7 +465,17 @@ private fun ColorPicker(
                     .size(24.dp)
                     .clip(CircleShape)
                     .background(hsvToColor(hue.toFloat(), saturation / 100f, 0.55f))
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                    .then(
+                        if (isLiquidGlassTheme()) {
+                            Modifier
+                        } else {
+                            Modifier.border(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant,
+                                CircleShape,
+                            )
+                        },
+                    ),
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

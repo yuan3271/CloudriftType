@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
@@ -72,6 +73,7 @@ import com.yuan3271.cloudrift.data.AppSettings
 import com.yuan3271.cloudrift.data.ExternalInputMode
 import com.yuan3271.cloudrift.data.ExternalKeyFlavor
 import com.yuan3271.cloudrift.data.KeyBackground
+import com.yuan3271.cloudrift.data.LiquidGlassKeyDensity
 import com.yuan3271.cloudrift.data.KeyboardFrame
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.data.ThemeSource
@@ -83,9 +85,18 @@ import com.yuan3271.cloudrift.input.ExternalInputMonitor
 import com.yuan3271.cloudrift.input.ExternalInputSnapshot
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.theme.hsvToColor
-import com.yuan3271.cloudrift.theme.CloudriftSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.KeyboardGlassSurface
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 import com.yuan3271.cloudrift.ui.CloudriftSegmentedControl
+import com.yuan3271.cloudrift.ui.CloudriftAlertDialog
+import com.yuan3271.cloudrift.ui.CloudriftCard
+import com.yuan3271.cloudrift.ui.CloudriftFilledButton
+import com.yuan3271.cloudrift.ui.CloudriftFilterChip
+import com.yuan3271.cloudrift.ui.CloudriftIconButton
+import com.yuan3271.cloudrift.ui.CloudriftOutlinedButton
+import com.yuan3271.cloudrift.ui.CloudriftTextButton
+import com.yuan3271.cloudrift.ui.CloudriftTextField
 import com.yuan3271.cloudrift.ui.CursorSpeedSelector
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
 import com.yuan3271.cloudrift.ui.LiquidChoiceCard
@@ -123,30 +134,30 @@ fun SettingsScreen(
     Scaffold(
         containerColor = if (liquidGlass) Color.Transparent else MaterialTheme.colorScheme.surface,
         topBar = {
-            TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (liquidGlass) {
-                        Color.Transparent
-                    } else {
-                        MaterialTheme.colorScheme.surface
+            if (liquidGlass) {
+                LiquidSettingsTopBar(onBack = actions.finish)
+            } else {
+                TopAppBar(
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    title = {
+                        Column {
+                            Text(text = "云隙输入", style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                text = "Cloudrift Type",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     },
-                ),
-                title = {
-                    Column {
-                        Text(text = "云隙输入", style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            text = "Cloudrift Type",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = actions.finish) {
-                        Icon(CloudriftIcons.ArrowBack, contentDescription = "返回")
-                    }
-                },
-            )
+                    navigationIcon = {
+                        IconButton(onClick = actions.finish) {
+                            Icon(CloudriftIcons.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                )
+            }
         },
     ) { padding ->
         Column(
@@ -255,8 +266,8 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
-                CloudriftSurface(
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                CloudriftCard(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
@@ -270,15 +281,38 @@ fun SettingsScreen(
                 }
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = "按键背景",
+                    text = if (liquidGlass) "玻璃按键浓度" else "按键背景",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(8.dp))
-                KeyBackgroundSelector(
-                    current = settings.keyBackground,
-                    onSelect = { style -> onUpdate { it.copy(keyBackground = style) } },
-                )
+                if (liquidGlass) {
+                    LiquidGlassKeyDensitySelector(
+                        current = settings.liquidGlassKeyDensity,
+                        onSelect = { density ->
+                            onUpdate { it.copy(liquidGlassKeyDensity = density) }
+                        },
+                    )
+                } else {
+                    KeyBackgroundSelector(
+                        current = settings.keyBackground,
+                        onSelect = { style -> onUpdate { it.copy(keyBackground = style) } },
+                    )
+                }
+                if (liquidGlass) {
+                    ValueSlider(
+                        title = "玻璃强度",
+                        value = settings.glassIntensityPercent,
+                        range = 0..100,
+                        unit = "%",
+                        onChange = { value -> onUpdate { it.copy(glassIntensityPercent = value) } },
+                    )
+                    Text(
+                        text = "0% 接近磨砂不透明，100% 完全通透；默认 35% 优先保证可读性。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Spacer(Modifier.height(14.dp))
                 ValueSlider(
                     title = "按键圆角",
@@ -546,7 +580,7 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
                     )
-                    OutlinedButton(onClick = { confirmClearLearning = true }) { Text("清除记录") }
+                    CloudriftOutlinedButton(onClick = { confirmClearLearning = true }) { Text("清除记录") }
                 }
                 Spacer(Modifier.height(10.dp))
                 LearningTransferRows(
@@ -663,7 +697,10 @@ fun SettingsScreen(
                 LabelValue("图标", "云隙图标集（自绘）")
                 LabelValue("中文词库", "jieba 词频 + THUOCL 领域词 + pinyin-data 读音 + pypinyin 词条读音（均 MIT）")
                 LabelValue("联想语料", "自撰口语语料 + Tatoeba 中文句子（CC BY 2.0 FR）")
-                LabelValue("界面", "Material 3 Expressive")
+                LabelValue(
+                    "界面",
+                    if (liquidGlass) "Liquid Glass" else "Material 3 Expressive",
+                )
                 ThirdPartyNoticeRow()
             }
 
@@ -674,7 +711,7 @@ fun SettingsScreen(
     if (confirmClearLearning) {
         // 学习记录是几千次上屏攒出来的，清掉不可恢复；一次误触就抹掉它，代价和"多点一下"不成
         // 比例，所以这里要一次明确的确认。
-        AlertDialog(
+        CloudriftAlertDialog(
             onDismissRequest = { confirmClearLearning = false },
             title = { Text("清除学习记录？") },
             text = {
@@ -685,7 +722,7 @@ fun SettingsScreen(
                 )
             },
             confirmButton = {
-                TextButton(
+                CloudriftTextButton(
                     onClick = {
                         actions.clearLearning()
                         confirmClearLearning = false
@@ -695,7 +732,7 @@ fun SettingsScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmClearLearning = false }) { Text("取消") }
+                CloudriftTextButton(onClick = { confirmClearLearning = false }) { Text("取消") }
             },
         )
     }
@@ -716,7 +753,7 @@ private fun KeyboardPreviewCard() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(10.dp))
-        OutlinedTextField(
+        CloudriftTextField(
             value = text,
             onValueChange = { text = it },
             modifier = Modifier.fillMaxWidth(),
@@ -744,14 +781,12 @@ private fun UpdateCard(
     onDownloadMirror: () -> Unit,
     onOpenRelease: () -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = if (update != null) {
-                MaterialTheme.colorScheme.tertiaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
+    CloudriftCard(
+        containerColor = if (update != null) {
+            MaterialTheme.colorScheme.tertiaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerLow
+        },
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -794,12 +829,12 @@ private fun UpdateCard(
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onDownload) { Text("下载更新") }
-                    OutlinedButton(onClick = onDownloadMirror) { Text("加速下载") }
+                    CloudriftFilledButton(onClick = onDownload) { Text("下载更新") }
+                    CloudriftOutlinedButton(onClick = onDownloadMirror) { Text("加速下载") }
                 }
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onOpenRelease) { Text("查看发布页") }
+                    CloudriftOutlinedButton(onClick = onOpenRelease) { Text("查看发布页") }
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -830,7 +865,7 @@ private fun UpdateCard(
                     UpdateInterval.EveryKeyboardOpen to "每次开键盘",
                 )
                 options.forEach { (value, label) ->
-                    FilterChip(
+                    CloudriftFilterChip(
                         selected = interval == value,
                         onClick = { onInterval(value) },
                         label = { Text(label, style = MaterialTheme.typography.labelSmall) },
@@ -855,7 +890,7 @@ private fun UpdateCard(
                 onCheckedChange = onShowDot,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onCheckNow) { Text("立即检测") }
+                CloudriftTextButton(onClick = onCheckNow) { Text("立即检测") }
                 Spacer(Modifier.weight(1f))
                 Text(
                     text = "版本来自 GitHub Releases",
@@ -875,10 +910,8 @@ private fun SetupCard(
     onPickKeyboard: () -> Unit,
     onGrantMicrophone: () -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
+    CloudriftCard(
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
         shape = RoundedCornerShape(24.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -900,10 +933,10 @@ private fun SetupCard(
             )
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onEnableKeyboard, modifier = Modifier.weight(1f)) {
+                CloudriftFilledButton(onClick = onEnableKeyboard, modifier = Modifier.weight(1f)) {
                     Text("去启用")
                 }
-                OutlinedButton(onClick = onPickKeyboard, modifier = Modifier.weight(1f)) {
+                CloudriftOutlinedButton(onClick = onPickKeyboard, modifier = Modifier.weight(1f)) {
                     Text("切换输入法")
                 }
             }
@@ -919,7 +952,7 @@ private fun SetupCard(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.weight(1f),
                     )
-                    OutlinedButton(onClick = onGrantMicrophone) { Text("授权") }
+                    CloudriftOutlinedButton(onClick = onGrantMicrophone) { Text("授权") }
                 }
             }
         }
@@ -947,6 +980,35 @@ private fun SectionTitle(title: String, icon: ImageVector) {
     }
 }
 
+@Composable
+private fun LiquidSettingsTopBar(onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .height(64.dp)
+            .padding(horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        CloudriftIconButton(onClick = onBack) { tint ->
+            Icon(
+                imageVector = CloudriftIcons.ArrowBack,
+                contentDescription = "返回",
+                tint = tint,
+            )
+        }
+        Column {
+            Text(text = "云隙输入", style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = "Cloudrift Type",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 /**
  * 设置页里的外接键鼠状态：进来先读一次，然后挂着设备监听跟着变。
  *
@@ -969,12 +1031,13 @@ private fun rememberExternalInputs(): ExternalInputSnapshot {
 @Composable
 private fun SettingsCard(content: @Composable () -> Unit) {
     if (isLiquidGlassTheme()) {
-        CloudriftSurface(
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
-            shape = RoundedCornerShape(28.dp),
+        CloudriftCard(
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
         ) {
-            Column(modifier = Modifier.padding(16.dp)) { content() }
+            Column(
+                modifier = Modifier.padding(16.dp),
+            ) { content() }
         }
     } else {
         Card(
@@ -1016,6 +1079,7 @@ private fun AppThemeSelector(current: AppTheme, onSelect: (AppTheme) -> Unit) {
                     title = option.title,
                     subtitle = option.subtitle,
                     icon = option.icon,
+                    selected = option.theme == current,
                     onClick = { onSelect(option.theme) },
                 )
             }
@@ -1234,6 +1298,23 @@ private fun AccentPicker(
 }
 
 @Composable
+private fun LiquidGlassKeyDensitySelector(
+    current: LiquidGlassKeyDensity,
+    onSelect: (LiquidGlassKeyDensity) -> Unit,
+) {
+    val options = listOf(
+        LiquidGlassKeyDensity.Low to "低",
+        LiquidGlassKeyDensity.Medium to "中",
+        LiquidGlassKeyDensity.High to "高",
+    )
+    CloudriftSegmentedControl(
+        options = options.map { it.second },
+        selectedIndex = options.indexOfFirst { it.first == current }.coerceAtLeast(0),
+        onSelected = { onSelect(options[it].first) },
+    )
+}
+
+@Composable
 private fun KeyBackgroundSelector(current: KeyBackground, onSelect: (KeyBackground) -> Unit) {
     val options = listOf(
         KeyBackground.Filled to "填充",
@@ -1413,7 +1494,7 @@ private fun SpeechEndpointCard(
         )
 
         if (endpoint.style == ApiStyle.AliyunQianwen) {
-            OutlinedTextField(
+            CloudriftTextField(
                 value = hotWords,
                 onValueChange = onHotWords,
                 label = { Text("即时热词（可选）") },
@@ -1522,11 +1603,11 @@ private fun ConfirmablePresetRow(
     var pending by remember { mutableStateOf<Pair<String, ApiEndpoint>?>(null) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         presets.forEach { (label, preset) ->
-            OutlinedButton(onClick = { pending = label to preset }) { Text(label) }
+            CloudriftOutlinedButton(onClick = { pending = label to preset }) { Text(label) }
         }
     }
     pending?.let { (label, preset) ->
-        AlertDialog(
+        CloudriftAlertDialog(
             onDismissRequest = { pending = null },
             title = { Text("切换到 $label 预设？") },
             text = {
@@ -1535,7 +1616,7 @@ private fun ConfirmablePresetRow(
                 )
             },
             confirmButton = {
-                TextButton(
+                CloudriftTextButton(
                     onClick = {
                         onChange(endpoint.merge(preset))
                         pending = null
@@ -1545,7 +1626,7 @@ private fun ConfirmablePresetRow(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pending = null }) { Text("取消") }
+                CloudriftTextButton(onClick = { pending = null }) { Text("取消") }
             },
         )
     }
@@ -1558,7 +1639,7 @@ private fun EndpointField(
     placeholder: String,
     onChange: (String) -> Unit,
 ) {
-    OutlinedTextField(
+    CloudriftTextField(
         value = value,
         onValueChange = { onChange(it.trim()) },
         label = { Text(label) },
@@ -1573,7 +1654,7 @@ private fun EndpointField(
 @Composable
 private fun SecretField(value: String, label: String, onChange: (String) -> Unit) {
     var reveal by remember { mutableStateOf(false) }
-    OutlinedTextField(
+    CloudriftTextField(
         value = value,
         onValueChange = { onChange(it.trim()) },
         label = { Text(label) },
@@ -1584,10 +1665,11 @@ private fun SecretField(value: String, label: String, onChange: (String) -> Unit
             PasswordVisualTransformation()
         },
         trailingIcon = {
-            IconButton(onClick = { reveal = !reveal }) {
+            CloudriftIconButton(onClick = { reveal = !reveal }) { tint ->
                 Icon(
                     imageVector = if (reveal) CloudriftIcons.Info else CloudriftIcons.Key,
                     contentDescription = if (reveal) "隐藏" else "显示",
+                    tint = tint,
                 )
             }
         },
@@ -1642,12 +1724,22 @@ private fun ThirdPartyNoticeRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isLiquidGlassTheme()) {
+                    Modifier.liquidControlGlass(
+                        shape = RoundedCornerShape(50),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    )
+                } else {
+                    Modifier
+                },
+            )
             .clickable {
                 notice = runCatching {
                     context.assets.open("NOTICE.md").bufferedReader().use { it.readText() }
                 }.getOrNull().orEmpty()
             }
-            .padding(vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -1665,10 +1757,10 @@ private fun ThirdPartyNoticeRow() {
     }
 
     notice?.let { text ->
-        AlertDialog(
+        CloudriftAlertDialog(
             onDismissRequest = { notice = null },
             confirmButton = {
-                TextButton(onClick = { notice = null }) { Text("关闭") }
+                CloudriftTextButton(onClick = { notice = null }) { Text("关闭") }
             },
             title = { Text("第三方资源声明") },
             text = {

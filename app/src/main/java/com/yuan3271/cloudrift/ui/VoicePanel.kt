@@ -38,11 +38,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.theme.VoiceActiveRed
-import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
+import com.yuan3271.cloudrift.theme.liquidInteractiveGlass
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 import kotlinx.coroutines.delay
@@ -67,9 +69,8 @@ fun VoicePanel(
     onOpenPermission: () -> Unit,
     onCancelAutoApply: () -> Unit = {},
 ) {
-    CloudriftSurface(
+    Box(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Box(
             modifier = Modifier
@@ -202,15 +203,16 @@ private fun RecordingContent(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
+            CloudriftOutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) {
                 Icon(CloudriftIcons.Close, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("取消")
             }
-            Button(
+            CloudriftFilledButton(
                 onClick = onStop,
                 modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = VoiceActiveRed),
+                containerColor = VoiceActiveRed,
+                contentColor = Color.White,
             ) {
                 Icon(CloudriftIcons.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
@@ -264,7 +266,7 @@ private fun BusyContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        LoadingIndicator(modifier = Modifier.size(28.dp))
+        CloudriftLoadingIndicator(modifier = Modifier.size(28.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
@@ -281,11 +283,11 @@ private fun BusyContent(
             }
         }
         if (onSkip != null) {
-            TextButton(onClick = onSkip) { Text("跳过修正") }
+            CloudriftTextButton(onClick = onSkip) { Text("跳过修正") }
         }
         // 识别和纠错都可能卡在网络上，而这块面板会把按键整块顶掉：没有这个按钮，等待期间
         // 用户既不能打字也不能退出，只能等超时。
-        TextButton(onClick = onCancel) { Text("取消") }
+        CloudriftTextButton(onClick = onCancel) { Text("取消") }
     }
 }
 
@@ -350,14 +352,14 @@ private fun ReadyContent(
             )
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TextButton(onClick = onRetry) {
+            CloudriftTextButton(onClick = onRetry) {
                 Icon(CloudriftIcons.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("重说")
             }
-            TextButton(onClick = onCancel) { Text("取消") }
+            CloudriftTextButton(onClick = onCancel) { Text("取消") }
             Spacer(Modifier.weight(1f))
-            Button(onClick = onCommit) {
+            CloudriftFilledButton(onClick = onCommit) {
                 Icon(CloudriftIcons.Send, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("上屏")
@@ -396,25 +398,42 @@ private fun FailedContent(
     onCancel: () -> Unit,
     onOpenPermission: () -> Unit,
 ) {
+    val liquid = isLiquidGlassTheme()
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (liquid) {
+                    Modifier.liquidInteractiveGlass(
+                        shape = RoundedCornerShape(18.dp),
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.22f),
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .padding(if (liquid) 12.dp else 0.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text(
             text = state.message,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.error,
+            color = if (liquid) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.error
+            },
             textAlign = TextAlign.Start,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (state.needsMicrophonePermission) {
-                Button(onClick = onOpenPermission) { Text("去授权") }
+                CloudriftFilledButton(onClick = onOpenPermission) { Text("去授权") }
             } else {
-                Button(onClick = onRetry) { Text("重试") }
+                CloudriftFilledButton(onClick = onRetry) { Text("重试") }
             }
             // 重试之外必须有一条退路：失败面板同样占着整块按键区，只剩「重试」时，一次识别
             // 出错就等于把键盘锁在了这个面板上。
-            TextButton(onClick = onCancel) { Text("取消") }
+            CloudriftTextButton(onClick = onCancel) { Text("取消") }
         }
     }
 }

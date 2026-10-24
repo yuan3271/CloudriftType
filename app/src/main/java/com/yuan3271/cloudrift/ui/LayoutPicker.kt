@@ -26,10 +26,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.yuan3271.cloudrift.input.LayoutId
-import com.yuan3271.cloudrift.theme.CloudriftSurface
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.LocalKeyboardOuterRadius
+import com.yuan3271.cloudrift.theme.concentricInnerRadius
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 
 /**
@@ -51,13 +54,17 @@ fun LayoutPickerOverlay(
             .clickable(onClick = onDismiss),
         contentAlignment = Alignment.BottomCenter,
     ) {
-        CloudriftSurface(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(enabled = false) {}
-                .padding(8.dp),
-            shape = RoundedCornerShape(26.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                .padding(8.dp)
+                .internalSurface(
+                    shape = RoundedCornerShape(
+                        concentricInnerRadius(LocalKeyboardOuterRadius.current, 8.dp),
+                    ),
+                    tone = InternalSurfaceTone.High,
+                ),
         ) {
             Column(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
@@ -90,12 +97,13 @@ private fun LayoutRow(layout: LayoutId, selected: Boolean, onClick: () -> Unit) 
             .heightIn(min = 46.dp)
             .then(
                 if (liquidGlass) {
-                    Modifier.liquidGlassPanel(
+                    Modifier.liquidControlGlass(
                         shape = RoundedCornerShape(18.dp),
-                        tint = if (selected) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.50f)
+                        active = selected,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            glassSurfaceTint()
+                            null
                         },
                     )
                 } else {
@@ -118,7 +126,9 @@ private fun LayoutRow(layout: LayoutId, selected: Boolean, onClick: () -> Unit) 
         Icon(
             imageVector = layoutIcon(layout),
             contentDescription = null,
-            tint = if (selected) {
+            tint = if (selected && liquidGlass) {
+                MaterialTheme.colorScheme.primary.bestContentColor()
+            } else if (selected) {
                 MaterialTheme.colorScheme.onPrimaryContainer
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant
@@ -129,7 +139,9 @@ private fun LayoutRow(layout: LayoutId, selected: Boolean, onClick: () -> Unit) 
             text = layoutName(layout),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) {
+            color = if (selected && liquidGlass) {
+                MaterialTheme.colorScheme.primary.bestContentColor()
+            } else if (selected) {
                 MaterialTheme.colorScheme.onPrimaryContainer
             } else {
                 MaterialTheme.colorScheme.onSurface
@@ -140,7 +152,11 @@ private fun LayoutRow(layout: LayoutId, selected: Boolean, onClick: () -> Unit) 
             Icon(
                 imageVector = CloudriftIcons.Check,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                tint = if (liquidGlass) {
+                    MaterialTheme.colorScheme.primary.bestContentColor()
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                },
                 modifier = Modifier.size(18.dp),
             )
         }

@@ -5,6 +5,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 import kotlin.math.abs
+import kotlin.math.pow
 
 /**
  * "Cloud rift" palette: a cool high-altitude blue for the sky, a warm peach accent for
@@ -157,6 +158,61 @@ fun accentColorScheme(hue: Float, saturation: Float, dark: Boolean): ColorScheme
             onTertiaryContainer = support(0.14f),
         )
     }
+}
+
+/** Boosts accent chroma without changing the sampled hue or surface roles. */
+internal fun ColorScheme.withSaturatedAccents(factor: Float): ColorScheme = copy(
+    primary = primary.saturated(factor),
+    primaryContainer = primaryContainer.saturated(factor * 0.72f),
+    inversePrimary = inversePrimary.saturated(factor),
+    secondary = secondary.saturated(factor),
+    secondaryContainer = secondaryContainer.saturated(factor * 0.62f),
+    tertiary = tertiary.saturated(factor),
+    tertiaryContainer = tertiaryContainer.saturated(factor * 0.68f),
+)
+
+/** Keeps dark surfaces while reusing the accent roles extracted in light mode. */
+internal fun ColorScheme.withAccentRolesFrom(source: ColorScheme): ColorScheme = copy(
+    primary = source.primary,
+    onPrimary = source.onPrimary,
+    primaryContainer = source.primaryContainer,
+    onPrimaryContainer = source.onPrimaryContainer,
+    inversePrimary = source.inversePrimary,
+    secondary = source.secondary,
+    onSecondary = source.onSecondary,
+    secondaryContainer = source.secondaryContainer,
+    onSecondaryContainer = source.onSecondaryContainer,
+    tertiary = source.tertiary,
+    onTertiary = source.onTertiary,
+    tertiaryContainer = source.tertiaryContainer,
+    onTertiaryContainer = source.onTertiaryContainer,
+)
+
+internal fun Color.saturated(factor: Float, minimumSaturation: Float = 0f): Color {
+    val max = maxOf(red, green, blue)
+    val min = minOf(red, green, blue)
+    val delta = max - min
+    if (max <= 0f || delta <= 0f) return this
+    val hue = when (max) {
+        red -> 60f * (((green - blue) / delta) % 6f)
+        green -> 60f * (((blue - red) / delta) + 2f)
+        else -> 60f * (((red - green) / delta) + 4f)
+    }
+    val saturation = (delta / max * factor).coerceIn(minimumSaturation, 1f)
+    return hsvToColor(hue, saturation, max).copy(alpha = alpha)
+}
+
+/**
+ * Pure black/white contrast choice for solid accents and selection fills. The 0.179 threshold is
+ * where relative luminance gives both candidates the same WCAG contrast ratio.
+ */
+internal fun Color.bestContentColor(): Color =
+    if (relativeLuminance() > 0.179f) Color.Black else Color.White
+
+private fun Color.relativeLuminance(): Float {
+    fun channel(value: Float): Float =
+        if (value <= 0.04045f) value / 12.92f else ((value + 0.055f) / 1.055f).pow(2.4f)
+    return channel(red) * 0.2126f + channel(green) * 0.7152f + channel(blue) * 0.0722f
 }
 
 /** HSV is the right space for a hue/saturation picker; Value doubles as the tone. */

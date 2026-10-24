@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 
 /**
@@ -68,10 +69,16 @@ internal fun FloatingGripStrip(
                 .background(
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                 )
-                .border(
-                    width = 0.5.dp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
-                    shape = RoundedCornerShape(50),
+                .then(
+                    if (isLiquidGlassTheme()) {
+                        Modifier
+                    } else {
+                        Modifier.border(
+                            width = 0.5.dp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f),
+                            shape = RoundedCornerShape(50),
+                        )
+                    },
                 ),
         )
     }

@@ -33,9 +33,11 @@ import com.yuan3271.cloudrift.data.SymbolWidth
 import com.yuan3271.cloudrift.engine.emoji.EmojiGroup
 import com.yuan3271.cloudrift.input.KeyDef
 import com.yuan3271.cloudrift.ime.SymbolSheet
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 
 /**
  * The symbol page, drawn as a scrollable bar of symbol keys instead of a fixed grid: the whole
@@ -248,12 +250,13 @@ private fun RailChip(
             .height(height)
             .then(
                 if (liquidGlass) {
-                    Modifier.liquidGlassPanel(
+                    Modifier.liquidControlGlass(
                         shape = RoundedCornerShape(16.dp),
-                        tint = if (selected) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.58f)
+                        active = selected,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            glassSurfaceTint()
+                            null
                         },
                     )
                 } else {
@@ -283,7 +286,7 @@ private fun RailChip(
                 style = MaterialTheme.typography.labelLarge,
                 fontSize = if (icon.isEmpty()) 14.sp else 10.sp,
                 color = if (selected) {
-                    MaterialTheme.colorScheme.onPrimary
+                    MaterialTheme.colorScheme.primary.bestContentColor()
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },

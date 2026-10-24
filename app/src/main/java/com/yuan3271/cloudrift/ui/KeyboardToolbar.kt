@@ -35,15 +35,22 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import com.yuan3271.cloudrift.data.ThemeMode
 import com.yuan3271.cloudrift.ime.ImeUiState
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.LiquidGlassConfig
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.LocalKeyboardOuterRadius
+import com.yuan3271.cloudrift.theme.concentricInnerRadius
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import com.yuan3271.cloudrift.theme.liquidControlGlass
 import com.yuan3271.cloudrift.voice.VoiceState
 
 /**
@@ -95,6 +102,7 @@ fun KeyboardToolbar(
             },
             description = "主题",
             onClick = onThemeClick,
+            width = LiquidGlassConfig.LANGUAGE_THEME_CONTROL_WIDTH_DP.dp,
         )
         if (state.update != null && state.showUpdateDot) {
             UpdateMark(replayKey = state.keyboardShows, onClick = onUpdateClick)
@@ -111,12 +119,18 @@ fun KeyboardToolbar(
             LiquidIconButton(
                 onClick = onVoiceClick,
                 active = true,
+                width = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+                height = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
                 tint = if (recording) {
-                    MaterialTheme.colorScheme.error.copy(alpha = 0.82f)
+                    MaterialTheme.colorScheme.error
                 } else {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.78f)
+                    MaterialTheme.colorScheme.primary
                 },
-                contentColor = Color.White,
+                contentColor = if (recording) {
+                    MaterialTheme.colorScheme.error.bestContentColor()
+                } else {
+                    MaterialTheme.colorScheme.primary.bestContentColor()
+                },
             ) { tint ->
                 Icon(
                     imageVector = voiceIcon,
@@ -136,7 +150,7 @@ fun KeyboardToolbar(
                         else -> MaterialTheme.colorScheme.primary
                     },
                 ),
-                modifier = Modifier.size(38.dp),
+                modifier = Modifier.size(LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp),
             ) {
                 Icon(
                     imageVector = voiceIcon,
@@ -163,6 +177,13 @@ fun KeyboardToolbar(
             icon = CloudriftIcons.KeyboardHide,
             description = "收起键盘",
             onClick = onHideClick,
+            width = LiquidGlassConfig.HIDE_CONTROL_WIDTH_DP.dp,
+            shape = RoundedCornerShape(
+                concentricInnerRadius(
+                    LocalKeyboardOuterRadius.current,
+                    LiquidGlassConfig.HIDE_CONTROL_RADIUS_INSET_DP.dp,
+                ),
+            ),
         )
     }
 }
@@ -194,8 +215,19 @@ internal fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
         modifier = Modifier
             .height(22.dp)
             .width(width)
-            .clip(RoundedCornerShape(50))
-            .background(fill)
+            .then(
+                if (isLiquidGlassTheme()) {
+                    Modifier.liquidControlGlass(
+                        shape = RoundedCornerShape(50),
+                        color = fill,
+                        active = expanded,
+                    )
+                } else {
+                    Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(fill)
+                },
+            )
             .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -249,28 +281,34 @@ internal fun ToolbarChip(
     onLongClick: (() -> Unit)? = null,
     icon: ImageVector? = null,
     active: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
+    val glass = isLiquidGlassTheme()
     val container = if (active) {
-        MaterialTheme.colorScheme.primaryContainer
+        if (glass) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
     }
     val content = if (active) {
-        MaterialTheme.colorScheme.onPrimaryContainer
+        if (glass) {
+            MaterialTheme.colorScheme.primary.bestContentColor()
+        } else {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        }
     } else {
         MaterialTheme.colorScheme.onSurface
     }
-    val glass = isLiquidGlassTheme()
     Row(
-        modifier = Modifier
+        modifier = modifier
             .then(
                 if (glass) {
-                    Modifier.liquidGlassPanel(
+                    Modifier.liquidControlGlass(
                         shape = RoundedCornerShape(50),
-                        tint = if (active) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.58f)
+                        active = active,
+                        color = if (active) {
+                            MaterialTheme.colorScheme.primary
                         } else {
-                            glassSurfaceTint()
+                            null
                         },
                     )
                 } else {
@@ -314,7 +352,16 @@ internal fun LanguageChip(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
-    ToolbarChip(label = label, onClick = onClick, onLongClick = onLongClick, icon = CloudriftIcons.Globe)
+    ToolbarChip(
+        label = label,
+        onClick = onClick,
+        onLongClick = onLongClick,
+        icon = CloudriftIcons.Globe,
+        modifier = Modifier.size(
+            width = LiquidGlassConfig.LANGUAGE_THEME_CONTROL_WIDTH_DP.dp,
+            height = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+        ),
+    )
 }
 
 /**
@@ -326,18 +373,29 @@ internal fun ToolbarButton(
     description: String,
     onClick: () -> Unit,
     active: Boolean = false,
+    modifier: Modifier = Modifier,
+    width: Dp = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+    height: Dp = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+    shape: Shape = RoundedCornerShape(50),
     content: @Composable (Color) -> Unit,
 ) {
     if (isLiquidGlassTheme()) {
-        LiquidIconButton(onClick = onClick, active = active) { tint ->
+        LiquidIconButton(
+            onClick = onClick,
+            modifier = modifier,
+            active = active,
+            width = width,
+            height = height,
+            shape = shape,
+        ) { tint ->
             content(tint)
         }
     } else {
         IconButton(
             onClick = onClick,
-            modifier = Modifier
-                .size(38.dp)
-                .clip(RoundedCornerShape(50))
+            modifier = modifier
+                .size(width = width, height = height)
+                .clip(shape)
                 .background(
                     if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
                 ),
@@ -359,9 +417,17 @@ internal fun SmallIconButton(
     description: String,
     onClick: () -> Unit,
     active: Boolean = false,
+    width: Dp = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+    shape: Shape = RoundedCornerShape(50),
 ) {
     // description 同时当无障碍标签与图标的替代文字：这一颗在哪儿都是"按下去做什么"。
-    ToolbarButton(description = description, onClick = onClick, active = active) { tint ->
+    ToolbarButton(
+        description = description,
+        onClick = onClick,
+        active = active,
+        width = width,
+        shape = shape,
+    ) { tint ->
         Icon(
             imageVector = icon,
             contentDescription = description,
@@ -371,7 +437,7 @@ internal fun SmallIconButton(
     }
 }
 
-private val TOOLBAR_HEIGHT = 46.dp
+private val TOOLBAR_HEIGHT = 52.dp
 
 /** Amber, so the mark reads as "something to look at" without shouting. */
 private val UpdateAmber = Color(0xFFFFB300)

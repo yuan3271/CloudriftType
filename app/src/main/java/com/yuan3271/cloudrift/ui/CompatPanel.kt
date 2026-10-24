@@ -25,9 +25,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -44,7 +46,15 @@ import com.yuan3271.cloudrift.input.KeyCode
 import com.yuan3271.cloudrift.input.KeyboardLayouts
 import com.yuan3271.cloudrift.input.KeyboardPage
 import com.yuan3271.cloudrift.theme.CloudriftTheme
-import com.yuan3271.cloudrift.theme.CloudriftSurface
+import com.yuan3271.cloudrift.theme.KeyboardContentSurface
+import com.yuan3271.cloudrift.theme.KeyboardOuterSurface
+import com.yuan3271.cloudrift.theme.LiquidGlassConfig
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.LocalLiquidGlassKeyDensity
+import com.yuan3271.cloudrift.theme.LocalLiquidGlassIntensity
+import com.yuan3271.cloudrift.theme.LocalKeyboardOuterRadius
+import com.yuan3271.cloudrift.theme.internalSurface
+import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
 import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.voice.VoiceState
 
@@ -80,6 +90,10 @@ fun CompatContentWindow(controller: ImeController) {
             controller = controller,
             kind = CompatPanelKind.Content,
             maxWidth = state.contentMaxWidth(),
+            // A candidate string is content, while the toolbar is the functional layer. When the
+            // toolbar window is visible it owns the only glass surface; when the toolbar is off,
+            // the content window becomes the only visible keyboard shell.
+            outerGlass = !state.compatToolbarVisible,
         ) {
             CompatContentBody(state = state, controller = controller)
         }
@@ -101,6 +115,7 @@ fun CompatToolbarWindowContent(controller: ImeController) {
             controller = controller,
             kind = CompatPanelKind.Toolbar,
             maxWidth = state.toolbarMaxWidth(),
+            outerGlass = true,
         ) {
             CompatToolbar(state = state, controller = controller)
         }
@@ -153,40 +168,48 @@ fun CompatPanel(
     controller: ImeController,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            // 悬浮键盘同款外边距：卡片与屏幕边靠它对齐。
-            .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL)
-            // 窗口自己不吃系统栏（decorFitsSystemWindows=false），面板替它吃：手势条不能压在
-            // 工具面板上。
-            .windowInsetsPadding(
-                WindowInsets.systemBars.only(
-                    WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
-                ),
-            ),
-        verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
+    KeyboardOuterSurface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(PANEL_CORNER),
+        materialColor = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        CompatPermissionStrip(state = state, controller = controller)
-        // 候选词卡片默认不出现：没有正在打的字、没有候选、没有提示时，屏幕上只剩工具面板那一条
-        // （用户点名要的就是这个）。
-        if (state.compatContentVisible) {
-            FloatPanelWithGrip(
-                controller = controller,
-                kind = CompatPanelKind.Content,
-                maxWidth = state.contentMaxWidth(),
-            ) {
-                CompatContentBody(state = state, controller = controller)
+        Column(
+            modifier = Modifier
+                // 悬浮键盘同款外边距：卡片与屏幕边靠它对齐。
+                .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL)
+                // 窗口自己不吃系统栏（decorFitsSystemWindows=false），面板替它吃：手势条不能压在
+                // 工具面板上。
+                .windowInsetsPadding(
+                    WindowInsets.systemBars.only(
+                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                    ),
+                ),
+            verticalArrangement = Arrangement.spacedBy(PANEL_GAP),
+        ) {
+            CompatPermissionStrip(state = state, controller = controller)
+            // 候选词卡片默认不出现：没有正在打的字、没有候选、没有提示时，屏幕上只剩工具面板那一条
+            // （用户点名要的就是这个）。
+            if (state.compatContentVisible) {
+                FloatPanelWithGrip(
+                    controller = controller,
+                    kind = CompatPanelKind.Content,
+                    maxWidth = state.contentMaxWidth(),
+                    outerGlass = false,
+                ) {
+                    CompatContentBody(state = state, controller = controller)
+                }
             }
-        }
-        // 工具面板也是"打字才出现"：空闲时屏幕上什么都不留（见 ImeUiState.compatToolbarVisible）。
-        // 这条退路和两个独立窗口那条路读的是同一个判断，两种形态不会长得不一样。
-        if (state.compatToolbarVisible) {
-            FloatPanelWithGrip(
-                controller = controller,
-                kind = CompatPanelKind.Toolbar,
-                maxWidth = state.toolbarMaxWidth(),
-            ) {
-                CompatToolbar(state = state, controller = controller)
+            // 工具面板也是"打字才出现"：空闲时屏幕上什么都不留（见 ImeUiState.compatToolbarVisible）。
+            // 这条退路和两个独立窗口那条路读的是同一个判断，两种形态不会长得不一样。
+            if (state.compatToolbarVisible) {
+                FloatPanelWithGrip(
+                    controller = controller,
+                    kind = CompatPanelKind.Toolbar,
+                    maxWidth = state.toolbarMaxWidth(),
+                    outerGlass = false,
+                ) {
+                    CompatToolbar(state = state, controller = controller)
+                }
             }
         }
     }
@@ -210,16 +233,22 @@ private fun CompatWindowTheme(state: ImeUiState, content: @Composable () -> Unit
         accentHue = state.accentHue,
         accentSaturation = state.accentSaturation,
     ) {
-        Box(
-            modifier = Modifier
-                .windowInsetsPadding(
-                    WindowInsets.systemBars.only(
-                        WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
-                    ),
-                )
-                .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL),
+        CompositionLocalProvider(
+            LocalLiquidGlassKeyDensity provides state.liquidGlassKeyDensity,
+            LocalLiquidGlassIntensity provides state.glassIntensityPercent / 100f,
+            LocalKeyboardOuterRadius provides PANEL_CORNER,
         ) {
-            content()
+            Box(
+                modifier = Modifier
+                    .windowInsetsPadding(
+                        WindowInsets.systemBars.only(
+                            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom,
+                        ),
+                    )
+                    .padding(horizontal = PANEL_MARGIN, vertical = PANEL_MARGIN_VERTICAL),
+            ) {
+                content()
+            }
         }
     }
 }
@@ -230,9 +259,15 @@ private fun CompatCard(
     controller: ImeController,
     kind: CompatPanelKind,
     maxWidth: Dp,
+    outerGlass: Boolean,
     content: @Composable () -> Unit,
 ) {
-    FloatPanelWithGrip(controller = controller, kind = kind, maxWidth = maxWidth) {
+    FloatPanelWithGrip(
+        controller = controller,
+        kind = kind,
+        maxWidth = maxWidth,
+        outerGlass = outerGlass,
+    ) {
         CompatPermissionStrip(state = state, controller = controller)
         content()
     }
@@ -243,12 +278,10 @@ private fun FloatPanelWithGrip(
     controller: ImeController,
     kind: CompatPanelKind,
     maxWidth: Dp,
+    outerGlass: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    CloudriftSurface(
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(PANEL_CORNER),
-    ) {
+    val card: @Composable () -> Unit = {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             FloatingGripStrip(
                 onMove = { dx, dy -> controller.moveCompatPanelBy(kind, dx, dy) },
@@ -268,6 +301,19 @@ private fun FloatPanelWithGrip(
                 }
             }
         }
+    }
+    if (outerGlass) {
+        KeyboardOuterSurface(
+            shape = RoundedCornerShape(PANEL_CORNER),
+            materialColor = MaterialTheme.colorScheme.surfaceContainer,
+            content = card,
+        )
+    } else {
+        KeyboardContentSurface(
+            shape = RoundedCornerShape(PANEL_CORNER),
+            materialColor = MaterialTheme.colorScheme.surfaceContainer,
+            content = card,
+        )
     }
 }
 
@@ -416,9 +462,19 @@ private fun CompatExpandedPanel(state: ImeUiState, controller: ImeController) {
 @Composable
 private fun CompatPermissionStrip(state: ImeUiState, controller: ImeController) {
     if (!state.compatNeedsOverlayPermission) return
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+    Box(
+        modifier = Modifier.then(
+            if (isLiquidGlassTheme()) {
+                Modifier.internalSurface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                )
+            } else {
+                Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+            },
+        ),
     ) {
         Row(
             modifier = Modifier
@@ -433,7 +489,7 @@ private fun CompatPermissionStrip(state: ImeUiState, controller: ImeController) 
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.weight(1f, fill = false),
             )
-            androidx.compose.material3.TextButton(onClick = controller::openOverlayPermissionSettings) {
+            CloudriftTextButton(onClick = controller::openOverlayPermissionSettings) {
                 Text("去授权")
             }
         }
@@ -486,27 +542,57 @@ private fun CompatToolbar(state: ImeUiState, controller: ImeController) {
             onLongClick = controller::toggleSymbolPage,
         )
 
-        FilledIconButton(
-            onClick = controller::toggleVoice,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = when {
-                    recording -> MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.primary
+        val voiceIcon = when {
+            recording -> CloudriftIcons.Stop
+            busy -> CloudriftIcons.Refresh
+            else -> CloudriftIcons.Mic
+        }
+        if (isLiquidGlassTheme()) {
+            LiquidIconButton(
+                onClick = controller::toggleVoice,
+                active = true,
+                width = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+                height = LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp,
+                tint = if (recording) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
                 },
-            ),
-            modifier = Modifier.size(38.dp),
-        ) {
-            Icon(
-                imageVector = when {
-                    recording -> CloudriftIcons.Stop
-                    busy -> CloudriftIcons.Refresh
-                    else -> CloudriftIcons.Mic
+                contentColor = if (recording) {
+                    MaterialTheme.colorScheme.error.bestContentColor()
+                } else {
+                    MaterialTheme.colorScheme.primary.bestContentColor()
                 },
-                contentDescription = "语音输入",
-                modifier = Modifier
-                    .size(20.dp)
-                    .rotate(if (busy) spin else 0f),
-            )
+            ) { tint ->
+                Icon(
+                    imageVector = voiceIcon,
+                    contentDescription = "语音输入",
+                    tint = tint,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(if (busy) spin else 0f),
+                )
+            }
+        } else {
+            FilledIconButton(
+                onClick = controller::toggleVoice,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = if (recording) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                ),
+                modifier = Modifier.size(LiquidGlassConfig.TOOLBAR_CONTROL_HEIGHT_DP.dp),
+            ) {
+                Icon(
+                    imageVector = voiceIcon,
+                    contentDescription = "语音输入",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(if (busy) spin else 0f),
+                )
+            }
         }
         SmallIconButton(
             icon = CloudriftIcons.Clipboard,

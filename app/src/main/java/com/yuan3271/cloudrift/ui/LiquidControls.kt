@@ -2,7 +2,12 @@ package com.yuan3271.cloudrift.ui
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -12,6 +17,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,12 +28,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -40,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerInputScope
@@ -52,18 +68,22 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.yuan3271.cloudrift.theme.glassSurfaceTint
+import com.yuan3271.cloudrift.theme.InternalSurfaceTone
+import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.liquidControlGlass
+import com.yuan3271.cloudrift.theme.liquidTrackGlass
+import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidGlassPanel
+import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * A draggable Liquid Glass segmented control. Unlike the Material equivalent, the selection is a
- * physical lens that follows the finger and springs into place; the shared glass tray refracts the
- * moving highlight underneath it.
+ * A draggable segmented control in the Liquid Glass theme. The tray is a flat luminance step and
+ * the selection is an opaque theme-colour fill; neither layer performs its own blur or refraction.
  */
 @Composable
 fun CloudriftSegmentedControl(
@@ -118,10 +138,8 @@ fun LiquidSegmentedControl(
         modifier = modifier
             .fillMaxWidth()
             .height(42.dp)
-            .liquidGlassPanel(
+            .liquidControlGlass(
                 shape = RoundedCornerShape(50),
-                tint = glassSurfaceTint(),
-                interactive = pressure,
             ),
     ) {
         val density = LocalDensity.current
@@ -137,10 +155,10 @@ fun LiquidSegmentedControl(
                     IntOffset((position.value.coerceIn(0f, options.lastIndex.toFloat()) *
                         itemWidthInt).roundToInt(), 0)
                 }
-                .liquidGlassPanel(
+                .liquidControlGlass(
                     shape = RoundedCornerShape(50),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.62f),
-                    interactive = pressure,
+                    color = MaterialTheme.colorScheme.primary,
+                    active = true,
                 ),
         )
         Row(
@@ -193,7 +211,7 @@ fun LiquidSegmentedControl(
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (index == selectedIndex) FontWeight.SemiBold else FontWeight.Medium,
                         color = if (index == selectedIndex) {
-                            MaterialTheme.colorScheme.onPrimary
+                            MaterialTheme.colorScheme.primary.bestContentColor()
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
                         },
@@ -204,7 +222,7 @@ fun LiquidSegmentedControl(
     }
 }
 
-/** A glass toggle whose thumb can be dragged and stretches under the finger. */
+/** A toggle whose track changes to a solid semantic fill instead of adding another material. */
 @Composable
 fun LiquidSwitch(
     checked: Boolean,
@@ -234,14 +252,14 @@ fun LiquidSwitch(
                     enabled
                 }
             }
-            .liquidGlassPanel(
+            .liquidControlGlass(
                 shape = RoundedCornerShape(50),
-                tint = if (checked) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.64f)
+                active = checked,
+                color = if (checked) {
+                    MaterialTheme.colorScheme.primary
                 } else {
-                    glassSurfaceTint()
+                    null
                 },
-                interactive = pressure,
             )
             .pointerInput(enabled) {
                 if (!enabled) return@pointerInput
@@ -276,16 +294,20 @@ fun LiquidSwitch(
                     scaleX = stretch
                     scaleY = 2f - stretch
                 }
-                .liquidGlassPanel(
+                .liquidControlGlass(
                     shape = CircleShape,
-                    tint = Color.White.copy(alpha = 0.78f),
-                    interactive = pressure,
+                    active = checked,
+                    color = if (checked) {
+                        MaterialTheme.colorScheme.primary.bestContentColor()
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                 ),
         )
     }
 }
 
-/** A continuous glass slider with an immediate tap position and a direct-manipulation thumb. */
+/** A continuous slider with flat track surfaces and a solid primary thumb. */
 @Composable
 fun LiquidSlider(
     value: Float,
@@ -331,9 +353,8 @@ fun LiquidSlider(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(7.dp)
-                .liquidGlassPanel(
+                .liquidTrackGlass(
                     shape = RoundedCornerShape(50),
-                    tint = glassSurfaceTint(),
                 ),
         )
         Box(
@@ -341,7 +362,7 @@ fun LiquidSlider(
                 .fillMaxWidth(fraction)
                 .height(7.dp)
                 .background(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.72f),
+                    MaterialTheme.colorScheme.primary,
                     RoundedCornerShape(50),
                 ),
         )
@@ -360,24 +381,25 @@ fun LiquidSlider(
                     scaleX = stretch
                     scaleY = 1f / stretch
                 }
-                .liquidGlassPanel(
+                .liquidControlGlass(
                     shape = RoundedCornerShape(50),
-                    tint = Color.White.copy(alpha = 0.82f),
-                    interactive = pressure,
+                    color = MaterialTheme.colorScheme.primary,
+                    active = true,
                 ),
         )
     }
 }
 
 /**
- * A floating glass option used by the first-run picker. The whole card stretches slightly while
- * pressed, while its icon tray acts as a second optical layer.
+ * A floating option used by the first-run picker. It is a flat card; only the keyboard shell is
+ * allowed to be real glass.
  */
 @Composable
 fun LiquidChoiceCard(
     title: String,
     subtitle: String,
     icon: ImageVector,
+    selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -387,6 +409,11 @@ fun LiquidChoiceCard(
         animationSpec = spring(0.58f, 360f),
         label = "liquid-choice-pressure",
     )
+    val foreground = if (selected) {
+        MaterialTheme.colorScheme.primary.bestContentColor()
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -395,11 +422,10 @@ fun LiquidChoiceCard(
                 scaleX = stretch
                 scaleY = 2f - stretch
             }
-            .liquidGlassPanel(
+            .liquidControlGlass(
                 shape = RoundedCornerShape(24.dp),
-                tint = glassSurfaceTint(),
-                strong = true,
-                interactive = pressure,
+                active = selected,
+                color = if (selected) MaterialTheme.colorScheme.primary else null,
             )
             .semantics {
                 role = Role.Button
@@ -425,17 +451,24 @@ fun LiquidChoiceCard(
         Box(
             modifier = Modifier
                 .size(42.dp)
-                .liquidGlassPanel(
+                .internalSurface(
                     shape = RoundedCornerShape(15.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-                    interactive = pressure,
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.primary.bestContentColor().copy(alpha = 0.14f)
+                    } else {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    },
                 ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (selected) {
+                    MaterialTheme.colorScheme.primary.bestContentColor()
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
                 modifier = Modifier.size(22.dp),
             )
         }
@@ -444,33 +477,48 @@ fun LiquidChoiceCard(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = foreground,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary.bestContentColor().copy(alpha = 0.76f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+        if (selected) {
+            Icon(
+                imageVector = CloudriftIcons.Check,
+                contentDescription = "已选择",
+                tint = MaterialTheme.colorScheme.primary.bestContentColor(),
+                modifier = Modifier.size(19.dp),
             )
         }
     }
 }
 
 /**
- * Circular glass action used by the keyboard toolbar. The icon tray itself refracts; it is not an
- * IconButton with a translucent background.
+ * Circular toolbar action. A neutral action is a subtle plane fill; active and pressed states are
+ * solid theme-colour fills.
  */
 @Composable
 fun LiquidIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     active: Boolean = false,
-    tint: Color = if (active) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.68f)
+    width: Dp = 38.dp,
+    height: Dp = 38.dp,
+    shape: Shape = CircleShape,
+    tint: Color? = if (active) {
+        MaterialTheme.colorScheme.primary
     } else {
-        glassSurfaceTint()
+        null
     },
     contentColor: Color = if (active) {
-        MaterialTheme.colorScheme.onPrimary
+        MaterialTheme.colorScheme.primary.bestContentColor()
     } else {
         MaterialTheme.colorScheme.onSurface
     },
@@ -482,18 +530,28 @@ fun LiquidIconButton(
         animationSpec = spring(0.58f, 360f),
         label = "liquid-icon-pressure",
     )
+    val fill = when {
+        pressed -> (tint ?: MaterialTheme.colorScheme.primary).copy(alpha = 1f)
+        active -> tint?.copy(alpha = 1f) ?: MaterialTheme.colorScheme.primary
+        else -> null
+    }
+    val foreground = if (pressed || active) {
+        (fill ?: MaterialTheme.colorScheme.primary).bestContentColor()
+    } else {
+        contentColor
+    }
     Box(
         modifier = modifier
-            .size(38.dp)
+            .size(width = width, height = height)
             .graphicsLayer {
                 val scale = 1f + pressure * 0.045f
                 scaleX = scale
                 scaleY = 2f - scale
             }
-            .liquidGlassPanel(
-                shape = CircleShape,
-                tint = tint,
-                interactive = pressure,
+            .liquidControlGlass(
+                shape = shape,
+                active = active || pressed,
+                color = fill,
             )
             .pointerInput(Unit) {
                 inspectLiquidDrag(
@@ -514,17 +572,19 @@ fun LiquidIconButton(
             },
         contentAlignment = Alignment.Center,
     ) {
-        content(contentColor)
+        content(foreground)
     }
 }
 
-/** A capsule action that is a floating liquid object rather than a filled Material button. */
+/** A capsule action with a flat neutral fill or a solid primary fill. */
 @Composable
 fun LiquidPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     primary: Boolean = false,
     enabled: Boolean = true,
+    containerColor: Color? = null,
+    contentColor: Color? = null,
     content: @Composable () -> Unit,
 ) {
     var pressed by remember { mutableStateOf(false) }
@@ -533,6 +593,17 @@ fun LiquidPillButton(
         animationSpec = spring(0.58f, 360f),
         label = "liquid-pill-pressure",
     )
+    val activeColor = containerColor ?: MaterialTheme.colorScheme.primary
+    val fill = when {
+        pressed -> androidx.compose.ui.graphics.lerp(activeColor, Color.White, 0.08f)
+        primary || containerColor != null -> activeColor
+        else -> null
+    }
+    val foreground = when {
+        primary || containerColor != null ->
+            contentColor ?: activeColor.bestContentColor()
+        else -> contentColor ?: MaterialTheme.colorScheme.onSurface
+    }
     Row(
         modifier = modifier
             .height(42.dp)
@@ -542,14 +613,10 @@ fun LiquidPillButton(
                 scaleX = stretch
                 scaleY = 2f - stretch
             }
-            .liquidGlassPanel(
+            .liquidControlGlass(
                 shape = RoundedCornerShape(50),
-                tint = if (primary) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.68f)
-                } else {
-                    glassSurfaceTint()
-                },
-                interactive = pressure,
+                active = primary || pressed || containerColor != null,
+                color = fill,
             )
             .then(
                 if (enabled) {
@@ -581,13 +648,183 @@ fun LiquidPillButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         androidx.compose.runtime.CompositionLocalProvider(
-            androidx.compose.material3.LocalContentColor provides if (primary) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+            LocalContentColor provides foreground,
         ) {
             content()
+        }
+    }
+}
+
+/** Compact flat text action used by Liquid Glass chrome instead of Material TextButton. */
+@Composable
+fun LiquidTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = modifier
+            .then(
+                if (enabled) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                },
+            )
+            .liquidControlGlass(
+                shape = RoundedCornerShape(50),
+            )
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        CompositionLocalProvider(
+            LocalContentColor provides MaterialTheme.colorScheme.onSurface,
+        ) {
+            content()
+        }
+    }
+}
+
+/** Shared action wrappers keep Material widgets out of the Liquid Glass branch. */
+@Composable
+fun CloudriftTextButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit,
+) {
+    if (isLiquidGlassTheme()) {
+        LiquidTextButton(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            content = content,
+        )
+    } else {
+        TextButton(onClick = onClick, modifier = modifier, enabled = enabled, content = content)
+    }
+}
+
+@Composable
+fun CloudriftFilledButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    containerColor: Color? = null,
+    contentColor: Color? = null,
+    content: @Composable () -> Unit,
+) {
+    if (isLiquidGlassTheme()) {
+        LiquidPillButton(
+            onClick = onClick,
+            modifier = modifier,
+            primary = containerColor == null,
+            enabled = enabled,
+            containerColor = containerColor,
+            contentColor = contentColor,
+            content = content,
+        )
+    } else {
+        Button(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = containerColor ?: MaterialTheme.colorScheme.primary,
+                contentColor = contentColor ?: MaterialTheme.colorScheme.onPrimary,
+            ),
+            content = { content() },
+        )
+    }
+}
+
+@Composable
+fun CloudriftOutlinedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit,
+) {
+    if (isLiquidGlassTheme()) {
+        LiquidPillButton(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            content = content,
+        )
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier,
+            enabled = enabled,
+            content = { content() },
+        )
+    }
+}
+
+@Composable
+fun CloudriftIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    active: Boolean = false,
+    content: @Composable (Color) -> Unit,
+) {
+    if (isLiquidGlassTheme()) {
+        LiquidIconButton(
+            onClick = onClick,
+            modifier = modifier,
+            active = active,
+            content = content,
+        )
+    } else {
+        IconButton(onClick = onClick, enabled = enabled, modifier = modifier) {
+            CompositionLocalProvider(
+                LocalContentColor provides if (active) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            ) {
+                content(LocalContentColor.current)
+            }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+fun CloudriftLoadingIndicator(modifier: Modifier = Modifier) {
+    if (!isLiquidGlassTheme()) {
+        LoadingIndicator(modifier = modifier)
+        return
+    }
+    val transition = rememberInfiniteTransition(label = "liquid-loading")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = (Math.PI * 2).toFloat(),
+        animationSpec = infiniteRepeatable(tween(1200, easing = LinearEasing)),
+        label = "liquid-loading-phase",
+    )
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        repeat(3) { index ->
+            val wave = 0.45f + 0.55f * kotlin.math.sin(phase + index * 2.1f)
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .graphicsLayer {
+                        alpha = wave.coerceIn(0.25f, 1f)
+                        scaleX = 0.75f + wave * 0.25f
+                        scaleY = 0.75f + wave * 0.25f
+                    }
+                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+            )
         }
     }
 }

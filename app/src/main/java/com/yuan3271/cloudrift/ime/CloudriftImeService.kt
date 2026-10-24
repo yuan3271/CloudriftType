@@ -151,6 +151,24 @@ class CloudriftImeService : LifecycleInputMethodService(), InputWindowHost {
         applyWindowLayout()
     }
 
+    override fun applyGlassBackdropBlur(radiusDp: Int) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val dialogWindow = window?.window ?: return
+        val supported = runCatching {
+            dialogWindow.windowManager.isCrossWindowBlurEnabled
+        }.getOrDefault(false)
+        val blurPx = if (supported && radiusDp > 0) {
+            (radiusDp * resources.displayMetrics.density).roundToInt().coerceAtLeast(1)
+        } else {
+            0
+        }
+        runCatching {
+            dialogWindow.setBackgroundBlurRadius(blurPx)
+        }.onFailure {
+            Log.w(TAG, "跨窗口背景模糊不可用，保留半透明玻璃兜底", it)
+        }
+    }
+
     private fun floatingWindowWidth(percent: Int): Int =
         (resources.displayMetrics.widthPixels * percent / 100f).toInt()
 

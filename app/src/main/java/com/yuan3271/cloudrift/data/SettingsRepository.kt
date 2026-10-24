@@ -42,6 +42,13 @@ class SettingsRepository(context: Context) {
             keyCornerRadiusDp = prefs.getInt(KEY_KEY_RADIUS, defaults.keyCornerRadiusDp),
             keyLabelScalePercent = prefs.getInt(KEY_KEY_LABEL_SCALE, defaults.keyLabelScalePercent),
             keyBackground = KeyBackground.fromKey(prefs.getString(KEY_KEY_BACKGROUND, null)),
+            liquidGlassKeyDensity = LiquidGlassKeyDensity.fromKey(
+                prefs.getString(KEY_LIQUID_GLASS_KEY_DENSITY, null),
+            ),
+            glassIntensityPercent = prefs.getInt(
+                KEY_GLASS_INTENSITY,
+                defaults.glassIntensityPercent,
+            ).coerceIn(0, 100),
             keyHeightDp = prefs.getInt(KEY_KEY_HEIGHT, defaults.keyHeightDp),
             bottomGapDp = prefs.getInt(KEY_BOTTOM_GAP, defaults.bottomGapDp),
             symbolWidth = SymbolWidth.fromKey(prefs.getString(KEY_SYMBOL_WIDTH, null)),
@@ -107,6 +114,8 @@ class SettingsRepository(context: Context) {
             putInt(KEY_KEY_RADIUS, settings.keyCornerRadiusDp)
             putInt(KEY_KEY_LABEL_SCALE, settings.keyLabelScalePercent)
             putString(KEY_KEY_BACKGROUND, settings.keyBackground.name)
+            putString(KEY_LIQUID_GLASS_KEY_DENSITY, settings.liquidGlassKeyDensity.name)
+            putInt(KEY_GLASS_INTENSITY, settings.glassIntensityPercent.coerceIn(0, 100))
             putInt(KEY_KEY_HEIGHT, settings.keyHeightDp)
             putInt(KEY_BOTTOM_GAP, settings.bottomGapDp)
             putString(KEY_SYMBOL_WIDTH, settings.symbolWidth.name)
@@ -184,6 +193,8 @@ class SettingsRepository(context: Context) {
         private const val KEY_KEY_RADIUS = "key_corner_radius"
         private const val KEY_KEY_LABEL_SCALE = "key_label_scale"
         private const val KEY_KEY_BACKGROUND = "key_background"
+        private const val KEY_LIQUID_GLASS_KEY_DENSITY = "liquid_glass_key_density"
+        private const val KEY_GLASS_INTENSITY = "glass_intensity"
         private const val KEY_KEY_HEIGHT = "key_height"
         private const val KEY_BOTTOM_GAP = "bottom_gap"
         private const val KEY_SYMBOL_WIDTH = "symbol_width"
