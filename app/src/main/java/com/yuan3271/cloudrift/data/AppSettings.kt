@@ -403,6 +403,26 @@ data class AppSettings(
     fun withAppThemeChoice(theme: AppTheme): AppSettings =
         copy(appTheme = theme, appThemeChosen = true)
 
+    /**
+     * 把每个"有合法范围"的数值收进范围里。
+     *
+     * 设置页与键盘里的滑杆给的是连续值：键盘高度 0 表示自动，可 1..27 这些值也是滑得到的，
+     * 而它们会真的把键盘做成一条按不准的细线（按键高 1dp）。所以写入与读回都过一遍这里，
+     * 存进去的永远是能用的值。
+     */
+    fun normalized(): AppSettings = copy(
+        keyHeightDp = normalizeKeyHeight(keyHeightDp),
+        bottomGapDp = bottomGapDp.coerceIn(0, MAX_BOTTOM_GAP_DP),
+        keyCornerRadiusDp = keyCornerRadiusDp.coerceIn(MIN_KEY_CORNER_RADIUS_DP, MAX_KEY_CORNER_RADIUS_DP),
+        keyLabelScalePercent = keyLabelScalePercent.coerceIn(MIN_KEY_LABEL_SCALE, MAX_KEY_LABEL_SCALE),
+        glassIntensityPercent = glassIntensityPercent.coerceIn(0, GLASS_INTENSITY_MAX),
+        accentHue = ((accentHue % 360) + 360) % 360,
+        accentSaturation = accentSaturation.coerceIn(MIN_ACCENT_SATURATION, MAX_ACCENT_SATURATION),
+        floatingWidthPercent = floatingWidthPercent.coerceIn(MIN_FLOATING_WIDTH_PERCENT, MAX_FLOATING_WIDTH_PERCENT),
+        floatingKeyHeightDp = floatingKeyHeightDp.coerceIn(MIN_FLOATING_KEY_HEIGHT, MAX_FLOATING_KEY_HEIGHT),
+        voiceAutoApplyDelayMs = voiceAutoApplyDelayMs.coerceIn(0, MAX_VOICE_AUTO_APPLY_MS),
+    )
+
     companion object {
         const val DEFAULT_SPEECH_BASE_URL = "https://api.openai.com/v1"
         const val DEFAULT_SPEECH_MODEL = "whisper-1"
@@ -422,6 +442,34 @@ data class AppSettings(
         const val UNSET_POSITION = -1
         const val GLASS_INTENSITY_MAX = 50
         const val DEFAULT_GLASS_INTENSITY = 18
+
+        /** 按键高度的合法范围：0 = 自动；其余至少 28dp，再矮就按不准了。 */
+        const val MIN_KEY_HEIGHT_DP = 28
+        const val MAX_KEY_HEIGHT_DP = 72
+        const val MIN_KEY_CORNER_RADIUS_DP = 4
+        const val MAX_KEY_CORNER_RADIUS_DP = 26
+        const val MIN_KEY_LABEL_SCALE = 80
+        const val MAX_KEY_LABEL_SCALE = 140
+        const val MIN_ACCENT_SATURATION = 10
+        const val MAX_ACCENT_SATURATION = 85
+        const val MAX_BOTTOM_GAP_DP = 48
+        const val MIN_FLOATING_WIDTH_PERCENT = 45
+        const val MAX_FLOATING_WIDTH_PERCENT = 100
+        const val MIN_FLOATING_KEY_HEIGHT = 28
+        const val MAX_FLOATING_KEY_HEIGHT = 72
+        const val MAX_VOICE_AUTO_APPLY_MS = 5_000
+
+        /**
+         * 0 是"自动"，原样保留；其余夹进 [MIN_KEY_HEIGHT_DP]..[MAX_KEY_HEIGHT_DP]。
+         *
+         * 1..27 这些值只会在滑杆上出现一瞬间，但存进设置就真会把键盘做成一条细线。
+         */
+        fun normalizeKeyHeight(heightDp: Int): Int = when {
+            heightDp <= 0 -> 0
+            heightDp < MIN_KEY_HEIGHT_DP -> MIN_KEY_HEIGHT_DP
+            heightDp > MAX_KEY_HEIGHT_DP -> MAX_KEY_HEIGHT_DP
+            else -> heightDp
+        }
 
         fun openAiSpeechPreset() = ApiEndpoint(
             baseUrl = DEFAULT_SPEECH_BASE_URL,

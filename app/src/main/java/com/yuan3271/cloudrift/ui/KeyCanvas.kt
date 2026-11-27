@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -27,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +43,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
@@ -61,10 +62,10 @@ import com.yuan3271.cloudrift.ui.icons.CloudriftIcons
 import com.yuan3271.cloudrift.theme.InternalSurfaceTone
 import com.yuan3271.cloudrift.theme.LiquidGlassConfig
 import com.yuan3271.cloudrift.theme.bestContentColor
+import com.yuan3271.cloudrift.theme.glassKeyCap
 import com.yuan3271.cloudrift.theme.glassKeySurfaceColor
 import com.yuan3271.cloudrift.theme.internalSurface
 import com.yuan3271.cloudrift.theme.isLiquidGlassTheme
-import com.yuan3271.cloudrift.theme.liquidControlGlass
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -114,6 +115,9 @@ fun KeyCanvas(
 ) {
     var popup by remember { mutableStateOf<AlternatePopup?>(null) }
     var canvasBounds by remember { mutableStateOf(Rect.Zero) }
+    // 换布局、换页之后，上一套键盘那颗键的长按菜单不能继续挂在屏幕上：它对应的键已经不在了，
+    // 菜单里写的是另一个键盘上的字。rows 是按内容比较的，打字本身不会重建它。
+    LaunchedEffect(rows) { popup = null }
 
     Box(modifier = modifier.onGloballyPositioned { canvasBounds = it.boundsInWindow() }) {
         CompositionLocalProvider(LocalKeyLabelScale provides labelScale) {
@@ -160,6 +164,9 @@ fun KeyCanvas(
         }
 
         popup?.let { current ->
+            // 菜单是一个必须回应的浮层：点它外面任何一处都先把它收掉，而不是让菜单继续浮着、
+            // 同时还让那一下按到下面的键上（以前点旁边的键会一边上字、一边留着菜单）。
+            PopupDismissLayer(onDismiss = { popup = null })
             AlternateMenu(
                 popup = current,
                 canvasWidth = canvasBounds.width,
@@ -174,6 +181,32 @@ fun KeyCanvas(
 }
 
 private data class AlternatePopup(val key: KeyDef, val anchor: Rect)
+
+/**
+ * 长按菜单开着时铺在整块按键上的透明层：这一下触摸只用来关菜单，不落到下面的键上。
+ *
+ * 它必须和菜单同时出现、并且排在菜单前面画：Compose 的命中测试按绘制顺序反着走，后画的菜单
+ * 在上面，所以菜单自己仍然点得动。
+ */
+@Composable
+private fun BoxScope.PopupDismissLayer(onDismiss: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false).consume()
+                    // 手指抬起之前一直吃掉事件：这是一次"关掉菜单"，不是一次按键。
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        event.changes.forEach { it.consume() }
+                        if (event.changes.none { it.pressed }) break
+                    }
+                    onDismiss()
+                }
+            },
+    )
+}
 
 @Composable
 private fun AlternateMenu(
@@ -227,17 +260,21 @@ private fun AlternateMenu(
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             down.consume()
-                            var released = false
+                            var releasedInside = false
                             while (true) {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                 change.consume()
                                 if (!change.pressed) {
-                                    released = true
+                                    // 松手时手指还在这一格上才算选中：滑出去再松手是"反悔了"，
+                                    // 不该在鼠标/手指已经离开的格子里打字。
+                                    val position = change.position
+                                    releasedInside = position.x in 0f..size.width.toFloat() &&
+                                        position.y in 0f..size.height.toFloat()
                                     break
                                 }
                             }
-                            if (released) onPick(alternate)
+                            if (releasedInside) onPick(alternate)
                         }
                     },
                 contentAlignment = Alignment.Center,
@@ -340,7 +377,8 @@ private fun KeyFace(
     // spec from the Material 3 Expressive motion scheme rather than a default spring.
     val scale by animateFloatAsState(
         targetValue = when {
-            glass && pressed -> 1f + LiquidGlassConfig.KEY_PRESS_SCALE
+            // 按下是「陷下去」：玻璃键以前按下去会胀大 4%，像被吹起来的泡泡。
+            glass && pressed -> 1f - LiquidGlassConfig.KEY_PRESS_SCALE
             pressed -> 0.9f
             else -> 1f
         },
@@ -407,11 +445,9 @@ private fun KeyFace(
         else -> null
     }
     val pressedColor = when {
-        glass -> lerp(
-            MaterialTheme.colorScheme.primary,
-            Color.White,
-            LiquidGlassConfig.KEY_PRESS_BRIGHTEN,
-        )
+        // 玻璃键按下就是一次明确的「这一下按到了」：直接用强调色，不再和白色混成一块
+        // 看不出意图的粉彩。
+        glass -> MaterialTheme.colorScheme.primary
         key.style == KeyStyle.Accent -> MaterialTheme.colorScheme.tertiaryContainer
         else -> MaterialTheme.colorScheme.primaryContainer
     }
@@ -432,19 +468,11 @@ private fun KeyFace(
             }
             .then(
                 if (glass) {
-                    if (pressed) {
-                        Modifier.liquidControlGlass(
-                            shape = RoundedCornerShape(corner),
-                            color = pressedColor,
-                            active = true,
-                        )
-                    } else {
-                        Modifier.liquidControlGlass(
-                            shape = RoundedCornerShape(corner),
-                            color = containerColor,
-                            active = isAccent,
-                        )
-                    }
+                    // 键帽是一块磨砂实体，不再是「一块会折射背景的小玻璃」：外框那层才是玻璃。
+                    Modifier
+                        .clip(RoundedCornerShape(corner))
+                        .background(if (pressed) pressedColor else (containerColor ?: Color.Transparent))
+                        .glassKeyCap(RoundedCornerShape(corner), pressed)
                 } else {
                     Modifier
                         .clip(RoundedCornerShape(corner))
@@ -581,8 +609,11 @@ private suspend fun PointerInputScope.keyGesture(
         // Set when this gesture opened a hold-to-talk session, so lifting the finger closes it.
         var holdToTalk = false
         var cancelArmed = false
-        // Backspace: sliding up cancels the repeat and lights the clear-everything option.
+        // Backspace: sliding up pauses the repeat and lights the clear-everything option.
         var clearArmed = false
+        // 滑上去之后又滑回来：这一次仍然只是退格，删除要接着走下去。旧实现只取消循环、不恢复，
+        // 手指滑回原位继续按着，键盘却再也不删了。
+        var repeatPaused = false
         val repeater: Job? = if (key.repeatable) {
             claimed = true
             repeatScope.launch {
@@ -590,7 +621,8 @@ private suspend fun PointerInputScope.keyGesture(
                 delay(REPEAT_START_MS)
                 var held = REPEAT_START_MS
                 while (isActive) {
-                    repeat()
+                    // 停在「松手清空全部」上时不再删字；滑回来就继续。
+                    if (!repeatPaused) repeat()
                     // Holding backspace used to escalate into a word delete after a second, which
                     // read as "it jumped and then ate half the line". Now it just gets faster, so
                     // the caret never moves more than one character per tick.
@@ -620,65 +652,70 @@ private suspend fun PointerInputScope.keyGesture(
             }
         }
 
-        while (true) {
-            val event = awaitPointerEvent()
-            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-            if (!change.pressed) {
+        try {
+            while (true) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                if (!change.pressed) {
+                    change.consume()
+                    released = true
+                    break
+                }
+                val dy = change.position.y - down.position.y
+                onPointer(
+                    change.position,
+                    Offset(
+                        change.position.x - down.position.x,
+                        change.position.y - down.position.y,
+                    ),
+                )
+
+                if (!claimed && key.swipeUp.isNotEmpty() && dy < -swipeThreshold) {
+                    claimed = true
+                    swipeUp()
+                }
+                if (!claimed && System.currentTimeMillis() - startedAt > LONG_PRESS_MS) {
+                    claimed = true
+                    longPress()
+                    holdToTalk = key.code == KeyCode.Space
+                }
+                if (holdToTalk) {
+                    val armed = slideUpCancels(
+                        dy = dy,
+                        threshold = cancelDistance,
+                        currentlyArmed = cancelArmed,
+                    )
+                    if (armed != cancelArmed) {
+                        cancelArmed = armed
+                        spaceCancelChanged(armed)
+                    }
+                }
+                if (repeater != null && key.code == KeyCode.Backspace) {
+                    val armed = slideUpCancels(
+                        dy = dy,
+                        threshold = clearDistance,
+                        currentlyArmed = clearArmed,
+                    )
+                    if (armed != clearArmed) {
+                        clearArmed = armed
+                        // Stop deleting while the option is lit: releasing will clear instead.
+                        repeatPaused = armed
+                        clearAllArmedChanged(armed)
+                    }
+                }
                 change.consume()
-                released = true
-                break
             }
-            val dy = change.position.y - down.position.y
-            onPointer(
-                change.position,
-                Offset(
-                    change.position.x - down.position.x,
-                    change.position.y - down.position.y,
-                ),
-            )
-
-            if (!claimed && key.swipeUp.isNotEmpty() && dy < -swipeThreshold) {
-                claimed = true
-                swipeUp()
-            }
-            if (!claimed && System.currentTimeMillis() - startedAt > LONG_PRESS_MS) {
-                claimed = true
-                longPress()
-                holdToTalk = key.code == KeyCode.Space
-            }
-            if (holdToTalk) {
-                val armed = slideUpCancels(
-                    dy = dy,
-                    threshold = cancelDistance,
-                    currentlyArmed = cancelArmed,
-                )
-                if (armed != cancelArmed) {
-                    cancelArmed = armed
-                    spaceCancelChanged(armed)
-                }
-            }
-            if (repeater != null && key.code == KeyCode.Backspace) {
-                val armed = slideUpCancels(
-                    dy = dy,
-                    threshold = clearDistance,
-                    currentlyArmed = clearArmed,
-                )
-                if (armed != clearArmed) {
-                    clearArmed = armed
-                    // Stop deleting while the option is lit: releasing will clear instead.
-                    if (armed) repeater.cancel()
-                    clearAllArmedChanged(armed)
-                }
-            }
-            change.consume()
+        } finally {
+            // 正常抬手、被系统抢走指针、或者这颗键中途被换掉（换页 / 换布局都会销毁它）都要走
+            // 这里。旧实现把收尾写在循环后面：手势被取消时那几行永远不执行，「松手清空全部」
+            // 的提示就留在屏幕上不走了。
+            repeater?.cancel()
+            // 手势结束了，计时器不能再自己触发一次长按（抬手那一刻的竞态就是"时而触发、时而不触发"）。
+            longPressTimer.cancel()
+            onPressedChange(false)
+            onPointer(down.position, Offset.Zero)
+            if (clearArmed) clearAllArmedChanged(false)
         }
-
-        repeater?.cancel()
-        // 手势结束了，计时器不能再自己触发一次长按（抬手那一刻的竞态就是"时而触发、时而不触发"）。
-        longPressTimer.cancel()
-        onPressedChange(false)
-        onPointer(down.position, Offset.Zero)
-        if (clearArmed) clearAllArmedChanged(false)
         if (released && clearArmed) clearAll()
         // A cancelled gesture (the system took the pointer) keeps recording on purpose: the
         // strip above the keys still shows that we are listening, and the mic key stops it.

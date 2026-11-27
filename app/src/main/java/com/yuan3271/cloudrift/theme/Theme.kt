@@ -43,23 +43,24 @@ fun CloudriftTheme(
         ThemeMode.Light -> false
         ThemeMode.Dark -> true
     }
-    val darkSource = when (themeSource) {
-        ThemeSource.Dynamic -> dynamicScheme(dark = true) ?: CloudriftDarkScheme
-        ThemeSource.Cloudrift -> CloudriftDarkScheme
-        ThemeSource.Custom -> accentColorScheme(
-            hue = accentHue.toFloat(),
-            saturation = accentSaturation / 100f,
-            dark = true,
-        )
-    }
-    // Accent roles are shared across modes and always use the dark-mode palette as the standard.
+    // 明暗两套各有自己的 accent 档位：浅色是 tone 40 / 90（深一点的强调色、很浅的容器），
+    // 深色是 tone 80 / 30。以前这里只取深色的那一套，再套到浅色表面上——浅色页面里就出现
+    // 了 ton-30 的深蓝卡片和深蓝选中态，和浅色背景撞成一片。
+    val dynamic = if (themeSource == ThemeSource.Dynamic) dynamicScheme(dark) else null
+    val accentSource = accentSourceFor(
+        dark = dark,
+        themeSource = themeSource,
+        accentHue = accentHue,
+        accentSaturation = accentSaturation,
+        dynamic = dynamic,
+    )
     val materialScheme = if (dark) {
-        CloudriftDarkScheme.withAccentRolesFrom(darkSource)
+        CloudriftDarkScheme.withAccentRolesFrom(accentSource)
     } else {
-        CloudriftLightScheme.withAccentRolesFrom(darkSource)
+        CloudriftLightScheme.withAccentRolesFrom(accentSource)
     }
     val colorScheme = if (effectiveAppTheme == AppTheme.LiquidGlass) {
-        glassColorScheme(darkSource.withSaturatedAccents(1.38f), dark)
+        glassColorScheme(accentSource.withSaturatedAccents(1.15f), dark)
     } else {
         materialScheme
     }

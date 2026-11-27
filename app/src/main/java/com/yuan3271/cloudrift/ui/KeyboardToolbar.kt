@@ -213,6 +213,10 @@ internal fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
     )
     Row(
         modifier = Modifier
+            // 视觉上就是一枚 22dp 的小标记，但点击目标要够大：上下各留 9dp 的透明可点区，
+            // 手指按得中，工具栏也不会因为它变高。
+            .clickable(onClick = onClick)
+            .padding(vertical = 9.dp)
             .height(22.dp)
             .width(width)
             .then(
@@ -227,8 +231,7 @@ internal fun UpdateMark(replayKey: Int, onClick: () -> Unit) {
                         .clip(RoundedCornerShape(50))
                         .background(fill)
                 },
-            )
-            .clickable(onClick = onClick),
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {

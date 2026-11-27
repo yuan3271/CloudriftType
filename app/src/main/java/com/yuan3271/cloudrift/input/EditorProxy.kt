@@ -10,7 +10,20 @@ import android.view.KeyEvent
  * "show this composing text" and "commit this string", which keeps the keyboard logic free
  * of InputConnection quirks.
  */
-class EditorProxy(private val connectionProvider: () -> InputConnection?) {
+class EditorProxy(
+    /**
+     * 发一次真正的退格按键。默认是 KeyEvent DEL 的按下 + 抬起；单元测试换成一个记录器，
+     * 这样"编辑器不吃任何删除接口时退回按键"这条路径也能被验证。
+     *
+     * 放在第一个参数，是为了让 connectionProvider 留在最后：调用方仍然可以写
+     * EditorProxy { service.currentInputConnection } 这种尾随 lambda。
+     */
+    private val backspaceKeySender: (InputConnection) -> Unit = { connection ->
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
+        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+    },
+    private val connectionProvider: () -> InputConnection?,
+) {
 
     /** True while a composing region is present, i.e. the host is showing our buffer. */
     var isComposing: Boolean = false
@@ -92,6 +105,104 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
         connection?.deleteSurroundingText(length, 0)
     }
 
+    /**
+     * 删掉光标左边"用户眼里的一个字"，并在编辑器不配合时逐级退回。
+     *
+     * 调用前提：没有上屏区、没有选区（有选区走 [deleteSelection]，有读音缓冲走输入法自己的
+     * 缓冲删除）。
+     *
+     * 顺序：
+     * 1. 读光标前的一小段文本与"内容末端位置"，找到末尾那个字素簇；
+     * 2. deleteSurroundingTextInCodePoints：官方按码点删的接口，emoji 不会被劈成半个；
+     * 3. 编辑器不认它（内容没变短）就退回 deleteSurroundingText（按 UTF-16 单元）——
+     *    不少定制输入框只实现了老的那一个；
+     * 4. 还不认，发一次真正的退格按键：WebView、自绘输入框、只处理 onKeyDown 的控件往往
+     *    只认按键；
+     * 5. 连文本都读不到的编辑器，直接从按键开始——读不到就没法验证，按键是覆盖面最广的路。
+     *
+     * 以前这里固定按一个 UTF-16 单元删、并且只认一条接口：emoji 会删成半个，不实现那条
+     * 接口的应用里按了没反应。
+     */
+    fun deleteBeforeCaret() {
+        val connection = connection ?: return
+        val before = snapshot(connection)
+        if (before == null || before.before.isEmpty()) {
+            // 读不到、或者光标前没有字：按键不会更糟（它同时也会让编辑器自己处理选区与上屏区）。
+            backspaceKeySender(connection)
+            return
+        }
+        val codePoints = Graphemes.lastClusterCodePoints(before.before)
+        val units = Graphemes.lastCluster(before.before)?.utf16Length ?: 1
+        if (deleteInCodePoints(connection, codePoints, before)) return
+        if (deleteInUnits(connection, units, before)) return
+        backspaceKeySender(connection)
+    }
+
+    /**
+     * 编辑器此刻的选中文本。null 表示编辑器没告诉我们（读不到），空串表示没有选区。
+     *
+     * 与 [hasLiveSelection] 的区别就是 null：选区判断要区分"没有选中"和"问不出来"——
+     * 前者该按字符退格，后者要退回缓存的那个标志。
+     */
+    fun selectedTextOrNull(): String? = runCatching {
+        connection?.getSelectedText(0)?.toString()
+    }.getOrNull()
+
+    /** 光标前的一段文本 + 内容末端位置，用来判断一次删除有没有真的发生。 */
+    private class Snapshot(val before: String, val extent: Int)
+
+    private fun snapshot(connection: InputConnection, window: Int = DELETE_WINDOW): Snapshot? =
+        runCatching {
+            val request = ExtractedTextRequest().apply {
+                flags = 0
+                hintMaxChars = window
+                hintMaxLines = 4
+            }
+            val extracted = connection.getExtractedText(request, 0) ?: return@runCatching null
+            val text = extracted.text?.toString() ?: return@runCatching null
+            val end = extracted.selectionEnd.coerceIn(0, text.length)
+            val start = (end - window).coerceAtLeast(0)
+            // startOffset + 窗口长度 = 内容末端。删除发生在光标左边时这两个数加起来一定变小
+            // （窗口左移一格，或者窗口本身变短），比"再读一遍光标前的文本"可靠：整段都是同一个
+            // 字（aaaaaaaa）时，后者前后一模一样，会把删成功误判成没反应、再删两遍。
+            Snapshot(
+                before = text.substring(start, end),
+                extent = extracted.startOffset + text.length,
+            )
+        }.getOrNull()
+
+    /**
+     * 这次删除有没有真的发生。
+     *
+     * 两个信号取并集：内容末端变短（窗口跟着左移的那种编辑器），或者光标前的文本变了
+     * （只返回固定开头一段、末端数字不动的那种编辑器）。只看其中一个都会在某一类编辑器里
+     * 把"删成功了"误判成"没反应"，然后多删两次。
+     */
+    private fun deletionHappened(connection: InputConnection, previous: Snapshot): Boolean {
+        val now = snapshot(connection) ?: return false
+        return now.extent < previous.extent || now.before != previous.before
+    }
+
+    private fun deleteInCodePoints(
+        connection: InputConnection,
+        count: Int,
+        previous: Snapshot,
+    ): Boolean {
+        if (count <= 0) return false
+        runCatching { connection.deleteSurroundingTextInCodePoints(count, 0) }
+        return deletionHappened(connection, previous)
+    }
+
+    private fun deleteInUnits(
+        connection: InputConnection,
+        units: Int,
+        previous: Snapshot,
+    ): Boolean {
+        if (units <= 0) return false
+        runCatching { connection.deleteSurroundingText(units, 0) }
+        return deletionHappened(connection, previous)
+    }
+
     // ---- 编辑器自己的编辑动作（外接键盘的 ⌘C / ⌘V / ⌘X / ⌘A）--------------------------
     //
     // 输入法**不该**自己去读写剪贴板：那拿不到别的应用选中的内容、要额外的权限，也绕过了编辑器
@@ -167,8 +278,7 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
      */
     fun sendBackspaceKey() {
         val connection = connection ?: return
-        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL))
-        connection.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL))
+        backspaceKeySender(connection)
     }
 
     /**
@@ -179,7 +289,15 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
     fun clearAll() {
         val connection = connection ?: return
         connection.performContextMenuAction(android.R.id.selectAll)
-        sendBackspaceKey()
+        val selected = selectedTextOrNull()
+        if (selected == null || selected.isNotEmpty()) {
+            // 选中了（或编辑器不报选区）：按键会删掉整段选区。
+            backspaceKeySender(connection)
+            return
+        }
+        // 编辑器不吃「全选」：退回到在光标两侧尽量多删。数字远大于正常文本，编辑器会自己夹到
+        // 可删的范围——总比「清空」只删掉一个字强。
+        runCatching { connection.deleteSurroundingText(CLEAR_ALL_CHARS, CLEAR_ALL_CHARS) }
     }
 
     fun newline() {
@@ -230,6 +348,15 @@ class EditorProxy(private val connectionProvider: () -> InputConnection?) {
     }
 
     companion object {
+        /**
+         * 读光标前多少字符来找最后一个字素簇。32 个 UTF-16 单元足够覆盖一个 ZWJ emoji 序列，
+         * 又不会让每次退格都去要一大段文本。
+         */
+        private const val DELETE_WINDOW = 32
+
+        /** 「清空」退路一次请求删掉的长度：远大于正常文本，编辑器自己会夹紧。 */
+        private const val CLEAR_ALL_CHARS = 100_000
+
         fun isTextField(info: EditorInfo?): Boolean {
             val type = info?.inputType ?: return false
             return when (type and android.text.InputType.TYPE_MASK_CLASS) {

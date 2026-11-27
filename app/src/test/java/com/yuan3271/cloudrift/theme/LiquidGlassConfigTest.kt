@@ -27,15 +27,21 @@ class LiquidGlassConfigTest {
     }
 
     @Test
-    fun `key concentration gets more transparent from low to high`() {
-        val low = glassKeyFillAlpha(LiquidGlassKeyDensity.Low)
-        val medium = glassKeyFillAlpha(LiquidGlassKeyDensity.Medium)
-        val high = glassKeyFillAlpha(LiquidGlassKeyDensity.High)
+    fun `key concentration gets more transparent from low to high in both modes`() {
+        val lightLow = glassKeyFillAlpha(LiquidGlassKeyDensity.Low, dark = false)
+        val lightMedium = glassKeyFillAlpha(LiquidGlassKeyDensity.Medium, dark = false)
+        val lightHigh = glassKeyFillAlpha(LiquidGlassKeyDensity.High, dark = false)
+        assertTrue(lightLow > lightMedium)
+        assertTrue(lightMedium > lightHigh)
+        assertTrue(lightHigh in 0.06f..0.14f)
 
-        assertTrue(low > medium)
-        assertTrue(medium > high)
-        assertTrue(low in 0.06f..0.12f)
-        assertTrue(high in 0.06f..0.12f)
+        val darkLow = glassKeyFillAlpha(LiquidGlassKeyDensity.Low, dark = true)
+        val darkMedium = glassKeyFillAlpha(LiquidGlassKeyDensity.Medium, dark = true)
+        val darkHigh = glassKeyFillAlpha(LiquidGlassKeyDensity.High, dark = true)
+        assertTrue(darkLow > darkMedium)
+        assertTrue(darkMedium > darkHigh)
+        // 深色下的键帽是浅色的那层，必须比浅色模式的墨色更实一点才看得出按键。
+        assertTrue(darkHigh >= 0.10f)
     }
 
     @Test
@@ -47,7 +53,7 @@ class LiquidGlassConfigTest {
     }
 
     @Test
-    fun `glass intensity spans frosted readable to fully clear`() {
+    fun `glass intensity stays frosted at one end and never becomes fully clear at the other`() {
         val frosted = outerGlassMaterial(0, dark = false)
         val clear = outerGlassMaterial(100, dark = false)
         val default = outerGlassMaterial(35, dark = false)
@@ -55,12 +61,14 @@ class LiquidGlassConfigTest {
         assertTrue(frosted.blurDp >= 12f)
         assertTrue(frosted.fillAlpha >= 0.75f)
         assertTrue(frosted.highlightAlpha > frosted.darkEdgeAlpha)
-        assertEquals(0f, clear.blurDp)
-        assertEquals(0f, clear.fillAlpha)
-        assertEquals(0f, clear.darkEdgeAlpha)
-        assertEquals(0f, clear.highlightAlpha)
-        assertEquals(0f, clear.refractionAmountDp)
-        assertTrue(default.fillAlpha in 0.4f..0.6f)
+        // 「最透明」也留一点底色、一点模糊、一点边光：全透时壁纸会直接穿到字底下，
+        // 键帽也会溶进背景（见 LiquidGlassConfig.CLEAR_FILL_ALPHA 的注释）。
+        assertTrue(clear.blurDp >= 6f)
+        assertTrue(clear.fillAlpha >= 0.18f)
+        assertTrue(clear.highlightAlpha >= 0.10f)
+        assertTrue(clear.darkEdgeAlpha >= 0.08f)
+        assertTrue(clear.refractionAmountDp >= 6f)
+        assertTrue(default.fillAlpha in 0.55f..0.72f)
     }
 
     @Test

@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
@@ -322,9 +323,9 @@ private fun KeyboardSurface(
     val callbacks = KeyCallbacks(
         onKey = controller::onKey,
         onAlternate = { _, alternate -> controller.onAlternateChosen(alternate) },
-        onLongPress = { key ->
-            if (key.code == KeyCode.Backspace) controller.onBackspaceLongPress()
-        },
+        // 退格是可重复键：按下那一刻就已经算"这颗键被用掉了"（见 KeyCanvas.keyGesture），
+        // 长按计时器对它永远不触发。删除靠按住连删，不再另外解释一次长按。
+        onLongPress = {},
         onSwipeUp = controller::onSwipeUp,
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,
@@ -389,6 +390,9 @@ private fun KeyboardSurface(
             Column(
                 modifier = Modifier
                 .fillMaxWidth()
+                // 整宽玻璃是一整块贴着屏幕边的面：按键直接顶到屏幕边缘时，外框的圆角和边光
+                // 都贴在墙上，看上去像没画完。留 6dp，让键帽与外框之间有一点"玻璃的厚度"。
+                .padding(horizontal = if (liquidGlass && !floating) 6.dp else 0.dp)
                 // The keyboard owns the bottom of the screen, so it has to respect the
                 // navigation bar itself once decorFitsSystemWindows is switched off.
                 .windowInsetsPadding(
@@ -418,33 +422,40 @@ private fun KeyboardSurface(
                 onClipboardClick = onOpenClipboard,
             )
 
-            state.notice?.let { notice ->
-                NoticeStrip(
-                    message = notice,
-                    actionLabel = if (state.noticeNeedsMicrophonePermission) "授权" else null,
-                    onAction = controller::openMicrophonePermissionSettings,
-                    onDismiss = controller::dismissNotice,
-                )
-            }
-
             // Hold-to-talk borrows the candidate strip instead of the whole key area: the
             // space bar has to stay under the finger that is holding it.
-            if (state.clearAllArmed) {
-                ClearAllStrip()
-            } else if (state.holdToTalk && recording != null) {
-                ListeningStrip(
-                    level = recording.level,
-                    elapsedMs = recording.elapsedMs,
-                    cancelArmed = recording.cancelArmed,
-                )
-            } else {
-                CandidateBar(
-                    state = state,
-                    onCandidate = controller::selectCandidate,
-                    onExpand = controller::toggleCandidatesExpanded,
-                    onPasteClipboardOffer = controller::pasteClipboardOffer,
-                    onDismissClipboardOffer = controller::dismissClipboardOffer,
-                )
+            //
+            // 提示条 **浮在这一条上**，不再单独占一行：以前它插在工具栏与候选栏之间，出现和消失
+            // 都会把下面的按键整排顶下去、整个键盘窗口也高出一截，正打着字时手指底下忽然换了一
+            // 个高度。matchParentSize 只让它盖住候选栏，高度仍由候选栏决定；用户一按键它就自己
+            // 退场（见 ImeController.onKey），不会长期挡住候选。
+            Box(modifier = Modifier.fillMaxWidth()) {
+                if (state.clearAllArmed) {
+                    ClearAllStrip()
+                } else if (state.holdToTalk && recording != null) {
+                    ListeningStrip(
+                        level = recording.level,
+                        elapsedMs = recording.elapsedMs,
+                        cancelArmed = recording.cancelArmed,
+                    )
+                } else {
+                    CandidateBar(
+                        state = state,
+                        onCandidate = controller::selectCandidate,
+                        onExpand = controller::toggleCandidatesExpanded,
+                        onPasteClipboardOffer = controller::pasteClipboardOffer,
+                        onDismissClipboardOffer = controller::dismissClipboardOffer,
+                    )
+                }
+                state.notice?.let { notice ->
+                    NoticeStrip(
+                        message = notice,
+                        actionLabel = if (state.noticeNeedsMicrophonePermission) "授权" else null,
+                        onAction = controller::openMicrophonePermissionSettings,
+                        onDismiss = controller::dismissNotice,
+                        modifier = Modifier.matchParentSize(),
+                    )
+                }
             }
 
             // 量一下按键区的高度：悬浮卡片的缩放换算要用它（见 FloatingResize.kt）。
@@ -706,17 +717,24 @@ internal fun ExpandedCandidates(
     }
 }
 
+/**
+ * 一条压在候选栏上的提示（权限、语音出错）。
+ *
+ * [modifier] 由调用方决定它占多大：虚拟键盘传 matchParentSize()，让它**正好盖住候选栏**，
+ * 高度不变、按键不会被顶走；键鼠兼容面板里它跟着卡片一起按内容长高。
+ */
 @Composable
 internal fun NoticeStrip(
     message: String,
     actionLabel: String?,
     onAction: () -> Unit,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
             .then(
                 if (isLiquidGlassTheme()) {
                     Modifier.internalSurface(
@@ -736,6 +754,9 @@ internal fun NoticeStrip(
             text = message,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
+            // 最多两行：再长的错误也只说清"出了什么事"，全文留给 logcat。
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         if (actionLabel != null) {

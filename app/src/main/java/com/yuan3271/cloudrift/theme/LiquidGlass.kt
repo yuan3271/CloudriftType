@@ -78,10 +78,18 @@ internal object LiquidGlassConfig {
     const val INTERNAL_FILL_HIGH = 0.10f
     const val INTERNAL_FILL_RAISED = 0.12f
 
-    /** Higher concentration means more transparent; these are matrix-key fills only. */
-    const val KEY_FILL_LOW = 0.12f
-    const val KEY_FILL_MEDIUM = 0.09f
-    const val KEY_FILL_HIGH = 0.06f
+    /**
+     * 键帽底色。浅色模式是一层淡墨（比玻璃外框深一点），深色模式是一层白（比背景亮一点）：
+     * 键盘要读得作"一颗一颗的按键"，就不能只有一圈边框。
+     *
+     * "浓度越高越透"这条方向不变，但最低档也留够对比度——按键不能溶进背景里。
+     */
+    const val KEY_FILL_LIGHT_LOW = 0.13f
+    const val KEY_FILL_LIGHT_MEDIUM = 0.10f
+    const val KEY_FILL_LIGHT_HIGH = 0.08f
+    const val KEY_FILL_DARK_LOW = 0.20f
+    const val KEY_FILL_DARK_MEDIUM = 0.16f
+    const val KEY_FILL_DARK_HIGH = 0.12f
     const val KEY_PRESS_SCALE = 0.04f
     const val KEY_PRESS_BRIGHTEN = 0.08f
     const val KEY_RADIUS_LIFT_DP = 2f
@@ -94,7 +102,8 @@ internal object LiquidGlassConfig {
     const val BASE_LIGHT_RADIUS_FRACTION = 1.2f
     val CENTER_LIGHT_STOPS = floatArrayOf(0.24f, 0.5f, 0.76f)
     const val EDGE_LIGHT_RADIUS_DP = 96f
-    const val EDGE_LIGHT_ALPHA = 0.32f
+    /** 手指按在哪、边缘光就跟到哪：键盘上这只手一直在动，太亮就变成一支手电筒。 */
+    const val EDGE_LIGHT_ALPHA = 0.20f
     const val EDGE_LIGHT_WIDTH_DP = 1.1f
 
     // Mirrors AndroidLiquidGlass's LiquidBottomTabs/GlassPlayground composition.
@@ -107,15 +116,20 @@ internal object LiquidGlassConfig {
     const val SHADOW_OFFSET_Y_DP = 4f
     const val INNER_SHADOW_RADIUS_DP = 12f
     const val FROSTED_FILL_ALPHA = 0.86f
-    const val CLEAR_FILL_ALPHA = 0f
+    /**
+     * "最透明"那一端也**不是全透**：外壳完全透明时，壁纸会直接穿到键帽之间，文字落在
+     * 任何图案上都可能看不清。留一点底色和一点模糊，玻璃才既透又读得清。
+     */
+    const val CLEAR_FILL_ALPHA = 0.22f
     const val FROSTED_BLUR_DP = 14f
-    const val CLEAR_BLUR_DP = 0f
-    const val FROSTED_HIGHLIGHT_ALPHA = 0.92f
-    const val CLEAR_HIGHLIGHT_ALPHA = 0f
-    const val FROSTED_EDGE_ALPHA = 0.62f
-    const val CLEAR_EDGE_ALPHA = 0f
+    const val CLEAR_BLUR_DP = 7f
+    const val FROSTED_HIGHLIGHT_ALPHA = 0.62f
+    const val CLEAR_HIGHLIGHT_ALPHA = 0.14f
+    /** 外壳的内阴影要比它上沿的高光弱一点：两者一样重时，面板看起来是脏的而不是厚的。 */
+    const val FROSTED_EDGE_ALPHA = 0.48f
+    const val CLEAR_EDGE_ALPHA = 0.10f
     const val FROSTED_SHADOW_ALPHA = 0.14f
-    const val CLEAR_SHADOW_ALPHA = 0f
+    const val CLEAR_SHADOW_ALPHA = 0.06f
     const val DEFAULT_INTENSITY = 0.35f
 
     val SURFACE_COLOR_LIGHT = Color(0xFFFAFAFA)
@@ -198,17 +212,28 @@ internal fun internalSurfaceColor(tone: InternalSurfaceTone = InternalSurfaceTon
     return (if (isLikelyDark()) Color.White else Color.Black).copy(alpha = alpha)
 }
 
-internal fun glassKeyFillAlpha(density: LiquidGlassKeyDensity): Float = when (density) {
-    LiquidGlassKeyDensity.Low -> LiquidGlassConfig.KEY_FILL_LOW
-    LiquidGlassKeyDensity.Medium -> LiquidGlassConfig.KEY_FILL_MEDIUM
-    LiquidGlassKeyDensity.High -> LiquidGlassConfig.KEY_FILL_HIGH
-}
+internal fun glassKeyFillAlpha(density: LiquidGlassKeyDensity, dark: Boolean): Float =
+    if (dark) {
+        when (density) {
+            LiquidGlassKeyDensity.Low -> LiquidGlassConfig.KEY_FILL_DARK_LOW
+            LiquidGlassKeyDensity.Medium -> LiquidGlassConfig.KEY_FILL_DARK_MEDIUM
+            LiquidGlassKeyDensity.High -> LiquidGlassConfig.KEY_FILL_DARK_HIGH
+        }
+    } else {
+        when (density) {
+            LiquidGlassKeyDensity.Low -> LiquidGlassConfig.KEY_FILL_LIGHT_LOW
+            LiquidGlassKeyDensity.Medium -> LiquidGlassConfig.KEY_FILL_LIGHT_MEDIUM
+            LiquidGlassKeyDensity.High -> LiquidGlassConfig.KEY_FILL_LIGHT_HIGH
+        }
+    }
 
 @Composable
-internal fun glassKeySurfaceColor(): Color =
-    (if (isLikelyDark()) Color.White else Color.Black).copy(
-        alpha = glassKeyFillAlpha(LocalLiquidGlassKeyDensity.current),
+internal fun glassKeySurfaceColor(): Color {
+    val dark = isLikelyDark()
+    return (if (dark) Color.White else Color.Black).copy(
+        alpha = glassKeyFillAlpha(LocalLiquidGlassKeyDensity.current, dark),
     )
+}
 
 /** A flat interior surface: no blur, refraction, edge light, outline or shadow. */
 @Composable
@@ -217,6 +242,54 @@ internal fun Modifier.internalSurface(
     tone: InternalSurfaceTone = InternalSurfaceTone.Low,
     color: Color? = null,
 ): Modifier = background(color ?: internalSurfaceColor(tone), shape)
+
+/**
+ * 键帽的"厚度"：上沿一道很淡的顶光、下沿一道暗线。
+ *
+ * 以前每一颗按键都套一遍 liquidControlGlass：三十多块小玻璃片各画一圈白边，整块键盘看上去
+ * 是一张发光的网格；按下去那颗还会变成透镜，把壁纸折射一下。玻璃感应该只属于**外框**那一层
+ * （它才是贴着背景的整块玻璃），键帽只负责"看得清、看得出按得下去"。
+ *
+ * 所以这里不调用 drawBackdrop：不模糊背景、不折射，只画两道随高度渐变的描边。
+ */
+@Composable
+internal fun Modifier.glassKeyCap(shape: Shape, pressed: Boolean): Modifier {
+    if (!isLiquidGlassTheme()) return this
+    val dark = isLikelyDark()
+    val topLight = if (dark) 0.10f else 0.30f
+    val bottomShade = if (dark) 0.18f else 0.08f
+    return drawWithContent {
+        drawContent()
+        val outline = shape.createOutline(size, layoutDirection, this)
+        val path = when (outline) {
+            is Outline.Rounded -> Path().apply { addRoundRect(outline.roundRect) }
+            is Outline.Rectangle -> Path().apply { addRect(outline.rect) }
+            is Outline.Generic -> outline.path
+        }
+        val stroke = Stroke(0.8.dp.toPx())
+        // 按下时不画顶光：键帽陷下去，光就不该还在上沿。
+        if (!pressed) {
+            drawPath(
+                path = path,
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.White.copy(alpha = topLight), Color.Transparent),
+                    startY = 0f,
+                    endY = size.height * 0.62f,
+                ),
+                style = stroke,
+            )
+        }
+        drawPath(
+            path = path,
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.Transparent, Color.Black.copy(alpha = bottomShade)),
+                startY = size.height * 0.55f,
+                endY = size.height,
+            ),
+            style = stroke,
+        )
+    }
+}
 
 /** Supplies the backdrop capture layer. A null base keeps the IME window transparent. */
 @Composable
@@ -394,10 +467,12 @@ internal fun Modifier.liquidControlGlass(
                 vibrancy()
                 blur(2.dp.toPx())
                 lens(
-                    refractionHeight = 12.dp.toPx(),
-                    refractionAmount = 24.dp.toPx(),
+                    // 小胶囊只有 44dp 高：折射范围跟着缩小，不然整颗控件像被吹起来的透镜。
+                    refractionHeight = 8.dp.toPx(),
+                    refractionAmount = 12.dp.toPx(),
                     depthEffect = true,
-                    chromaticAberration = active,
+                    // 色散只在光穿过厚玻璃时才有；一颗小胶囊上出现彩边只会显得脏。
+                    chromaticAberration = false,
                 )
             },
             highlight = {
@@ -530,7 +605,7 @@ private fun Modifier.glassStaticEdge(shape: Shape, enabled: Boolean = true): Mod
             path = path,
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color.Black.copy(alpha = if (lightMode) 0.07f else 0.20f),
+                    Color.Black.copy(alpha = if (lightMode) 0.05f else 0.14f),
                     Color.Transparent,
                 ),
                 start = end,
@@ -540,9 +615,11 @@ private fun Modifier.glassStaticEdge(shape: Shape, enabled: Boolean = true): Mod
         )
         drawPath(
             path = path,
+            // 一圈 76% 的白边是把控件画成「肥皂泡」的元凶：每个胶囊、每颗按钮都镶一道亮边，
+            // 屏幕上一片反光。留三成，只当作光从上方照下来的一道边。
             brush = Brush.linearGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = if (lightMode) 0.76f else 0.28f),
+                    Color.White.copy(alpha = if (lightMode) 0.30f else 0.18f),
                     Color.Transparent,
                 ),
                 start = Offset.Zero,

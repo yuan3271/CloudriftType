@@ -24,7 +24,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -396,7 +395,7 @@ private fun SliderRow(
                 modifier = Modifier.height(38.dp),
             )
         } else {
-            Slider(
+            CloudriftSlider(
                 value = value,
                 onValueChange = onChange,
                 valueRange = range,
@@ -451,10 +450,11 @@ private fun ColorPicker(
                     modifier = Modifier.weight(1f),
                 )
             } else {
-                Slider(
+                CloudriftSlider(
                     value = hue.toFloat(),
                     onValueChange = { onHue(it.roundToInt()) },
                     valueRange = 0f..359f,
+                    steps = 358,
                     modifier = Modifier
                         .weight(1f)
                         .height(28.dp),
@@ -493,10 +493,11 @@ private fun ColorPicker(
                     modifier = Modifier.weight(1f),
                 )
             } else {
-                Slider(
+                CloudriftSlider(
                     value = saturation.toFloat(),
                     onValueChange = { onSaturation(it.roundToInt()) },
                     valueRange = 10f..85f,
+                    steps = 74,
                     modifier = Modifier
                         .weight(1f)
                         .height(28.dp),

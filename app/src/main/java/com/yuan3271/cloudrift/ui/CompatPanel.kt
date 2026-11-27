@@ -370,9 +370,8 @@ private fun CompatExpandedPanel(state: ImeUiState, controller: ImeController) {
     val callbacks = KeyCallbacks(
         onKey = controller::onKey,
         onAlternate = { _, alternate -> controller.onAlternateChosen(alternate) },
-        onLongPress = { key ->
-            if (key.code == KeyCode.Backspace) controller.onBackspaceLongPress()
-        },
+        // 退格是可重复键，长按计时器对它不触发（见 KeyCanvas.keyGesture）：删除靠按住连删。
+        onLongPress = {},
         onSwipeUp = controller::onSwipeUp,
         onSpaceLongPress = controller::onSpaceLongPress,
         onSpaceRelease = controller::onSpaceRelease,

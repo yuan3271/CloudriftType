@@ -386,6 +386,9 @@ class ImeController(
     // ---- key handling ---------------------------------------------------------------
 
     fun onKey(key: KeyDef) {
+        // 提示条说的是"刚才发生的那件事"（权限、语音失败）。用户已经继续打字了，它就该退场——
+        // 它现在压在候选栏上，留着不走等于替用户把候选遮住。
+        if (_state.value.notice != null) dismissNotice()
         if (key.code != KeyCode.Settings && key.code != KeyCode.HideKeyboard) feedback()
         // 用户开始编辑了：那条"要不要粘贴"的提示就此收掉，别再回到候选栏。剪贴板提示是复制
         // 之后的一次性邀请，不是常驻控件（见 ClipboardStore：一段内容只提示一次）。
@@ -1007,17 +1010,6 @@ class ImeController(
         openSettings()
     }
 
-    fun onBackspaceLongPress() {
-        if (_state.value.isComposing) {
-            clearBuffer()
-        } else {
-            // One character, never a word: a long press is not a licence to guess where the
-            // previous one started. Holding the key already repeats single character deletes.
-            selfEditCounter++
-            editor.deleteSurroundingBefore(1)
-        }
-    }
-
     /**
      * The 清空 key: empties the editor in one go. The pending reading is dropped first, so the
      * selection covers the text rather than our own composing region.
@@ -1190,6 +1182,8 @@ class ImeController(
         autoApplyJob = null
         _state.value = _state.value.copy(autoApplyPending = false)
         characterChain.clear()
+        // 一段语音上屏之后，光标已经不在原来那个词后面了，旧的联想不能留着。
+        clearAssociations()
         selfEditCounter++
         editor.commit(ready.text)
         voice.dismiss()
@@ -1341,6 +1335,9 @@ class ImeController(
     private fun commitLiteral(text: String) {
         if (text.isEmpty()) return
         characterChain.clear()
+        // 符号不是"上一个词后面要接的词"：联想条讲的是词与词之间的搭配，按下逗号之后它说的
+        // 已经不是光标左边那个词了。
+        clearAssociations()
         if (_state.value.isComposing) commitBuffer()
         selfEditCounter++
         // 只有**成对键**（符号页最前面那些「（）」「“”」）才一次出两个并把光标放中间；
@@ -1360,21 +1357,9 @@ class ImeController(
      */
     private fun backspace() {
         characterChain.clear()
-        // A selected range is the user's target, not the text next to the caret, and
-        // deleteSurroundingText is ignored by most editors while a selection is live - pressing the
-        // key is what makes them delete the selection.
-        //
-        // 判断以编辑器**当场**的选区为准（见 EditorProxy.hasLiveSelection）：缓存的那个标志会
-        // 在拖选、编辑器自己改选区之后过期，所以同一个动作时而删得掉、时而删不掉。两条路都走：
-        // 先把选区替换成空串，若编辑器不吃这一套，再补一次真正的退格键按下。
-        if (hasSelection || editor.hasLiveSelection()) {
-            selfEditCounter++
-            editor.deleteSelection()
-            if (editor.hasLiveSelection()) editor.sendBackspaceKey()
-            doubleSpaceArmed = false
-            return
-        }
+        doubleSpaceArmed = false
         val current = _state.value
+        // 正在拼写：退格改的是读音缓冲，不是编辑器里的字。
         if (current.raw.isNotEmpty()) {
             val edited = backspaceReading(current.raw, compositionCaret)
             if (edited.text.isEmpty()) {
@@ -1384,12 +1369,27 @@ class ImeController(
             }
             return
         }
+        // 没有拼写：先看编辑器里是不是有一段被选中的文本。
+        //
+        // 判断以编辑器**当场**报的选中文本为准。缓存的那个标志会在拖选、编辑器自己改选区之后
+        // 过期；它过期成 true 时，旧实现会去"删选区"，而其实没有选区，commitText("") 什么也
+        // 不删——同一个退格在一个应用里好用、在另一个应用里按了没反应，很多就是这样来的。
+        val selected = editor.selectedTextOrNull()
+        if (selected != null) hasSelection = selected.isNotEmpty()
+        val mayHaveSelection = selected?.isNotEmpty() == true || (selected == null && hasSelection)
+        if (mayHaveSelection) {
+            selfEditCounter++
+            editor.deleteSelection()
+            // 编辑器不吃 commitText("") 时补一次真正的退格键：按键会走它自己的"删掉选区"路径。
+            if (editor.selectedTextOrNull()?.isNotEmpty() == true) editor.sendBackspaceKey()
+            return
+        }
         // Deleting into text that is already in the editor: the 联想 strip was about what used to
         // be in front of the caret, so it goes away rather than predicting from stale text.
         clearAssociations()
         selfEditCounter++
-        editor.deleteSurroundingBefore(1)
-        doubleSpaceArmed = false
+        // 按"用户眼里的一个字"删，并在编辑器不认码点接口时逐级退回（见 EditorProxy）。
+        editor.deleteBeforeCaret()
     }
 
     private fun space() {
@@ -1428,11 +1428,15 @@ class ImeController(
             // all in most editors when the user has a selection, and committing replaces the
             // selection, which is what pressing enter on selected text should do.
             selfEditCounter++
+            // 换行之后联想条说的还是上一行那个词，清掉。
+            clearAssociations()
             editor.newline()
             updateEnterLabel()
             return
         }
         selfEditCounter++
+        // 换行之后联想条说的还是上一行那个词，清掉。
+        clearAssociations()
         editor.performEditorAction(editorInfo)
     }
 
@@ -1496,12 +1500,23 @@ class ImeController(
         }
     }
 
-    /** Walks the enabled layouts: 中 ⇄ 英, with 日 in the rotation only when it is switched on. */
+    /**
+     * 工具栏语言键：中 → 英 →（开了日文时）日 → 中。
+     *
+     * 以前这里按 LayoutId.cycleFor 的下标走，而那个循环里只有 26 键：9 键用户按一下会被送到
+     * 「中文 26 键」，既不是英文、也不是他原来的 9 键。现在中文（26/9 都算）一律先去英文，
+     * 从英文/日文回来时回到用户上一次用的那个中文布局。
+     */
     fun cycleLanguage() {
-        val order = LayoutId.cycleFor(settings.current.japaneseEnabled)
-        val index = order.indexOf(_state.value.layout)
-        val next = if (index < 0) order.first() else order[(index + 1) % order.size]
-        selectLayout(next)
+        val current = _state.value.layout
+        if (current.isChinese) languageReturn = current
+        selectLayout(
+            nextLanguageLayout(
+                current = current,
+                japaneseEnabled = settings.current.japaneseEnabled,
+                chineseReturn = languageReturn,
+            ),
+        )
     }
 
     private fun showPage(page: KeyboardPage) {
@@ -1628,6 +1643,19 @@ class ImeController(
         )
 
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
+        /**
+         * 语言键的下一个布局。纯函数，方便单测：中文 → 英文 →（开日文时）日文 → 回到中文。
+         */
+        internal fun nextLanguageLayout(
+            current: LayoutId,
+            japaneseEnabled: Boolean,
+            chineseReturn: LayoutId,
+        ): LayoutId = when {
+            current.isChinese -> LayoutId.English
+            current == LayoutId.English && japaneseEnabled -> LayoutId.JapaneseRomaji
+            else -> if (chineseReturn.isChinese) chineseReturn else LayoutId.Pinyin26
+        }
+
         /** 与 [CloudriftImeService] 同一个 tag：`adb logcat -s CloudriftIme` 一条就够。 */
         private const val LOG_TAG = "CloudriftIme"
         /** 单独按一下 Shift、且这么久以内抬起，才算"单击切中英"（按住 Shift 打字不算）。 */

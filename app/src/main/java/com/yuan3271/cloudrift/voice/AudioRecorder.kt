@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -66,7 +67,13 @@ class AudioRecorder(val file: File) {
                     val buffer = ShortArray(bufferSize / 2)
                     while (isActive) {
                         val read = recorder.read(buffer, 0, buffer.size)
-                        if (read <= 0) continue
+                        // 负值是 AudioRecord 的硬错误（设备被抢走、录音中途被撤销）：再读下去
+                        // 只是死循环空转、电池白烧。0 是"这一小会儿还没数据"，让出一下时间片。
+                        if (read < 0) break
+                        if (read == 0) {
+                            delay(READ_IDLE_DELAY_MS)
+                            continue
+                        }
                         val bytes = ByteArray(read * 2)
                         var peak = 0
                         for (index in 0 until read) {
@@ -164,5 +171,7 @@ class AudioRecorder(val file: File) {
         private const val HEADER_SIZE = 44
         private const val LEVEL_GAIN = 4f
         private const val WRITER_JOIN_TIMEOUT_MS = 500L
+        /** read() 返回 0（暂时没数据）时让出的时间，避免空转。 */
+        private const val READ_IDLE_DELAY_MS = 5L
     }
 }

@@ -1,6 +1,7 @@
 package com.yuan3271.cloudrift.ui.settings
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -15,9 +16,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yuan3271.cloudrift.data.AppGraph
 import com.yuan3271.cloudrift.data.AppTheme
@@ -41,7 +47,7 @@ class SettingsActivity : ComponentActivity() {
             com.yuan3271.cloudrift.data.ThemeMode.Dark -> true
             }
         window.setBackgroundDrawable(
-            ColorDrawable(if (darkLaunch) 0xFF111318.toInt() else 0xFFFAF8FF.toInt()),
+            ColorDrawable(if (darkLaunch) 0xFF101319.toInt() else 0xFFF9FAFD.toInt()),
         )
         val requestMicrophone = intent?.getBooleanExtra(EXTRA_REQUEST_MICROPHONE, false) == true
 
@@ -50,6 +56,7 @@ class SettingsActivity : ComponentActivity() {
             val userStats by AppGraph.profile.stats.collectAsStateWithLifecycle()
             val update by AppGraph.updates.available.collectAsStateWithLifecycle()
             val updateStatus by AppGraph.updates.status.collectAsStateWithLifecycle()
+            val imeStatus = rememberImeStatus()
             LaunchedEffect(Unit) { AppGraph.updates.checkIfDue() }
             CloudriftTheme(
                 appTheme = settings.appTheme,
@@ -65,7 +72,8 @@ class SettingsActivity : ComponentActivity() {
                     SettingsScreen(
                         settings = settings,
                         onUpdate = AppGraph.settings::update,
-                        imeEnabled = rememberImeEnabled(),
+                        imeEnabled = imeStatus.enabled,
+                        imeActive = imeStatus.active,
                         userStats = userStats,
                         update = update,
                         updateStatus = updateStatus,
@@ -134,23 +142,43 @@ data class SettingsActions(
     val finish: () -> Unit,
 )
 
-@Composable
-internal fun rememberMicrophoneGranted(): Boolean {
-    val context = LocalContext.current
-    return ContextCompat.checkSelfPermission(context, SettingsActivity.MICROPHONE_PERMISSION) ==
+/** 麦克风权限现在有没有给。设置页每次回到前台都重读一次——授权也可能是在系统设置里做的。 */
+internal fun microphoneGranted(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, SettingsActivity.MICROPHONE_PERMISSION) ==
         PackageManager.PERMISSION_GRANTED
+
+/**
+ * 输入法在系统里的两种状态，**不能合成一个布尔值**：
+ *
+ * - [enabled]：系统设置里勾选了云隙输入（输入法列表里有它）；
+ * - [active]：现在正在用的就是它（默认输入法）。
+ *
+ * 勾上了但还没切过去时，界面得说"还差一步"，而不是直接宣布"正在使用"。
+ */
+data class ImeStatus(val enabled: Boolean, val active: Boolean)
+
+/**
+ * 读一次系统的输入法状态，并在每次回到设置页时重读：勾选与切换都发生在另一个界面里，
+ * 只在组合时读一次的话，用户切完输入法回来看到的还是旧状态。
+ */
+@Composable
+internal fun rememberImeStatus(): ImeStatus {
+    val context = LocalContext.current
+    var status by remember { mutableStateOf(readImeStatus(context)) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { status = readImeStatus(context) }
+    return status
 }
 
-/** True when 云隙输入 is both enabled and the keyboard currently in use. */
-@Composable
-internal fun rememberImeEnabled(): Boolean {
-    val context = LocalContext.current
-    val manager = context.getSystemService(InputMethodManager::class.java) ?: return false
-    val enabled: List<InputMethodInfo> = manager.enabledInputMethodList
+private fun readImeStatus(context: Context): ImeStatus {
+    val manager = context.getSystemService(InputMethodManager::class.java)
+    // InputMethodInfo.id 就是 DEFAULT_INPUT_METHOD 里那种短形式（pkg/.Class），两边可以直接比。
+    val enabled: List<InputMethodInfo> = manager?.enabledInputMethodList.orEmpty()
     val active = Settings.Secure.getString(
         context.contentResolver,
         Settings.Secure.DEFAULT_INPUT_METHOD,
     )
-    return active == SettingsActivity.IME_ID ||
-        enabled.any { "${it.packageName}/${it.serviceName}" == SettingsActivity.IME_ID }
+    return ImeStatus(
+        enabled = enabled.any { it.id == SettingsActivity.IME_ID },
+        active = active == SettingsActivity.IME_ID,
+    )
 }

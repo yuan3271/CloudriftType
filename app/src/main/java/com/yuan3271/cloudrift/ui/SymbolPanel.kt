@@ -76,7 +76,7 @@ fun SymbolPanel(
     val gridHeight = keyHeight * VISIBLE_ROWS + KEY_GAP * (VISIBLE_ROWS - 1)
     // 空串表示"还没选过"：落到第一个分类，而不是给出一页空白。
     val activeGroup = emojiGroups.firstOrNull { it.key == emojiGroup } ?: emojiGroups.firstOrNull()
-    val showEmoji = sheet == SymbolSheet.Emoji && activeGroup != null
+    // 表情表为空（资源没读到）时左栏也不给「表情」入口，落回标点页，而不是给一页空白。
 
     Row(modifier = modifier.fillMaxWidth()) {
         SymbolRail(
@@ -90,7 +90,7 @@ fun SymbolPanel(
             onEmojiGroupChange = onEmojiGroupChange,
         )
         Column(modifier = Modifier.weight(1f)) {
-            if (showEmoji && activeGroup != null) {
+            if (sheet == SymbolSheet.Emoji && activeGroup != null) {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
                     modifier = Modifier

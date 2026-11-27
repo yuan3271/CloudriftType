@@ -22,7 +22,8 @@ class SettingsRepository(context: Context) {
     val current: AppSettings get() = _state.value
 
     fun update(transform: (AppSettings) -> AppSettings) {
-        val next = transform(_state.value)
+        // 滑杆给的是连续值，先收进合法范围再落盘：状态、磁盘、界面读到的必须是同一个值。
+        val next = transform(_state.value).normalized()
         if (next == _state.value) return
         write(next)
         _state.value = next
@@ -98,7 +99,7 @@ class SettingsRepository(context: Context) {
             autoPunctuation = prefs.getBoolean(KEY_AUTO_PUNCTUATION, defaults.autoPunctuation),
             hotWords = prefs.getString(KEY_HOT_WORDS, defaults.hotWords).orEmpty(),
             lastLayout = prefs.getString(KEY_LAST_LAYOUT, defaults.lastLayout).orEmpty(),
-        )
+        ).normalized()
     }
 
     private fun write(settings: AppSettings) {

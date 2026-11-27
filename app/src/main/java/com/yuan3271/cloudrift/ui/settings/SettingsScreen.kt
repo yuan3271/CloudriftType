@@ -42,7 +42,6 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,6 +65,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.yuan3271.cloudrift.BuildConfig
 import com.yuan3271.cloudrift.data.AppTheme
 import com.yuan3271.cloudrift.data.ApiEndpoint
@@ -99,6 +100,7 @@ import com.yuan3271.cloudrift.ui.CloudriftFilterChip
 import com.yuan3271.cloudrift.ui.CloudriftIconButton
 import com.yuan3271.cloudrift.ui.CloudriftOutlinedButton
 import com.yuan3271.cloudrift.ui.CloudriftTextButton
+import com.yuan3271.cloudrift.ui.CloudriftSlider
 import com.yuan3271.cloudrift.ui.CloudriftTextField
 import com.yuan3271.cloudrift.ui.CursorSpeedSelector
 import com.yuan3271.cloudrift.ui.KeyPreviewRow
@@ -116,13 +118,20 @@ fun SettingsScreen(
     settings: AppSettings,
     onUpdate: ((AppSettings) -> AppSettings) -> Unit,
     imeEnabled: Boolean = false,
+    /** 现在正在用的输入法就是云隙输入（见 [rememberImeStatus]）。 */
+    imeActive: Boolean = false,
     userStats: UserStats = UserStats(),
     update: UpdateInfo? = null,
     updateStatus: UpdateCheckStatus = UpdateCheckStatus.Idle,
     actions: SettingsActions,
 ) {
-    val grantState = rememberMicrophoneGranted()
-    var hasMicrophone by remember { mutableStateOf(grantState) }
+    val context = LocalContext.current
+    var hasMicrophone by remember { mutableStateOf(microphoneGranted(context)) }
+    // 权限可能是在系统设置里给的（设置页只是引导），也可能刚在权限对话框里点过允许。
+    // 每次回到这一页都重读一次，否则授权回来仍挂着"语音输入需要麦克风权限"。
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        hasMicrophone = microphoneGranted(context)
+    }
     var confirmClearLearning by remember { mutableStateOf(false) }
     val liquidGlass = isLiquidGlassTheme()
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -174,6 +183,7 @@ fun SettingsScreen(
             item {
                 SetupCard(
                     imeEnabled = imeEnabled,
+                    imeActive = imeActive,
                     hasMicrophone = hasMicrophone,
                     onEnableKeyboard = actions.openSystemKeyboardSettings,
                     onPickKeyboard = actions.showKeyboardPicker,
@@ -937,6 +947,7 @@ private fun UpdateCard(
 @Composable
 private fun SetupCard(
     imeEnabled: Boolean,
+    imeActive: Boolean,
     hasMicrophone: Boolean,
     onEnableKeyboard: () -> Unit,
     onPickKeyboard: () -> Unit,
@@ -948,17 +959,23 @@ private fun SetupCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = if (imeEnabled) "输入法启用成功" else "启用云隙输入",
+                text = when {
+                    imeActive -> "输入法已就绪"
+                    // 勾上了不等于切过去了：这两件事以前被当成一个布尔值，于是"已启用"就敢写
+                    // "当前正在使用"，用户勾完回来看到这句话、却仍然打不出字。
+                    imeEnabled -> "还差一步：切换过去"
+                    else -> "启用云隙输入"
+                },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = if (imeEnabled) {
-                    "当前正在使用云隙输入。下面可以调整外观、按键和语音接口。"
-                } else {
-                    "在系统设置里勾选「云隙输入」，然后切换过去即可使用。"
+                text = when {
+                    imeActive -> "当前正在使用云隙输入。下面可以调整外观、按键和语音接口。"
+                    imeEnabled -> "云隙输入已在系统里启用。点「切换输入法」把它换成当前输入法，就可以开始打字了。"
+                    else -> "在系统设置里勾选「云隙输入」，然后切换过去即可使用。"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -966,7 +983,8 @@ private fun SetupCard(
             Spacer(Modifier.height(12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CloudriftFilledButton(onClick = onEnableKeyboard, modifier = Modifier.weight(1f)) {
-                    Text("去启用")
+                    // 已经启用之后这颗键打开的还是系统输入法页，但那时它叫"去启用"就是错的。
+                    Text(if (imeEnabled) "输入法设置" else "去启用")
                 }
                 CloudriftOutlinedButton(onClick = onPickKeyboard, modifier = Modifier.weight(1f)) {
                     Text("切换输入法")
@@ -1288,10 +1306,11 @@ private fun AccentPicker(
                 modifier = Modifier.weight(1f),
             )
         } else {
-            Slider(
+            CloudriftSlider(
                 value = hue.toFloat(),
                 onValueChange = { onHue(it.roundToInt()) },
                 valueRange = 0f..359f,
+                steps = 358,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -1319,10 +1338,11 @@ private fun AccentPicker(
                 modifier = Modifier.weight(1f),
             )
         } else {
-            Slider(
+            CloudriftSlider(
                 value = saturation.toFloat(),
                 onValueChange = { onSaturation(it.roundToInt()) },
                 valueRange = 10f..85f,
+                steps = 74,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -1404,7 +1424,7 @@ private fun ValueSlider(
                 valueRange = range.first.toFloat()..range.last.toFloat(),
             )
         } else {
-            Slider(
+            CloudriftSlider(
                 value = value.toFloat(),
                 onValueChange = { onChange(it.roundToInt()) },
                 valueRange = range.first.toFloat()..range.last.toFloat(),
