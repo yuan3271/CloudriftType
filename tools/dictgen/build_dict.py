@@ -198,6 +198,8 @@ HSK30_FLOOR = {1: 480, 2: 400, 3: 330, 4: 270, 5: 220, 6: 180, 7: 140}
 # Everyday compounds that the corpus lists miss but a Chinese keyboard should still own as words.
 # 月考 keeps 月 and 考 together instead of letting the 月/乐 homophone contest decide the first word.
 EXTRA_DAILY_WORDS = {"月考": 1400}
+# 需要压过同音词的日常写法：一行 `词<TAB>保底分`（见 clean/prominent_words.txt 的注释）。
+PROMINENT_WORDS = TOOLS / "clean/prominent_words.txt"
 # A second reading earns its own entry in the character table when the frequency dictionary shows
 # it carrying at least this share of the character's occurrences (血 is xiě in 14% of them, 觉 is
 # jiào in 15%). Below that the reading exists but is rare enough that the primary placement is
@@ -728,6 +730,22 @@ def load_named_lists() -> dict[str, int]:
     return names
 
 
+def load_prominent_words() -> dict[str, int]:
+    """"这个词必须排在它的同音词前面"的保底分；缺文件时为空表。"""
+    if not PROMINENT_WORDS.exists():
+        return {}
+    scores: dict[str, int] = {}
+    for line in PROMINENT_WORDS.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#") or "\t" not in line:
+            continue
+        word, _, raw = line.partition("\t")
+        word = word.strip()
+        digit = raw.strip().split()[0] if raw.strip() else ""
+        if 2 <= len(word) <= MAX_WORD_LENGTH and HAN.match(word) and digit.isdigit():
+            scores[word] = max(scores.get(word, 0), int(digit))
+    return scores
+
+
 def load_word_lists() -> dict[str, int]:
     """词条语料（新华字典词条、网络常用词）-> 分数。
 
@@ -929,6 +947,8 @@ def main() -> int:
     for word, floor in daily.items():
         word_scores[word] = max(word_scores.get(word, 0), floor)
     for word, floor in EXTRA_DAILY_WORDS.items():
+        word_scores[word] = max(word_scores.get(word, 0), floor)
+    for word, floor in load_prominent_words().items():
         word_scores[word] = max(word_scores.get(word, 0), floor)
     print(f"日常词汇表: {len(daily)} 个词（HSK 3.0 等级保底）")
 

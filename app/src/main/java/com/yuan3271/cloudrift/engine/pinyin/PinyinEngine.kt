@@ -1893,6 +1893,12 @@ class PinyinEngine(
          * Unigram cost of one unit in the sentence decoder, on the dictionary's log-frequency
          * scale: a unit scores its log frequency minus this, so one word beats several characters.
          * Single characters get a fixed score because the asset ranks them but does not score them.
+         *
+         * 不能靠调高它来修「今天家半了」：实测（2026-11，574 句回归台 + 30 条多词短语）
+         * 1500 / 1800 虽然把全拼 top1 抬到 549 / 550，却把「我今天去了北京」拆成
+         * 「我今天取乐北京」，2100 全面变差。所以保持 1200——缺的是搭配，用
+         * clean/extra_bigrams.txt 补（今天|加班 800、明天|上班 850…）：短语 27/30 → 28/30，
+         * 回归台不回退。
          */
         private const val UNIT_PENALTY = 1200f
         /**

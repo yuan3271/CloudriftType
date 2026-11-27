@@ -30,3 +30,6 @@ tools/tune/bigrams/
 # 生成物 EnglishSchoolWords.kt 是版本化的。
 tools/wordgen/raw/
 tools/wordgen/__pycache__/
+
+# 构建产物（发版时上传到 GitHub Release，不进版本库）
+*.apk

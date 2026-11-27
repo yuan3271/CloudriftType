@@ -616,7 +616,7 @@ aiqinhai	爱琴海	446
 aiqiu	哀求	507
 aiqiwei	艾奇伟	235
 aiqixun	艾奇逊	334
-aiqiyi	爱奇艺	414
+aiqiyi	爱奇艺	661
 aiquan	爱犬	241
 aiqundasha	爱群大厦	297
 airen	爱人	677
@@ -10735,7 +10735,7 @@ bizheng	痹症	264
 bizheng	痹证	272
 bizhengwei	毕政委	251
 bizhengzhidi	必争之地	295
-bizhi	壁纸	331
+bizhi	壁纸	661
 bizhi	币值	534
 bizhi	币制	429
 bizhi	比值	450
@@ -16163,7 +16163,7 @@ chaoshu	抄书	272
 chaoshui	潮水	532
 chaoshuiping	超水平	295
 chaosigua	炒丝瓜	327
-chaosong	抄送	276
+chaosong	抄送	661
 chaosu	超速	688
 chaosuan	超算	298
 chaotiangong	朝天宫	460
@@ -19017,7 +19017,7 @@ chongde	崇德	388
 chongdi	冲抵	256
 chongdian	充电	607
 chongdianbao	充电宝	661
-chongdianqi	充电器	270
+chongdianqi	充电器	661
 chongdianzhuang	充电桩	661
 chongdiao	冲吊	246
 chongdiao	冲掉	440
@@ -27180,7 +27180,7 @@ dazhong	打肿	223
 dazhong	打钟	223
 dazhong	达中	305
 dazhongchengshi	大中城市	470
-dazhongdianping	大众点评	459
+dazhongdianping	大众点评	661
 dazhonggongsi	大众公司	246
 dazhonghua	大中华	354
 dazhonghua	大众化	405
@@ -27665,7 +27665,7 @@ denglong	灯笼	590
 denglong	邓龙	256
 denglongjiao	灯笼椒	246
 denglongku	灯笼裤	229
-denglu	登录	535
+denglu	登录	760
 denglu	登陆	717
 dengludian	登陆点	272
 denglujian	登陆舰	497
@@ -28282,7 +28282,7 @@ dianlian	电联	292
 dianliang	佃粮	223
 dianliang	掂量	392
 dianliang	点亮	703
-dianliang	电量	390
+dianliang	电量	661
 dianliangdianliang	掂量掂量	260
 dianliao	垫料	223
 dianliao	电疗	314
@@ -32719,7 +32719,7 @@ dongzuoxunsu	动作迅速	229
 douan	都安	355
 douanxian	都安县	354
 douanyaozuzizhixian	都安瑶族自治县	740
-douban	豆瓣	304
+douban	豆瓣	661
 doubanjiang	豆瓣酱	260
 doubanjiyu	豆瓣鲫鱼	229
 doubao	豆包	320
@@ -35629,7 +35629,7 @@ erhuqu	二胡曲	229
 erji	二季	283
 erji	二级	699
 erji	二集	251
-erji	耳机	686
+erji	耳机	760
 erji	耳际	306
 erjia	二价	323
 erjia	二家	348
@@ -41975,7 +41975,7 @@ fujian	复检	380
 fujian	抚剑	223
 fujian	福建	668
 fujian	苻坚	228
-fujian	附件	499
+fujian	附件	661
 fujianbai	福建柏	289
 fujiancai	福建菜	331
 fujianchaofan	福建炒饭	226
@@ -54130,7 +54130,7 @@ halisi	哈里斯	314
 haliweier	哈莉维尔	229
 halong	哈隆	229
 halun	哈伦	327
-haluo	哈啰	223
+haluo	哈啰	661
 haluo	哈罗	354
 haluode	哈罗德	423
 hama	哈马	272
@@ -55377,7 +55377,7 @@ haonaner	好男儿	334
 haoneng	耗能	311
 haopai	号牌	318
 haopao	号炮	353
-haoping	好评	540
+haoping	好评	661
 haoping	浩平	223
 haoqi	号旗	223
 haoqi	好奇	711
@@ -66733,7 +66733,7 @@ jianongpao	加农炮	404
 jianou	建瓯	318
 jianoushi	建瓯市	740
 jianpai	减排	276
-jianpan	键盘	518
+jianpan	键盘	661
 jianpanchuli	键盘处理	325
 jianpang	减胖	223
 jianpangaodu	键盘高度	361
@@ -72182,7 +72182,7 @@ jingdiaoxike	精雕细刻	323
 jingding	静定	268
 jingdisheng	警笛声	235
 jingdizhiwa	井底之蛙	334
-jingdong	京东	381
+jingdong	京东	700
 jingdong	惊动	559
 jingdong	景东	345
 jingdong	荆东	544
@@ -73240,7 +73240,7 @@ jingyida	景亦大	251
 jingyidan	敬一丹	394
 jingyijinshi	经义进士	235
 jingyilu	经一路	355
-jingyin	静音	591
+jingyin	静音	661
 jingying	净赢	223
 jingying	晶莹	501
 jingying	精英	660
@@ -78788,7 +78788,7 @@ kaihuo	开伙	235
 kaihuo	开火	407
 kaihuo	开豁	264
 kaihushu	开户数	264
-kaiji	开机	411
+kaiji	开机	661
 kaiji	开记	223
 kaijia	开价	351
 kaijia	开架	272
@@ -87140,7 +87140,7 @@ lianyungang	连云港	651
 lianyungangshi	连云港市	740
 lianyunlu	连云路	269
 lianyunqu	连云区	740
-lianzai	连载	406
+lianzai	连载	661
 lianzhai	李安宅	229
 lianzhan	恋战	395
 lianzhan	恋栈	223
@@ -89030,7 +89030,7 @@ lingshanlu	灵山路	258
 lingshanxian	灵山县	740
 lingshe	灵蛇	333
 lingsheng	令甥	223
-lingsheng	铃声	491
+lingsheng	铃声	661
 lingshengmu	零声母	235
 lingshi	令师	223
 lingshi	灵狮	306
@@ -94809,7 +94809,7 @@ luyoudongsigu	路有冻死骨	306
 luyoujiao	鲁有脚	450
 luyoujiaohuan	路由交换	312
 luyoupeizhi	路由配置	420
-luyouqi	路由器	510
+luyouqi	路由器	661
 luyouqipeizhi	路由器配置	386
 luyouxieyi	路由协议	477
 luyouxuanze	路由选择	465
@@ -109907,7 +109907,7 @@ pingming	平明	327
 pingminhua	平民化	351
 pingminzhuyi	平民主义	440
 pingmoer	平摩尔	256
-pingmu	屏幕	635
+pingmu	屏幕	661
 pingmubaohu	屏幕保护	393
 pingmuchangliang	屏幕常亮	349
 pingmuchicun	屏幕尺寸	547
@@ -116225,7 +116225,7 @@ qishou	期收	223
 qishou	棋手	505
 qishou	稽首	333
 qishou	起首	256
-qishou	骑手	357
+qishou	骑手	661
 qishoubajiao	七手八脚	367
 qishu	七数	325
 qishu	乞恕	223
@@ -118644,7 +118644,7 @@ redaiyulin	热带雨林	508
 redao	热岛	286
 redaolv	热导率	329
 redi	热地	241
-redian	热点	618
+redian	热点	661
 redian	热电	338
 redianchang	热电厂	535
 redianhuati	热点话题	459
@@ -119043,7 +119043,7 @@ renli	任吏	229
 renlian	人脸	432
 renlianduiqi	人脸对齐	315
 renlianjiance	人脸检测	477
-renlianshibie	人脸识别	623
+renlianshibie	人脸识别	661
 renlibu	任礼部	246
 renliche	人力车	338
 renling	认领	334
@@ -130411,7 +130411,7 @@ shipian	十片	229
 shipian	十篇	280
 shipian	石片	368
 shipian	诗篇	562
-shipin	视频	794
+shipin	视频	960
 shipin	诗品	251
 shipin	食品	904
 shipin	饰品	412
@@ -132449,7 +132449,7 @@ shoujiang	授奖	333
 shoujiang	收缰	251
 shoujianquan	手机安全	370
 shoujianquanweishi	手机安全卫士	312
-shoujianren	收件人	276
+shoujianren	收件人	661
 shoujianzhe	受检者	251
 shoujianzhixing	收监执行	399
 shoujiao	受教	223
@@ -135092,7 +135092,7 @@ shujuwanzhengxing	数据完整性	620
 shujuwei	数据位	268
 shujuwenjian	数据文件	754
 shujuwenjiancunchu	数据文件存储	354
-shujuxian	数据线	256
+shujuxian	数据线	661
 shujuxiang	数据项	687
 shujuxiaoyan	数据校验	476
 shujuxinhao	数据信号	522
@@ -136716,7 +136716,7 @@ siji	四记	256
 siji	四辑	241
 siji	四集	241
 siji	死寂	370
-siji	死机	637
+siji	死机	661
 siji	死记	268
 sijia	四价	229
 sijia	四家	466
@@ -149831,7 +149831,7 @@ wangsiyi	王思懿	249
 wangsiying	王四营	315
 wangsizheng	王思政	229
 wangsongda	王宋大	485
-wangsu	网速	251
+wangsu	网速	661
 wangsuli	王素莉	286
 wangsun	王孙	361
 wangsungongzi	王孙公子	276
@@ -150497,7 +150497,7 @@ wanjiashengfo	万家生佛	246
 wanjiazhuang	万家庄	231
 wanjiben	烷基苯	260
 wanjie	万节	223
-wanjie	完结	413
+wanjie	完结	661
 wanjie	晚节	295
 wanjiebufu	万劫不复	351
 wanjiegu	万劫谷	350
@@ -152559,7 +152559,7 @@ weixike	维西克	235
 weixilisuzuzizhixian	维西傈僳族自治县	740
 weixin	唯心	320
 weixin	威信	545
-weixin	微信	270
+weixin	微信	700
 weixin	惟心	223
 weixin	维新	528
 weixin	违心	368
@@ -152617,7 +152617,7 @@ weixinyingxiao	微信营销	387
 weixinyouxi	微信游戏	271
 weixinyundong	维新运动	323
 weixinyunying	微信运营	330
-weixinzhifu	微信支付	487
+weixinzhifu	微信支付	661
 weixinzhilun	违心之论	235
 weixinzhuyi	唯心主义	509
 weixinzhuyizhe	唯心主义者	295
@@ -161872,7 +161872,7 @@ xiechen	亵臣	223
 xiechen	谢忱	251
 xiecheng	写成	578
 xiecheng	卸成	223
-xiecheng	携程	630
+xiecheng	携程	661
 xiecheng	斜成	223
 xiecheng	泄成	223
 xiechengwang	携程网	412
@@ -178644,7 +178644,7 @@ yizhan	一盏	534
 yizhan	一站	705
 yizhan	义战	223
 yizhan	翼展	441
-yizhan	驿站	490
+yizhan	驿站	661
 yizhang	一丈	498
 yizhang	一张	751
 yizhang	一章	492
@@ -179761,7 +179761,7 @@ youjian	右键	836
 youjian	有间	223
 youjian	油煎	223
 youjian	诱奸	649
-youjian	邮件	698
+youjian	邮件	900
 youjiancaidan	右键菜单	540
 youjianduxuexi	有监督学习	433
 youjianfasong	邮件发送	512
@@ -181484,7 +181484,7 @@ yuantong	元痛	223
 yuantong	元通	292
 yuantong	圆桶	223
 yuantong	圆筒	394
-yuantong	圆通	329
+yuantong	圆通	661
 yuantong	源通	567
 yuantongbingqilin	圆筒冰淇淋	270
 yuantongli	袁同礼	229
@@ -183121,7 +183121,7 @@ yuncunchu	云存储	484
 yunda	云大	251
 yunda	云达	235
 yunda	运达	235
-yunda	韵达	426
+yunda	韵达	661
 yundaiying	恽代英	370
 yundan	运单	235
 yundanfengqing	云淡风轻	260
@@ -188476,7 +188476,7 @@ zhendingwei	帧定位	257
 zhendingziruo	镇定自若	353
 zhendizhan	阵地战	378
 zhendong	振东	330
-zhendong	振动	600
+zhendong	振动	661
 zhendong	镇东	336
 zhendong	震动	586
 zhendonghua	帧动画	498
@@ -190661,7 +190661,7 @@ zhihou	滞后	484
 zhihouxing	滞后性	268
 zhihu	执壶	309
 zhihu	支护	329
-zhihu	知乎	570
+zhihu	知乎	661
 zhihua	指画	295
 zhihua	支化	229
 zhihua	直话	235
@@ -191513,7 +191513,7 @@ zhiweihui	支委会	289
 zhiweipinren	职位聘任	315
 zhiweitangxun	智威汤逊	229
 zhiweiwei	智微微	256
-zhiwen	指纹	408
+zhiwen	指纹	661
 zhiwen	织纹	251
 zhiwen	质问	477
 zhiwenpoan	指纹破案	263
@@ -197673,7 +197673,7 @@ zitaokuchi	自讨苦吃	354
 zitaomeiqu	自讨没趣	338
 ziteng	紫藤	338
 ziti	子体	246
-ziti	字体	560
+ziti	字体	661
 ziti	自体	342
 zitiao	字条	435
 zitie	字帖	327
@@ -198495,7 +198495,7 @@ zongye	棕叶	223
 zongyelv	宗耶律	272
 zongyelvlong	宗耶律隆	276
 zongyi	棕衣	223
-zongyi	综艺	346
+zongyi	综艺	661
 zongyichanshuizhi	总遗产税制	304
 zongyilang	宗一郎	246
 zongying	总应	223
@@ -199999,3 +199999,52 @@ zuzongjiafa	祖宗家法	276
 zuzu	组组	388
 zuzu	足足	516
 zuzubeibei	祖祖辈辈	353
+zhongtong	中通	661
+wuxinghaoping	五星好评	661
+jingdongdaojia	京东到家	661
+fukuanma	付款码	661
+youku	优酷	661
+yuebao	余额宝	661
+jiebei	借呗	661
+chongdiankou	充电口	661
+kadun	卡顿	661
+qunaer	去哪儿	661
+fajianren	发件人	661
+fajianxiang	发件箱	661
+qujianma	取件码	661
+xiaohongshu	小红书	661
+chaping	差评	661
+dewu	得物	661
+weixindushu	微信读书	661
+weibo	微博	720
+kuaishou	快手	661
+kuaididanhao	快递单号	661
+douyin	抖音	661
+pinduoduo	拼多多	661
+shoufukuan	收付款	661
+shoujianxiang	收件箱	661
+shoukuanma	收款码	661
+wuxianwang	无线网	661
+taobaozhibo	淘宝直播	661
+didi	滴滴	661
+shentong	申通	661
+fanju	番剧	661
+wangju	网剧	661
+meituan	美团	661
+tengxunshipin	腾讯视频	661
+huabei	花呗	661
+caogaoxiang	草稿箱	661
+cainiaoyizhan	菜鸟驿站	661
+xiguashipin	西瓜视频	661
+shipinhao	视频号	661
+jiesuo	解锁	661
+zhuiju	追剧	661
+zhuigeng	追更	661
+xianyu	闲鱼	661
+lingqiantong	零钱通	661
+qingju	青桔	661
+shunfeng	顺丰	661
+feizhu	飞猪	661
+feixingmoshi	飞行模式	661
+eleme	饿了么	661
+gaode	高德	661
