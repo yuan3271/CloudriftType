@@ -26,6 +26,8 @@ class PinyinDictionary(
     private val bigramSource: (() -> BufferedReader)? = null,
     /** Optional: traditional-only characters generated from OpenCC's TSCharacters table. */
     private val traditionalSource: (() -> BufferedReader)? = null,
+    /** 可选：两个单元 -> 下一个单元的三元表，只给联想用，见 [nextAfterPair]。 */
+    private val trigramSource: (() -> BufferedReader)? = null,
 ) {
 
     private val charTable = HashMap<String, String>(1024)
@@ -75,6 +77,9 @@ class PinyinDictionary(
      * 我向河北谁 - both are made of real words - and adjacency is exactly that missing piece.
      */
     private var bigrams: HashMap<String, Int>? = null
+
+    /** 两个单元拼起来的左文 -> 下一个单元，只给联想用；装载时按分数排好。 */
+    private var trigrams: HashMap<String, ArrayList<WordEntry>>? = null
 
     /**
      * The same table turned the other way round: word -> the words that follow it, best first.
@@ -383,6 +388,47 @@ class PinyinDictionary(
     }
 
     /**
+     * 两个单元连着的时候，语料说下一个是什么。
+     *
+     * 键是**两个单元直接拼起来的字符串**（`今天` + `天气` = `今天天气`），因为调用方手里是
+     * 光标前的文本、不知道单元边界：它在文本末尾按长度逐个试，试到哪个键就用哪个（见
+     * PinyinEngine.associations）。比单词表多一个单元，回答的是 `今天天气` 后面接什么，
+     * 而不是 `天气` 后面接什么。
+     */
+    fun nextAfterPair(joined: String, limit: Int): List<WordEntry> {
+        if (joined.isEmpty() || limit <= 0 || trigramSource == null) return emptyList()
+        if (trigrams == null) loadTrigrams()
+        val row = trigrams?.get(joined) ?: return emptyList()
+        return if (row.size <= limit) row else row.subList(0, limit)
+    }
+
+    /** 这张词典有没有三元表（只影响联想，解码不用它）。 */
+    val hasTrigramModel: Boolean get() = trigramSource != null
+
+    private fun loadTrigrams() {
+        val table = HashMap<String, ArrayList<WordEntry>>(1 shl 15)
+        trigramSource?.invoke()?.use { reader ->
+            for (line in reader.lineSequence()) {
+                val first = line.indexOf('\t')
+                if (first <= 0) continue
+                val second = line.indexOf('\t', first + 1)
+                if (second <= 0) continue
+                val third = line.indexOf('\t', second + 1)
+                if (third <= 0) continue
+                val left = line.substring(0, first)
+                val middle = line.substring(first + 1, second)
+                val right = line.substring(second + 1, third)
+                val score = line.substring(third + 1).toIntOrNull() ?: continue
+                table.getOrPut(left + middle) { ArrayList(2) }.add(WordEntry(right, "", score))
+            }
+        }
+        for (row in table.values) {
+            row.sortWith(compareByDescending<WordEntry> { it.score }.thenBy { it.word })
+        }
+        trigrams = table
+    }
+
+    /**
      * 以 [prefix] 开头的音节，按语料权重从高到低。
      *
      * 每按一个键都要用（`addPartialCandidates` 与 `addLeadingSyllableCandidates` 各一次），而
@@ -529,6 +575,7 @@ class PinyinDictionary(
         private const val ASSET_CHARS = "pinyin_chars.txt"
         private const val ASSET_WORDS = "pinyin_words.txt"
         private const val ASSET_BIGRAMS = "pinyin_bigrams.txt"
+        private const val ASSET_TRIGRAMS = "pinyin_trigrams.txt"
         private const val ASSET_TRADITIONAL = "traditional_chars.txt"
         private const val BUFFER_SIZE = 1 shl 16
 
@@ -597,6 +644,11 @@ class PinyinDictionary(
                         BUFFER_SIZE,
                     )
                 },
+                trigramSource = {
+                    runCatching { assets.open(ASSET_TRIGRAMS) }.getOrNull()?.let { stream ->
+                        BufferedReader(InputStreamReader(stream, Charsets.UTF_8), BUFFER_SIZE)
+                    } ?: BufferedReader(java.io.StringReader(""))
+                },
             )
 
         /** Test wiring: read the same files from disk. */
@@ -605,7 +657,8 @@ class PinyinDictionary(
             wordTable: () -> BufferedReader,
             bigramTable: (() -> BufferedReader)? = null,
             traditionalChars: (() -> BufferedReader)? = null,
+            trigramTable: (() -> BufferedReader)? = null,
         ): PinyinDictionary =
-            PinyinDictionary(charTable, wordTable, bigramTable, traditionalChars)
+            PinyinDictionary(charTable, wordTable, bigramTable, traditionalChars, trigramTable)
     }
 }

@@ -229,6 +229,32 @@ class EditorProxy(
     }.getOrDefault(false)
 
     /**
+     * 编辑器此刻把光标放在组合区预览 [preview] 的第几格，问不出来时返回 null。
+     *
+     * 组合区的光标位置本来靠 `onUpdateSelection` 回报，但**编辑器并不保证为每次
+     * `setComposingText` 都回一次**：WebView、部分 Compose 输入框和某些 ROM 都不回。于是
+     * "我自己的回声"越攒越多，把用户真正的那一次移动吃掉，下一次按键就按"光标在末尾"插字——
+     * 用户看到的就是"光标点到了中间，打出来的字母还是接在最后"。
+     *
+     * 所以按键时不再信任那份缓存，而是当场问编辑器：文本里有没有这段预览、光标落在哪一个
+     * 出现位置的内部。问不出来（编辑器不给全文、或预览还没写进去）时返回 null，调用方沿用
+     * 原有缓存，不改变行为。
+     */
+    fun composingCaret(preview: String): Int? = runCatching {
+        if (preview.isEmpty()) return@runCatching null
+        val request = ExtractedTextRequest().apply {
+            flags = 0
+            hintMaxChars = 10_000
+            hintMaxLines = 10
+        }
+        val extracted = connection?.getExtractedText(request, 0) ?: return@runCatching null
+        // 有选区时那一段是被选中的文字，不是一个插入点：编辑含义不同，交给原有逻辑处理。
+        if (extracted.selectionStart != extracted.selectionEnd) return@runCatching null
+        val text = extracted.text?.toString() ?: return@runCatching null
+        caretInsidePreview(text, extracted.selectionEnd, preview)
+    }.getOrNull()
+
+    /**
      * 光标左边那 [length] 个字符，编辑器不肯说时返回 null。
      *
      * 用途只有一个：确认一条联想候选还配不配得上当前光标。联想条说的是"刚才上屏的那个词
@@ -395,4 +421,25 @@ internal fun composingSelectionTarget(
     val end = selectionEndAfterComposing ?: return null
     val start = (end - textLength).coerceAtLeast(0)
     return (start + cursorOffset.coerceIn(0, textLength)).coerceAtMost(end)
+}
+
+/**
+ * 光标落在 [preview] 这一段文字的第几格，落在这段文字之外时返回 null。
+ *
+ * 只看"光标左边有几个字符"不够：组合区可能不在文本末尾，前面还有已经上屏的字。所以在整段
+ * 文本里找出这段预览的每一次出现，再看光标落在哪一个的内部——光标在同一段文字的不同位置，
+ * 得到的偏移就是它在该段里的下标。同一段预览出现多次时光标只可能在其中一个里面，取最后
+ * 找到的那个（前面的那些只可能是别处一模一样的字）。
+ */
+internal fun caretInsidePreview(text: String, caret: Int, preview: String): Int? {
+    if (preview.isEmpty() || caret !in 0..text.length) return null
+    var found: Int? = null
+    var from = 0
+    while (true) {
+        val index = text.indexOf(preview, from)
+        if (index < 0) break
+        if (caret in index..(index + preview.length)) found = caret - index
+        from = index + 1
+    }
+    return found
 }

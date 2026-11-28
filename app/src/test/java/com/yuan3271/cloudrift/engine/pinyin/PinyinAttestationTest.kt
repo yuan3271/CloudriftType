@@ -15,11 +15,13 @@ import org.junit.Test
  *
  * 组合解码能拼出无穷多读法，而多数不是中文：`毫无|青年`、`辛苦|里`、`转账|一|不错` 每一段都是
  * 词典里的词或常用字，相邻两段却在语料里从来没一起出现过。候选栏铺满这类读法，用户看到的就是
- * 一整屏"不成句的结果"。
+ * 一整屏"不成句的结果"——也就是用户说的"生活中根本不存在这种组合"。
  *
- * 但这条线只能划在"一整串读法一条证据都没有"上。测试同时锁住另一头：语料没连过、却确实是用户
- * 想打的句子（`那|挺|好|的`、`票|买|好|了|吗`）必须原样留在候选里——它们和噪声长得一模一样，
- * 区别只在用户心里，所以宁可少删也不能多删。词组、专名是词典词，不受这条线影响。
+ * 不能按"有没有证据"逐条删：语料没连过、却确实是用户想打的句子（`那|挺|好|的`、
+ * `票|买|好|了|吗`）和噪声长得一模一样，逐条删实测每删一条就少一句正常话。所以线只划在两种
+ * **结构上**认得出的拼法上：短读法以孤字收尾（`生|鱼|白`、`省|摔`）、同音字洗牌（`我爱你` 与
+ * `握爱你`）。测试两头都锁：噪声要收敛，正常话（`怎么才能学好`、`百度百科`、`那挺好的`）不能动，
+ * 词组、专名是词典词，走另一条候选来源，不受影响。
  */
 class PinyinAttestationTest {
 
@@ -83,6 +85,38 @@ class PinyinAttestationTest {
             val texts = engine.evaluate(code).candidates.map { it.text }
             assertTrue("$code 的正常句子被删了: $texts", texts.contains(sentence))
         }
+    }
+
+    @Test
+    fun `a short reading may not end on an unsupported single character`() {
+        // 用户报的现场：`shengyubai` 的第一名是 生鱼白 / 生于白 这种"词后面硬接一个字"的拼法。
+        // 三四个字的读法里，收尾那个字没有搭配证据就等于凭空补了一个字——`生|鱼` 在语料里连着，
+        // `鱼|白` 从来没有，而整条读法却靠前一条接缝的分数站住了。这种读法不再进候选，候选栏
+        // 退回词典词（生于 / 胜于 / 生育 / 剩余…），用户自己接下去打即可。
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val texts = engine.evaluate("shengyubai").candidates.map { it.text }
+
+        for (invented in listOf("生鱼白", "生于白", "胜于白", "生育白", "剩余白")) {
+            assertFalse("$invented 是孤字收尾的拼法，不该出现: $texts", texts.contains(invented))
+        }
+        assertTrue("应当退回词典词: $texts", texts.contains("生于"))
+    }
+
+    @Test
+    fun `short readings lose their homophone wash`() {
+        // `我爱你` 与 `握爱你` 断在同一处、读同一串音节，只差第一个同音字。搭配模型说 `我|爱`
+        // 有据、`握|爱` 没有，后者就是同音字洗牌。同形的 `实施|这个` 与 `试试|这个` 都由真词
+        // 组成、都没有缺口，必须两条都在。
+        val engine = PinyinEngine(dictionary, nineKey = false)
+        val love = engine.evaluate("woaini").candidates.map { it.text }
+        assertTrue("我爱你 应保留: $love", love.contains("我爱你"))
+        for (wash in listOf("握爱你", "沃爱你", "窝爱你", "卧爱你")) {
+            assertFalse("$wash 是同音字洗牌: $love", love.contains(wash))
+        }
+
+        val shi = engine.evaluate("shishizhege").candidates.map { it.text }
+        assertTrue("试试这个 应保留: $shi", shi.contains("试试这个"))
+        assertTrue("实施这个 应保留: $shi", shi.contains("实施这个"))
     }
 
     @Test

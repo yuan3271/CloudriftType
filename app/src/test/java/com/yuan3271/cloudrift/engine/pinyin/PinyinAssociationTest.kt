@@ -1,6 +1,10 @@
 package com.yuan3271.cloudrift.engine.pinyin
 
+import com.yuan3271.cloudrift.data.StringStore
+import com.yuan3271.cloudrift.data.UserProfile
 import com.yuan3271.cloudrift.engine.CandidateKind
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -21,17 +25,50 @@ import org.junit.Test
 class PinyinAssociationTest {
 
     private lateinit var engine: PinyinEngine
+    private lateinit var dictionary: PinyinDictionary
 
     @Before
     fun setUp() {
-        val dictionary = PinyinDictionary.fromReaders(
+        dictionary = PinyinDictionary.fromReaders(
             charTable = { reader("pinyin_chars.txt") },
             wordTable = { reader("pinyin_words.txt") },
             bigramTable = { reader("pinyin_bigrams.txt") },
             traditionalChars = { reader("traditional_chars.txt") },
+            trigramTable = { reader("pinyin_trigrams.txt") },
         )
         dictionary.load()
         engine = PinyinEngine(dictionary, nineKey = false)
+    }
+
+    @Test
+    fun `the strip looks at the text before the caret, not just the last commit`() {
+        // 逐字上屏（北、京）时手里只有一个字，而 北京 才是该问的左文。光标前文把两个字连起来
+        // 以后，问出来的就是 北京 后面接什么。
+        val fromContext = engine.associations("我在北京", limit = 8).map { it.text }
+        val fromWord = engine.associations("北京", limit = 8).map { it.text }
+
+        assertEquals(fromWord.first(), fromContext.first())
+        assertTrue("北京 后面应接 的/大学/学习: $fromContext", fromContext.take(4).any { it == "的" || it == "大学" })
+    }
+
+    @Test
+    fun `a continuation the user has picked twice comes first`() {
+        // 语料说 北京→的 最稳（919），但这个人在 北京 后面两次都点了 大学，第三次该先给 大学。
+        val profile = profile()
+        repeat(2) { profile.recordAssociation("北京", "大学") }
+        val learned = PinyinEngine(dictionary, nineKey = false, profile = profile)
+
+        assertEquals("大学", learned.associations("北京", limit = 8).first().text)
+        assertEquals("的", engine.associations("北京", limit = 8).first().text)
+    }
+
+    @Test
+    fun `one association pick is not a habit yet`() {
+        val profile = profile()
+        profile.recordAssociation("北京", "大学")
+        val learned = PinyinEngine(dictionary, nineKey = false, profile = profile)
+
+        assertEquals("的", learned.associations("北京", limit = 8).first().text)
     }
 
     @Test
@@ -57,14 +94,17 @@ class PinyinAssociationTest {
     }
 
     @Test
-    fun `a sentence commit predicts from the word at its tail`() {
-        // The whole string is not in the table, and neither are its 4 and 3 character tails, so
-        // the lookup has to fall back to 天气 - otherwise picking a sentence candidate would end
-        // the 联想 strip entirely.
-        val fromSentence = engine.associations("他说今天天气", limit = 8)
-        val fromWord = engine.associations("天气", limit = 8)
+    fun `a sentence commit predicts from the last two units when the corpus knows them`() {
+        // 三元表里有 今天|天气，所以上屏一整句之后问的是"今天天气 后面接什么"，而不是只有
+        // "天气 后面接什么"：前者是 不错 / 真不错，后者只是 预报 / 好 这类泛词。
+        val fromSentence = engine.associations("他说今天天气", limit = 8).map { it.text }
+        val fromPair = engine.associations("今天天气", limit = 8).map { it.text }
+        val fromWord = engine.associations("天气", limit = 8).map { it.text }
 
-        assertEquals(fromWord.map { it.text }, fromSentence.map { it.text })
+        assertEquals(fromPair, fromSentence)
+        // 两个单元一起看，比只看最后一个单元更具体：泛词 天气→好 让位给 今天天气→不错。
+        assertEquals("不错", fromPair.first())
+        assertEquals("好", fromWord.first())
     }
 
     @Test
@@ -109,6 +149,18 @@ class PinyinAssociationTest {
 
         assertTrue("联想命中率过低: $hits/$total", hits >= total * 2 / 3)
     }
+
+    /** 一台只有内存的"设备"：学习记录写在它里面，测试之间互不影响。 */
+    private class MemoryStore : StringStore {
+        val values = HashMap<String, String>()
+        override fun read(key: String): String? = values[key]
+        override fun write(key: String, value: String) {
+            values[key] = value
+        }
+    }
+
+    private fun profile(store: StringStore = MemoryStore()): UserProfile =
+        UserProfile(store, CoroutineScope(Dispatchers.Unconfined))
 
     private fun reader(name: String) = BufferedReader(
         InputStreamReader(FileInputStream(File("src/main/assets", name)), Charsets.UTF_8),

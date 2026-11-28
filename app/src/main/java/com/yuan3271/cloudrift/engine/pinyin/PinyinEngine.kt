@@ -403,33 +403,66 @@ class PinyinEngine(
     }
 
     /**
-     * 联想: what the association table says tends to follow what was just committed.
+     * 联想: what the association table says tends to follow the text before the caret.
      *
-     * The context is the committed text itself, backing off to its tail, because a commit is not
-     * always one word: picking the sentence candidate 我今天去了北京 has to end up asking about
-     * 北京, not about the whole string, or there would be nothing to look up.
+     * 左文不是一个词，而是光标前面那一段：它常常由两个单元组成（我今天 = 我 + 今天），表里
+     * 没有这么长的键，所以从最长往下试到末尾两个字，谁能命中就用谁，见 [associationContexts]。
      */
     override fun associations(text: String, limit: Int): List<Candidate> {
-        if (!dictionary.isReady || text.isEmpty()) return emptyList()
-        for (context in associationContexts(text)) {
+        if (!dictionary.isReady || text.isEmpty() || limit <= 0) return emptyList()
+        val contexts = associationContexts(text)
+        // 多个左文一起看，而不是"最长的那个有结果就整排丢掉短的"。
+        //
+        // 短左文的续词往往太泛（今天 后面能接的东西很多），长左文又常常没被语料覆盖。所以按
+        // "左文越具体越可信"给每条左文一个权重，同一个词只取它最好的一次——长的能命中就压过
+        // 短的，长的没覆盖时短的照样把候选栏填满，不会因为一条长左文没命中就让整条联想消失。
+        val best = LinkedHashMap<String, Int>()
+        // 先问三元表：光标前文里最长的、表里有记录的那一段（两个单元拼起来的字符串）。它回答的
+        // 是"今天天气 后面接什么"，比单词表多一个上下文，所以先把它放进结果里，单词表的候选
+        // 之后再用分数补进来，不会把它挤掉。
+        val pool = maxOf(limit * 3, limit)
+        trigramRow(text, pool)?.forEach { entry ->
+            if (!dictionary.containsTraditional(entry.word)) best[entry.word] = entry.score
+        }
+        contexts.forEachIndexed { depth, context ->
             // A wider pool than the strip will show, because the 句末语气词 are lifted inside it:
             // 可以了 and 可以吗 are what someone typing 可以 usually wants next, and the corpus has
-            // both - just below 可以接受 and 可以想象, which are what a *sentence* corpus writes.
-            val words = dictionary.nextWords(context, maxOf(limit * 3, limit))
-            if (words.isEmpty()) continue
-            val ranked = words.sortedWith(
-                compareByDescending<WordEntry> { tailParticleScore(it) }.thenBy { it.word },
-            ).take(limit)
-            return ranked.map { entry ->
-                Candidate(
-                    text = entry.word,
-                    consumed = 0,
-                    kind = CandidateKind.Prediction,
-                    score = entry.score,
-                )
-            }.filterNot { dictionary.containsTraditional(it.text) }
+            // both - just below 可以接受 and 可以想象, which is what a *sentence* corpus writes.
+            val words = dictionary.nextWords(context, pool)
+            if (words.isEmpty()) return@forEachIndexed
+            val weight = associationWeight(context.length)
+            for (entry in words) {
+                if (dictionary.containsTraditional(entry.word)) continue
+                val score = (tailParticleScore(entry) * weight).toInt()
+                if (score > (best[entry.word] ?: 0)) best[entry.word] = score
+            }
         }
-        return emptyList()
+        if (best.isEmpty()) return emptyList()
+        val ranked = best.entries
+            .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+            .take(limit)
+        // 用户自己接过的词排到前面：和打字那边同一个门槛（选过两次才算），见 [UserProfile.recordAssociation]。
+        val habits = profile?.associationHabits(contexts, ranked.map { it.key })
+        val ordered = if (habits == null) {
+            ranked
+        } else {
+            // 只认"已经成了习惯"的那些（同一个门槛：两次），一次点击不改变顺序——稳定排序
+            // 让其余候选保持语料自己的排序。
+            ranked.withIndex()
+                .sortedByDescending { indexed ->
+                    val count = habits[indexed.index]
+                    if (count >= UserProfile.HABIT_THRESHOLD) count else 0
+                }
+                .map { it.value }
+        }
+        return ordered.map { entry ->
+            Candidate(
+                text = entry.key,
+                consumed = 0,
+                kind = CandidateKind.Prediction,
+                score = entry.value,
+            )
+        }
     }
 
     /**
@@ -446,11 +479,31 @@ class PinyinEngine(
         return maxOf(entry.score, PREDICTION_PARTICLE_FLOOR)
     }
 
-    /** Longest first: the committed text, then its 4/3/2 character tails. */
+    /**
+     * 光标前文里最长的一段、三元表里有记录的那个左文，按分数排好；没有就 null。
+     *
+     * 表里的键是两个单元直接拼起来的字符串（`今天` + `天气` = `今天天气`），调用方手里只有
+     * 文本，不知道单元边界，所以从最长的后缀往下试——越长越具体，试到哪一条就用哪一条。
+     */
+    private fun trigramRow(text: String, limit: Int): List<WordEntry>? {
+        if (!dictionary.hasTrigramModel) return null
+        for (length in minOf(text.length, MAX_TRIGRAM_KEY_CHARS) downTo 2) {
+            val row = dictionary.nextAfterPair(text.takeLast(length), limit)
+            if (row.isNotEmpty()) return row
+        }
+        return null
+    }
+
+    /**
+     * 联想要问的左文，从整段文本到末尾两个字。
+     *
+     * 表里的左键是**单元**（一个词或一个单字，最长 6 个字），所以 我今天 这种三字串查不到，
+     * 得靠末尾的 今天；而 今天 又太泛，于是能试的长度都试一遍，交给 [associations] 的权重去比。
+     */
     private fun associationContexts(text: String): List<String> {
-        val contexts = LinkedHashSet<String>(4)
+        val contexts = LinkedHashSet<String>(6)
         contexts.add(text)
-        for (length in 4 downTo 2) {
+        for (length in 6 downTo 2) {
             if (text.length > length) contexts.add(text.takeLast(length))
         }
         return contexts.toList()
@@ -605,37 +658,55 @@ class PinyinEngine(
     }
 
     /**
-     * 把"语料里从来没这样连过"的一整串读法收敛掉。
+     * 把"不成句"的读法收敛掉。
      *
-     * 组合解码能拼出无穷多读法，而大多数读法不是中文：`毫无|青年`、`辛苦|里`、`不及|慢慢|来`、
-     * `转账|一|不错` 里的每一段都是词典里的词或常用字，相邻两段却在语料里从来没一起出现过
-     * （证据 0）。这类读法凑在一起就是用户眼里的"不成句的候选"。
+     * 组合解码能拼出无穷多读法，而大多数读法不是中文：`毫无|青年`、`辛苦|里`、`生于|白` 里的
+     * 每一段都是词典里的词或常用字，相邻两段却在语料里从来没一起出现过。这类读法凑在一起就是
+     * 用户眼里的"不成句的候选"，也就是"生活中根本不存在这种组合"。
      *
-     * 但只在**一整串读法一条证据都没有**时收敛：那种情况下剩下的全是同一串音节的同音字洗牌，
-     * 留解码器最看好的那一条就够。只要有一条读法带证据，一条都不删——语料没覆盖、却确实是用户
-     * 想打的句子（`那|挺|好|的`、`票|买|好|了|吗`）和噪声在证据这一维上完全一样，多删一条就少
-     * 一句正常话（广谱回归台实测）。词组与专名是词典里的词，走另一条候选来源，不受影响。
+     * 不能按"有没有证据"逐条删：语料没覆盖、却确实是用户想打的句子（`那|挺|好|的`、
+     * `票|买|好|了|吗`）和噪声在证据这一维上完全一样，逐条删实测每删一条就少一句正常话。
+     * 这里只挡两种**结构上**就能认出来的拼法：
+     *
+     *  1. **孤字收尾**：最后一个单元是单字，而且它和前一段的搭配语料里一次都没出现过——
+     *     `生|鱼|白`、`省|摔`、`生于|白` 都是在词或字后面硬接一个字，收尾那一下没有依据。
+     *     以词收尾（`百度|百科`）放行，句末语气词（`好啦`、`走吧`）也放行——语料本来就不该为
+     *     它们作证（见 [TAIL_PARTICLES]）。574 句广谱回归台上这条判据一条正常话都没误杀：
+     *     正常句子的收尾字都有搭配证据，没证据的那 11 句本来就解码错了。
+     *  2. **同音字洗牌**：同一套切分形状里只留缺口最少的那一条。`我爱你` 与 `握爱你` 形状相同、
+     *     只差同音字，搭配模型说 `握|爱` 一次都没连过，它就是洗牌。形状不同的读法是不同的断句
+     *     （`我们|走了` 对 `握|们|走|了`），不能互相淘汰——`实施这个` 与 `试试这个` 形状相同，
+     *     但两条都没有缺口，所以都留着。
+     *
+     * 一条都不剩时不补猜测：候选栏还有词典词与单字，那比印一条谁都不认识的"词"更像人话。
      */
     private fun attested(readings: List<Reading>): List<Reading> {
-        // Only readings that can actually reach the bar may vote on whether this run has corpus
-        // evidence. A low-scoring alternative split used to contribute one backed reading and
-        // then unlock dozens of unrelated homophone washes above it.
         val shortlist = readings.take(SENTENCE_LIMIT)
         // 没有搭配模型时"证据"恒为 0，那不是"语料里没连过"，是"无从知道"（测试里的词典就是
         // 这种），照删会把每条读法都删掉。
         if (!dictionary.hasAssociationModel) return shortlist
-        if (shortlist.size <= UNBACKED_READINGS) return shortlist
-        // 只要有一条读法带着语料证据，就一条都不删。
-        //
-        // 这一条是量出来的，不是保守：同一个字形骨架下常常有真也有假（`那|挺|好|的` 对
-        // `那|听|好|的`、`票|买|好|了|吗` 对 `票|买|好|了|马`），"删掉没证据的"分不出谁是谁，
-        // 广谱回归台实测每删一条就少一句正常话。所以真正被删的只有另一种情况——一整串读法**一条
-        // 证据都没有**：那不是"挑了错的"，而是"这串音节根本没被语料读到过"，剩下的全是同音字洗牌
-        // （`毫无|青年`、`辛苦|里`、`不及|慢慢|来`、`转账|一|不错`），留一条最好的猜测就够，铺满
-        // 八条只会让候选栏看起来全是"不成句的结果"。
-        if (shortlist.any { it.evidence > 0 }) return shortlist
-        return shortlist.take(UNBACKED_READINGS)
+        val closed = shortlist.filterNot { it.orphanTail() }
+        if (closed.isEmpty()) return closed
+        // 同一套切分形状里只留缺口最少的那条——但只对"每个单元都是单字"的形状做：那种形状里
+        // 变化的位置只可能是同音字（`我爱你` 对 `握爱你`），搭配模型说谁没连过就删谁。
+        // 单元是词的形状（`实施|这个` 对 `试试|这个`）变化的是词，删掉就等于用搭配表否定一个
+        // 真词，`实施这个` 正是这么被误伤的。
+        val floor = closed.filter { it.shape.all { char -> char == '1' } }
+            .groupBy { it.shape }
+            .mapValues { (_, group) -> group.minOf { it.misses } }
+        val washed = closed.filter { floor[it.shape]?.let { floorValue -> it.misses == floorValue } ?: true }
+        // 一整串读法一条证据都没有：剩下的全是同音字洗牌，留解码器最看好的那一条就够了。
+        if (washed.any { it.evidence > 0 }) return washed
+        return washed.take(UNBACKED_READINGS)
     }
+
+    /**
+     * 收尾是一个孤字：最后一个单元是单字、它和前一段的搭配语料里一次都没出现过，而且它不是
+     * 句末语气词（`好啦`、`走吧`、`马上了` 的收尾不需要语料作证）。
+     */
+    private fun Reading.orphanTail(): Boolean =
+        tail == 0 && shape.endsWith('1') && text.length <= ORPHAN_TAIL_MAX_CHARS &&
+            text.last() !in TAIL_PARTICLE_CHARS
 
     /**
      * 一条接缝的搭配证据：句首边界（[SENTENCE_START]）不是接缝。
@@ -771,6 +842,7 @@ class PinyinEngine(
                     // 下雨拉). Everywhere else the ordinary rule stands.
                     val particle = particles.indexOf(character) >= 0
                     if (particle) {
+                        val seam = if (start > 0) 1 else 0
                         push(
                             paths[start + 1],
                             path.score + CHARACTER_SCORE - UNIT_PENALTY +
@@ -779,6 +851,10 @@ class PinyinEngine(
                             count,
                             lastToken = character.toString(),
                             evidence = path.evidence + pair,
+                            seams = path.seams + seam,
+                            misses = path.misses + if (start > 0 && pair <= 0) 1 else 0,
+                            shape = path.shape + 1,
+                            tail = if (start > 0 && pair <= 0) 0 else 1,
                         )
                         continue
                     }
@@ -799,6 +875,10 @@ class PinyinEngine(
                         count,
                         lastToken = character.toString(),
                         evidence = path.evidence + pair,
+                        seams = path.seams + if (start > 0) 1 else 0,
+                        misses = path.misses + if (start > 0 && pair <= 0) 1 else 0,
+                        shape = path.shape + 1,
+                        tail = if (start > 0 && pair <= 0) 0 else 1,
                     )
                 }
                 for ((end, entries) in words) {
@@ -817,6 +897,10 @@ class PinyinEngine(
                             // reading belong together. Counting it made almost every reading look
                             // attested (see [attested]).
                             evidence = path.evidence + internalEvidence(path.lastToken, pair),
+                            seams = path.seams + if (start > 0) 1 else 0,
+                            misses = path.misses + if (start > 0 && pair <= 0) 1 else 0,
+                            shape = path.shape + entry.word.length,
+                            tail = if (start > 0 && pair <= 0) 0 else 1,
                         )
                     }
                 }
@@ -825,11 +909,24 @@ class PinyinEngine(
         return paths[syllables]
             .sortedByDescending { it.score }
             .filter { it.text.isNotEmpty() }
-            .map { Reading(it.text, it.score, it.evidence) }
+            .map { Reading(it.text, it.score, it.evidence, it.seams, it.misses, it.shape, it.tail) }
     }
 
-    /** 一条读法：文本、路径分数，以及它拿到的搭配证据（0 = 语料里没有这个连法）。 */
-    private data class Reading(val text: String, val score: Float, val evidence: Int)
+    /**
+     * 一条读法：文本、路径分数、搭配证据，以及它成不成句的三项证据——
+     * [seams] 接缝数、[misses] 其中语料里没见过的、[shape] 每个单元的汉字数（如 `生|鱼|白` 是
+     * `111`）。[tail] 是最后一条接缝有没有证据；收尾是不是句末语气词由 [Reading] 的文本直接
+     * 查 [TAIL_PARTICLE_CHARS]（语气词不需要证据）。
+     */
+    private data class Reading(
+        val text: String,
+        val score: Float,
+        val evidence: Int,
+        val seams: Int = 0,
+        val misses: Int = 0,
+        val shape: String = "",
+        val tail: Int = 1,
+    )
 
     private fun push(
         paths: ArrayList<Path>,
@@ -838,6 +935,10 @@ class PinyinEngine(
         count: Int,
         lastToken: String = "",
         evidence: Int = 0,
+        seams: Int = 0,
+        misses: Int = 0,
+        shape: String = "",
+        tail: Int = 1,
     ) {
         // 去重要连上下文一起看：一条路径的分数只取决于（到哪了、文本、最后一段是什么），两条
         // 文本相同、切分不同的路径不是同一条。`今天|天气` 与词典词 `今天天气` 都写"今天天气"，
@@ -845,7 +946,7 @@ class PinyinEngine(
         // `今天|天气|很好` 永远排不上来。加上 lastToken 以后两条各走各的，最好的那条赢。
         if (paths.any { it.text == text && it.lastToken == lastToken }) return
         if (paths.size >= count && paths.last().score >= score) return
-        paths.add(Path(score, text, lastToken, evidence))
+        paths.add(Path(score, text, lastToken, evidence, seams, misses, shape, tail))
         paths.sortByDescending { it.score }
         while (paths.size > count) paths.removeAt(paths.size - 1)
     }
@@ -859,6 +960,10 @@ class PinyinEngine(
          * `毫无|青年`、`辛苦|里`、`不及|慢慢|来` 都是这种，语料里从来没人这样连过。
          */
         val evidence: Int = 0,
+        val seams: Int = 0,
+        val misses: Int = 0,
+        val shape: String = "",
+        val tail: Int = 1,
     )
 
     /** The single best reading of the run of syllables, or null when none exists. */
@@ -1973,6 +2078,28 @@ class PinyinEngine(
          * 整句候选，多留则同音字洗牌又铺满候选栏；详见 [attested]。
          */
         private const val UNBACKED_READINGS = 1
+
+        /**
+         * 一条左文值多少分：越长越具体，2 个字的左文最泛。
+         *
+         * 按**长度**算而不是按它在上下文列表里的位置算：同一段文本前面多几个字，末尾那个
+         * 词的权重不该跟着变（`今天天气` 与 `他说今天天气` 都必须给 `天气` 同一个折扣）。
+         */
+        private fun associationWeight(length: Int): Float = when {
+            length >= 4 -> 1f
+            length == 3 -> 0.95f
+            else -> 0.9f
+        }
+
+        /** 三元表左键最长是两个单元各 6 个字（见 build_trigram.py），只有最后这么长的一段才可能是键。 */
+        private const val MAX_TRIGRAM_KEY_CHARS = 12
+
+        /**
+         * 孤字收尾只在短读法上算数。三四个字的读法里，一个没有搭配证据的字就占了四分之一到
+         * 三分之一，那是拼出来的（`生|鱼|白`、`生于|白`、`省|摔`）；长句的收尾字常常只是语料
+         * 没覆盖的普通字（`怎么才能学好` 的 好、`先看条件再画个图` 的 图），删它等于删正常话。
+         */
+        private const val ORPHAN_TAIL_MAX_CHARS = 4
 
         // ---- 中文模式下的英文词（见 [englishCandidates] 与 [mergeEnglish]）-------------
 

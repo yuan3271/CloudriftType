@@ -86,6 +86,9 @@ class UserProfile(
     /** word -> how often it has been committed at all, any code. */
     private val wordCounts = HashMap<String, Int>()
 
+    /** 上一个词 -> (从联想条里选中的续词 -> 次数)。联想条自己的习惯，见 [recordAssociation]。 */
+    private val turns = HashMap<String, HashMap<String, Int>>()
+
     private val _stats = MutableStateFlow(UserStats())
     val stats: StateFlow<UserStats> = _stats.asStateFlow()
 
@@ -195,6 +198,50 @@ class UserProfile(
             .toList()
     }
 
+    /**
+     * 联想条上选中了一次续词：`今天` 之后点了 `天气`。
+     *
+     * 和打字习惯分开记：那份习惯的键是**拼音码**（`jintian`），回答的是"这个码想要哪个词"；
+     * 这份的键是**上一个词**（`今天`），回答的是"这个词后面接什么"。两者混在一起，会让
+     * "我常打 天气"变成"今天 后面该跟 天气"，那不是同一件事。
+     */
+    fun recordAssociation(left: String, next: String) {
+        if (left.isEmpty() || next.isEmpty()) return
+        val key = normalize(left.takeLast(MAX_TURN_CHARS))
+        val word = normalize(next)
+        if (key.isEmpty() || word.length > MAX_WORD_CHARS) return
+        val bucket = turns.getOrPut(key) { HashMap(4) }
+        bucket.merge(word, 1, Int::plus)
+        if (bucket.size > MAX_NEXT_PER_TURN) {
+            bucket.entries.minByOrNull { it.value }?.let { bucket.remove(it.key) }
+        }
+        if (turns.size > MAX_TURNS) {
+            turns.entries.minByOrNull { entry -> entry.value.values.sum() }?.let { turns.remove(it.key) }
+        }
+        schedulePersist()
+    }
+
+    /**
+     * [recordAssociation] 的查询：这些左文里，用户以前接在后面的候选各被选过几次。
+     *
+     * 一次问多个左文（组合区的光标前文可能有多种读法），命中哪一个都算——它们说的是同一个位置。
+     */
+    fun associationHabits(lefts: List<String>, texts: List<String>): IntArray {
+        val counts = IntArray(texts.size)
+        if (lefts.isEmpty() || texts.isEmpty() || turns.isEmpty()) return counts
+        val keys = lefts.map { normalize(it.takeLast(MAX_TURN_CHARS)) }.filter { it.isNotEmpty() }
+        if (keys.isEmpty()) return counts
+        val buckets = keys.mapNotNull { turns[it] }
+        if (buckets.isEmpty()) return counts
+        for (index in texts.indices) {
+            val text = normalize(texts[index])
+            var total = 0
+            for (bucket in buckets) total += bucket[text] ?: 0
+            counts[index] = total
+        }
+        return counts
+    }
+
     /** Words this user assembled themselves whose reading matches the code exactly. */
     fun inventedWord(reading: String): String? = invented[reading]
 
@@ -204,6 +251,7 @@ class UserProfile(
         choices.clear()
         invented.clear()
         wordCounts.clear()
+        turns.clear()
         saveJob?.cancel()
         persist()
         publish()
@@ -243,6 +291,7 @@ class UserProfile(
         val incomingChoices = root.optJSONObject(KEY_CHOICES)
         val incomingInvented = root.optJSONObject(KEY_INVENTED)
         val incomingCounts = root.optJSONObject(KEY_COUNTS)
+        val incomingTurns = root.optJSONObject(KEY_TURNS)
 
         var habits = 0
         incomingChoices?.let { choiceJson ->
@@ -279,6 +328,20 @@ class UserProfile(
                 val merged = maxOf(wordCounts[key] ?: 0, count)
                 if (merged > (wordCounts[key] ?: 0) && wordCounts.size < MAX_WORDS) {
                     wordCounts[key] = merged
+                }
+            }
+        }
+
+        incomingTurns?.let { turnJson ->
+            for (left in turnJson.keys()) {
+                val item = turnJson.optJSONObject(left) ?: continue
+                val key = normalize(left.takeLast(MAX_TURN_CHARS))
+                val bucket = turns.getOrPut(key) { HashMap(4) }
+                for (word in item.keys()) {
+                    val count = item.optInt(word)
+                    if (count <= 0) continue
+                    val text = normalize(word)
+                    bucket[text] = maxOf(bucket[text] ?: 0, count)
                 }
             }
         }
@@ -360,6 +423,16 @@ class UserProfile(
                 countJson.put(word, count)
             }
             root.put(KEY_COUNTS, countJson)
+
+            val turnJson = JSONObject()
+            for ((left, bucket) in turns) {
+                val item = JSONObject()
+                for ((word, count) in bucket.entries.sortedByDescending { it.value }.take(MAX_NEXT_PER_TURN)) {
+                    item.put(word, count)
+                }
+                turnJson.put(left, item)
+            }
+            root.put(KEY_TURNS, turnJson)
         }
         return root
     }
@@ -389,6 +462,16 @@ class UserProfile(
                     wordCounts[key] = maxOf(wordCounts[key] ?: 0, countJson.optInt(word))
                 }
             }
+            root.optJSONObject(KEY_TURNS)?.let { turnJson ->
+                for (left in turnJson.keys()) {
+                    val item = turnJson.optJSONObject(left) ?: continue
+                    val bucket = turns.getOrPut(normalize(left)) { HashMap(4) }
+                    for (word in item.keys()) {
+                        val text = normalize(word)
+                        bucket[text] = maxOf(bucket[text] ?: 0, item.optInt(word))
+                    }
+                }
+            }
         }
     }
 
@@ -403,12 +486,18 @@ class UserProfile(
         private const val MAX_TEXTS_PER_CODE = 8
         private const val MAX_INVENTED_WORDS = 1000
         private const val MAX_WORDS = 5000
+
+        /** 联想习惯：多少个"上一个词"、每个词最多几个续词、左文最长几个字符。 */
+        private const val MAX_TURNS = 2000
+        private const val MAX_NEXT_PER_TURN = 6
+        private const val MAX_TURN_CHARS = 12
         private const val MAX_WORD_CHARS = 12
         private const val SAVE_DELAY_MS = 1500L
         private const val KEY_PROFILE = "profile"
         private const val KEY_CHOICES = "choices"
         private const val KEY_INVENTED = "invented"
         private const val KEY_COUNTS = "counts"
+        private const val KEY_TURNS = "turns"
         private const val KEY_VERSION = "version"
         private const val KEY_EXPORTED_AT = "exportedAt"
 

@@ -130,6 +130,9 @@ class ImeController(
      */
     private var associationSeed: String? = null
 
+    /** 这条联想是拿哪段左文问出来的（[showAssociations]），选中的续词按它的末尾两个字记习惯。 */
+    private var associationContext: String = ""
+
     /**
      * The run of single characters that went in back to back, used to spot a word the user is
      * spelling out one character at a time. See [CharacterChain] for why the whole run is kept and
@@ -1039,6 +1042,16 @@ class ImeController(
         // 记录既不能给 `wo` 用，又会在下次打同一句时把 我 顶到整句前面——而它每被点一次就更稳，
         // 于是"长句只能一个字一个字地拿"。按被吃掉的那段码记，单字就只是"wo 这个码的习惯"。
         learn(current.raw.take(candidate.consumed), candidate)
+        // 联想条上选中了一次续词：这是"这个词后面接什么"的证据，和拼音码的习惯分开记。
+        //
+        // 键取左文的末尾两个字：查习惯时用的也是末尾两个字（associationContexts 里一定有），
+        // 这样逐字上屏（北、京）记下的"北京"和整词上屏记下的"北京"是同一个键。
+        if (current.raw.isEmpty() && settings.current.learningEnabled) {
+            associationSeed?.let {
+                val left = associationContext.takeLast(ASSOCIATION_HABIT_KEY_CHARS).ifEmpty { it }
+                AppGraph.profile.recordAssociation(left, candidate.text)
+            }
+        }
         val remaining = if (candidate.consumed >= current.raw.length) {
             ""
         } else {
@@ -1071,7 +1084,11 @@ class ImeController(
      */
     private fun showAssociations(seed: String) {
         if (_state.value.showsCompatPanel) return
-        val predictions = engine.associations(seed)
+        // 左文取光标前面那一段，而不是只有刚上屏的那个候选：逐字上屏（北、京）时手里只有一个
+        // 字，而 北京 才是真正该问的左文。编辑器不肯说时退回那个候选，行为与以前一致。
+        val context = editor.textBeforeCaret(ASSOCIATION_CONTEXT_CHARS).orEmpty().ifEmpty { seed }
+        associationContext = context
+        val predictions = engine.associations(context)
         associationSeed = seed.takeIf { predictions.isNotEmpty() }
         _state.value = _state.value.copy(
             raw = "",
@@ -1228,7 +1245,11 @@ class ImeController(
         } else {
             text
         }
-        val edited = insertReading(current.raw, compositionCaret, shiftedText)
+        // 编辑点以编辑器**当场**的光标为准，而不是选择回调攒下来的那份缓存：见
+        // [syncCompositionCaret]。用户把光标点到拼音中间再打字时，漏一次回调就会让字母
+        // 接到整条拼音的末尾去。
+        syncCompositionCaret()
+        val edited = insertReading(_state.value.raw, compositionCaret, shiftedText)
         applyBuffer(edited.text, edited.caret)
         if (current.shifted && !current.capsLock) {
             _state.value = _state.value.copy(shifted = false)
@@ -1239,6 +1260,7 @@ class ImeController(
     private fun moveCompositionCaret(keyCode: Int): Boolean {
         val current = _state.value
         if (!current.isComposing || current.preview.length != current.raw.length) return false
+        syncCompositionCaret()
         val previous = compositionCaret ?: current.raw.length
         val target = movedReadingCaret(
             raw = current.raw,
@@ -1287,6 +1309,23 @@ class ImeController(
             selfEditCounter++
             editor.setComposing(preview, previewCaret)
         }
+    }
+
+    /**
+     * 重新问一次编辑器：光标现在在组合区的哪一格。
+     *
+     * `onSelectionChanged` 记下的 `compositionCaret` 是**缓存**，而编辑器不一定为每次
+     * `setComposingText` 都回一次选择回调。缓存一旦落后于用户的点击，下一次按键就会按旧位置
+     * 插字——典型现象是"光标点到拼音中间，打出来的字母却接在整条拼音最后"。所以每次改动
+     * 缓冲之前都当场问一次；问不出来就保留缓存，行为与以前一致。
+     *
+     * 预览与缓冲不一致的语言（日文罗马音转假名）不在这里对齐：那种情况下编辑点按预览算，
+     * 缓冲里的下标没有意义（见 [applyBuffer]）。
+     */
+    private fun syncCompositionCaret() {
+        val current = _state.value
+        if (!current.isComposing || current.preview.length != current.raw.length) return
+        editor.composingCaret(current.preview)?.let { compositionCaret = it }
     }
 
     private fun clearBuffer() {
@@ -1361,7 +1400,8 @@ class ImeController(
         val current = _state.value
         // 正在拼写：退格改的是读音缓冲，不是编辑器里的字。
         if (current.raw.isNotEmpty()) {
-            val edited = backspaceReading(current.raw, compositionCaret)
+            syncCompositionCaret()
+            val edited = backspaceReading(_state.value.raw, compositionCaret)
             if (edited.text.isEmpty()) {
                 clearBuffer()
             } else {
@@ -1643,6 +1683,17 @@ class ImeController(
         )
 
         private const val DOUBLE_SPACE_WINDOW_MS = 450L
+
+        /**
+         * 联想问左文时最多取光标前几个字（见 [showAssociations]）。
+         *
+         * 搭配表里最长的键是 6 个字，取两倍长度是为了让"末尾 6 个字"有机会成词；再多也只是
+         * 多几次查表，不会有更好的键。
+         */
+        private const val ASSOCIATION_CONTEXT_CHARS = 12
+
+        /** 联想习惯记几个字的左文：末尾两个字，查习惯时一定在上下文列表里。 */
+        private const val ASSOCIATION_HABIT_KEY_CHARS = 2
         /**
          * 语言键的下一个布局。纯函数，方便单测：中文 → 英文 →（开日文时）日文 → 回到中文。
          */

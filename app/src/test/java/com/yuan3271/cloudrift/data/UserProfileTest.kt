@@ -249,6 +249,39 @@ class UserProfileTest {
         assertEquals(1, habitOf(target, "ni", "你好0"))
     }
 
+    @Test
+    fun `association picks are counted per preceding word and survive a restart`() {
+        // 联想习惯的键是"上一个词"，不是拼音码：今天 后面点两次 天气，说的是这个词之后接
+        // 什么，和"打 jintian 想要哪个词"是两件事。
+        val store = MemoryStore()
+        val learner = profile(store)
+        repeat(2) { learner.recordAssociation("今天", "天气") }
+        learner.recordAssociation("今天", "下雨")
+
+        val counts = learner.associationHabits(listOf("今天"), listOf("天气", "下雨"))
+        assertEquals(listOf(2, 1), counts.toList())
+        assertEquals(0, learner.associationHabits(listOf("明天"), listOf("天气"))[0])
+
+        // 重新载入同一份存储：记录还在，而且续词是那个词本身、不是拼音码。
+        learner.flush()
+        val reloaded = profile(store).associationHabits(listOf("今天"), listOf("天气"))
+        assertEquals(2, reloaded[0])
+    }
+
+    @Test
+    fun `association habits merge on import without inflating`() {
+        val sender = profile()
+        repeat(2) { sender.recordAssociation("北京", "大学") }
+        val payload = sender.exportPayload()
+
+        val receiver = profile()
+        receiver.recordAssociation("北京", "大学")
+        receiver.importPayload(payload)
+        receiver.importPayload(payload)
+
+        assertEquals(2, receiver.associationHabits(listOf("北京"), listOf("大学"))[0])
+    }
+
     private fun habitOf(learner: UserProfile, code: String, text: String): Int =
         learner.habit(code, text)
 }
